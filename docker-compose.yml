@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./datagem_backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./datagem.db
+    # To persist the database, uncomment the following lines:
+    # volumes:
+    #   - backend_data:/app
+
+  frontend:
+    build:
+      context: ./datagem_frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+# volumes:
+#   backend_data:

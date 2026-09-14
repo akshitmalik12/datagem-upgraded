@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Enhanced response styling */
+.response-enhanced {
+  line-height: 1.7;
+}
+
+.response-enhanced p {
+  margin-bottom: 0.75rem;
+}
+
+.response-enhanced ul,
+.response-enhanced ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.response-enhanced li {
+  margin-bottom: 0.5rem;
+}
+
+.response-enhanced h2 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.response-enhanced h3 {
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Smooth transitions for tables */
+.response-enhanced table {
+  transition: all 0.3s ease;
+}
+
+.response-enhanced table:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Better code block styling */
+.response-enhanced code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+.response-enhanced pre {
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+/* Enhanced blockquote */
+.response-enhanced blockquote {
+  border-left-width: 4px;
+  padding-left: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin: 1rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
