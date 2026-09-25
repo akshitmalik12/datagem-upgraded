@@ -18,16 +18,49 @@ from chat import db_tools
 # GEMINI API KEY CONFIGURATION
 # =====================
 
-# ⚠️ Recommended: use environment variable, fallback to hardcoded for local dev
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# =====================
+# API KEY ROTATION LOGIC
+# =====================
+def get_all_gemini_keys():
+    keys = []
+    # Primary key
+    if os.getenv("GEMINI_API_KEY"):
+        keys.append(os.getenv("GEMINI_API_KEY"))
+    
+    # Secondary keys
+    for i in range(2, 6):
+        key = os.getenv(f"GEMINI_API_KEY_{i}")
+        if key:
+            keys.append(key)
+            
+    # Fallback for old .env formats
+    if os.getenv("GEMINI_API_KEY_1") and os.getenv("GEMINI_API_KEY_1") not in keys:
+        keys.append(os.getenv("GEMINI_API_KEY_1"))
+        
+    return keys
 
-if not GEMINI_API_KEY:
+GEMINI_API_KEYS = get_all_gemini_keys()
+CURRENT_KEY_INDEX = 0
+
+if not GEMINI_API_KEYS:
     raise ValueError("❌ GEMINI_API_KEY not found. Set it in your environment or .env file.")
 
 try:
-    genai.configure(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=GEMINI_API_KEYS[0])
 except Exception as e:
     logger.error(f"Error configuring Gemini: {e}")
+
+def rotate_api_key():
+    global CURRENT_KEY_INDEX, GEMINI_API_KEYS
+    if len(GEMINI_API_KEYS) <= 1:
+        return False # Nothing to rotate to
+        
+    CURRENT_KEY_INDEX = (CURRENT_KEY_INDEX + 1) % len(GEMINI_API_KEYS)
+    new_key = GEMINI_API_KEYS[CURRENT_KEY_INDEX]
+    genai.configure(api_key=new_key)
+    logger.warning(f"🔄 Rotated to Gemini API Key #{CURRENT_KEY_INDEX + 1}")
+    return True
+
 
 
 # =====================
@@ -662,7 +695,12 @@ IMPORTANT:
         except Exception as e:
             error_str = str(e).lower()
             if "429" in error_str or "quota" in error_str or "exhausted" in error_str:
-                error_msg = "❌ **Quota over for the day, resets at midnight UTC.**"
+                # Try rotating key!
+                import chat.agent
+                if hasattr(chat.agent, 'rotate_api_key') and chat.agent.rotate_api_key():
+                    error_msg = "🔄 **API Rate limit reached. Rotating to backup key... Please send your message again.**"
+                else:
+                    error_msg = "❌ **Quota over for the day, resets at midnight UTC.**"
             else:
                 error_msg = f"❌ Error generating response: {e}"
                 
