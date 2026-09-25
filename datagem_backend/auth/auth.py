@@ -66,19 +66,21 @@ def create_new_user(user: auth_models.UserCreate, db: Session = Depends(database
                             Your AI-powered data analyst is ready. Say goodbye to complex SQL and hello to instantaneous insights, interactive charts, and intelligent reporting.
                         </p>
                         <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
-                            <h3 style="color: #E5E7EB; font-size: 16px; font-weight: 600; margin-top: 0; margin-bottom: 12px;">Next Steps:</h3>
-                            <ul style="color: #9CA3AF; font-size: 15px; padding-left: 20px; margin: 0; line-height: 1.8;">
-                                <li>Connect a database or upload a CSV</li>
-                                <li>Ask a question in plain English</li>
-                                <li>Watch DataGem generate the exact charts you need</li>
-                            </ul>
+                            <h3 style="color: #E5E7EB; font-size: 16px; font-weight: 600; margin-top: 0; margin-bottom: 12px;">Unlock the Full Power of DataGem</h3>
+                            <p style="color: #9CA3AF; font-size: 15px; margin: 0 0 15px 0; line-height: 1.6;">
+                                You are currently on the Free tier. Want to handle massive datasets and unlock unlimited AI chats?
+                            </p>
+                            <div style="text-align: center;">
+                                <a href="https://datagem.app/pricing" style="display: inline-block; background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); color: #ffffff; font-weight: 600; font-size: 14px; text-decoration: none; padding: 10px 20px; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4); margin-right: 10px;">🚀 Upgrade to Pro</a>
+                                <a href="https://datagem.app/pricing" style="display: inline-block; background: transparent; border: 1px solid #4F46E5; color: #6366F1; font-weight: 600; font-size: 14px; text-decoration: none; padding: 10px 20px; border-radius: 6px;">💼 View Enterprise</a>
+                            </div>
                         </div>
                         <div style="text-align: center;">
-                            <a href="http://localhost:5173/chat" style="display: inline-block; background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); color: #ffffff; font-weight: 600; font-size: 16px; text-decoration: none; padding: 14px 32px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);">Open Workspace</a>
+                            <a href="https://datagem.app/chat" style="display: inline-block; background: #111827; color: #ffffff; font-weight: 600; font-size: 16px; text-decoration: none; padding: 14px 32px; border-radius: 8px; border: 1px solid #374151;">Open Workspace</a>
                         </div>
                     </div>
                     <div style="padding: 24px 40px; background: #0F131F; text-align: center;">
-                        <p style="color: #6B7280; font-size: 13px; margin: 0;">© 2026 DataGem Inc. All rights reserved.</p>
+                        <p style="color: #6B7280; font-size: 12px; margin: 0;">&copy; 2026 DataGem. All rights reserved.</p>
                     </div>
                 </div>
             </body>
