@@ -35,7 +35,12 @@ export default function Signup() {
     
     try {
       if (password !== confirmPassword) { setError('Passwords do not match'); setIsLoading(false); return; }
-      await signup(email, password, fullName);
+      const result = await signup(email, password, fullName);
+      if (result && result.success === false) {
+        setError(result.error);
+        setIsLoading(false);
+        return;
+      }
       navigate('/chat');
     } catch (err) {
       setError(err.message || 'Failed to login. Please check your credentials.');
