@@ -32,7 +32,12 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      const result = await login(email, password);
+      if (result && result.success === false) {
+        setError(result.error);
+        setIsLoading(false);
+        return;
+      }
       navigate('/chat');
     } catch (err) {
       setError(err.message || 'Failed to login. Please check your credentials.');
