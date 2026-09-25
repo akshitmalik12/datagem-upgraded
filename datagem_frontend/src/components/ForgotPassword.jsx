@@ -94,7 +94,7 @@ export default function ForgotPassword() {
                 <form onSubmit={handleSendOTP} className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-3 bg-white dark:bg-[#151B2B] border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white" placeholder="akshitmalik@gmail.com" />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-3 bg-white dark:bg-[#151B2B] border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white" placeholder="name@company.com" />
                   </div>
                   {error && <div className="text-red-500 text-sm">{error}</div>}
                   <button type="submit" disabled={isLoading} className="w-full py-3 px-4 bg-accent-600 hover:bg-accent-700 text-white font-medium rounded-lg">{isLoading ? 'Sending...' : 'Send OTP'}</button>

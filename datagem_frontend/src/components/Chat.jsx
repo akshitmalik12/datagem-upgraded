@@ -1,13 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PieChart, Pie, Cell } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { chatAPI } from '../services/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
+import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import InteractiveChart from './InteractiveChart';
+import AgentAccordion from './AgentAccordion';
+import StopButton from './StopButton';
 import CodeBlock from './CodeBlock';
 import CommandPalette from './CommandPalette';
 import PromptSuggestions from './PromptSuggestions';
@@ -46,16 +50,85 @@ export default function Chat() {
   const [currentResponse, setCurrentResponse] = useState('');
   const [dataset, setDataset] = useState(chatMemoryCache?.dataset || null);
   const [datasetProfile, setDatasetProfile] = useState(chatMemoryCache?.datasetProfile || null);
+  const [datasetFilename, setDatasetFilename] = useState(chatMemoryCache?.datasetFilename || null);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [isCalculatingHealth, setIsCalculatingHealth] = useState(false);
+  useEffect(() => {
+    if (dataset && dataset.length > 0) {
+      setIsCalculatingHealth(true);
+      const t = setTimeout(() => setIsCalculatingHealth(false), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [dataset]);
+  const chatHealthScore = useMemo(() => {
+    if (!dataset || dataset.length === 0) return 0;
+    let issues = 0;
+    
+    // Null check
+    let hasNull = false;
+    for (let i=0; i<dataset.length; i++) {
+        if (Object.values(dataset[i]).some(v => v === null || v === '')) {
+            hasNull = true;
+            break;
+        }
+    }
+    if (hasNull) issues++;
+
+    // Duplicate check
+    let hasDuplicates = false;
+    const seen = new Set();
+    for (let i=0; i<dataset.length; i++) {
+        const str = JSON.stringify(dataset[i]);
+        if (seen.has(str)) {
+            hasDuplicates = true;
+            break;
+        }
+        seen.add(str);
+    }
+    if (hasDuplicates) issues++;
+
+    return Math.max(0, Math.floor(100 - (issues * 12.5)));
+  }, [dataset]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editSessionTitle, setEditSessionTitle] = useState("");
 
+  // Global Command Palette Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsPaletteOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const deleteSession = (e, sessionId) => {
     e.stopPropagation();
+    const sessionToDelete = sessions.find(s => s.id === sessionId);
     setSessions(prev => prev.filter(s => s.id !== sessionId));
     if (currentSessionId === sessionId) {
       handleNewChat();
     }
+    
+    toast((t) => (
+      <div className="flex items-center gap-4">
+        <span>Chat deleted.</span>
+        <button
+          onClick={() => {
+            setSessions(prev => [sessionToDelete, ...prev].sort((a, b) => b.id.localeCompare(a.id)));
+            if (currentSessionId === null) restoreSession(sessionToDelete);
+            toast.dismiss(t.id);
+            toast.success("Chat restored!");
+          }}
+          className="px-3 py-1 bg-gray-900 text-white rounded text-sm font-medium hover:bg-gray-800 transition-colors"
+        >
+          Undo
+        </button>
+      </div>
+    ), { duration: 5000 });
   };
 
   const exportSingleSession = (e, session) => {
@@ -94,8 +167,26 @@ export default function Chat() {
 
   // Sync sessions to localStorage
   useEffect(() => {
-    localStorage.setItem('datagem_sessions', JSON.stringify(sessions));
+    try {
+        localStorage.setItem('datagem_sessions', JSON.stringify(sessions));
+    } catch (e) {
+        console.warn("Could not save sessions to localStorage:", e);
+    }
   }, [sessions]);
+
+  useEffect(() => {
+    // If no session is selected but we have sessions, load the first one
+    if (!currentSessionId && sessions.length > 0) {
+        const first = sessions[0];
+        setCurrentSessionId(first.id);
+        setDatasetFilename(first.filename);
+        setDataset(first.dataset);
+        setDatasetProfile(first.profile);
+        setMessages(first.messages || []);
+        setConnectionString(first.connectionString || '');
+        setIsConnected(first.isConnected || false);
+    }
+  }, []);
 
   const [connectionString, setConnectionString] = useState(chatMemoryCache?.connectionString || '');
   const [isConnected, setIsConnected] = useState(chatMemoryCache?.isConnected || false);
@@ -104,17 +195,19 @@ export default function Chat() {
     if (currentSessionId) {
       setSessions(prev => prev.map(s => {
         if (s.id === currentSessionId) {
-          let newTitle = s.title;
-
-          return { ...s, messages, dataset, profile: datasetProfile, connectionString, isConnected, title: newTitle };
+          // Prevent accidental wiping of dataset during race conditions when switching sessions
+          const safeDataset = dataset !== null ? dataset : s.dataset;
+          const safeProfile = datasetProfile !== null ? datasetProfile : s.profile;
+          const safeFilename = datasetFilename !== null ? datasetFilename : s.filename;
+          
+          return { ...s, messages, dataset: safeDataset, profile: safeProfile, filename: safeFilename, connectionString, isConnected };
         }
         return s;
       }));
     }
-  }, [messages, dataset, datasetProfile, connectionString, isConnected]);
+  }, [messages, dataset, datasetProfile, connectionString, isConnected, currentSessionId, datasetFilename]);
 
   const [showChatHistory, setShowChatHistory] = useState(false);
-  const [datasetFilename, setDatasetFilename] = useState(chatMemoryCache?.datasetFilename || null);
 
   // Sync state to memory cache whenever it changes
   useEffect(() => {
@@ -149,7 +242,7 @@ export default function Chat() {
     
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
-    recognition.interimResults = true;
+    recognition.interimResults = false; // Fix duplicate transcription issue
     
     recognition.onstart = () => setIsListening(true);
     
@@ -158,7 +251,7 @@ export default function Chat() {
         .map(result => result[0])
         .map(result => result.transcript)
         .join('');
-      setInput(prev => prev + ' ' + transcript);
+      setInput(prev => (prev ? prev + ' ' : '') + transcript);
     };
     
     recognition.onerror = (event) => {
@@ -295,6 +388,7 @@ export default function Chat() {
         setSessions(prev => [{
             id: datasetId,
             title: 'New Chat',
+            filename: file.name,
             dataset: df,
             profile: profile,
             messages: initMessages,
@@ -313,7 +407,7 @@ export default function Chat() {
     if (!url) return;
     setIsImporting(true);
     try {
-      const endpoint = type === 'url' ? 'http://127.0.0.1:8000/import/url' : 'http://127.0.0.1:8000/import/gsheet';
+      const endpoint = type === 'url' ? `${API_BASE_URL}/import/url` : `${API_BASE_URL}/import/gsheet`;
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -377,6 +471,7 @@ export default function Chat() {
       setSessions(prev => [{
         id: datasetId,
         title: 'New Chat',
+        filename: filename,
         dataset: df,
         profile: profile,
         messages: initMsgs,
@@ -424,6 +519,7 @@ export default function Chat() {
     setSessions(prev => [{
       id: sessId,
       title: 'New Chat',
+      filename: 'Database Connection',
       dataset: null,
       profile: null,
       messages: initMsgs,
@@ -444,7 +540,7 @@ export default function Chat() {
   
   const restoreSession = (sess) => {
     setCurrentSessionId(sess.id);
-    setDatasetFilename(sess.title);
+    setDatasetFilename(sess.filename || sess.title);
     setDataset(sess.dataset);
     setDatasetProfile(sess.profile);
     setMessages(sess.messages || []);
@@ -668,7 +764,7 @@ export default function Chat() {
     if (currentSession && currentSession.title === 'New Chat') {
       chatAPI.generateTitle(input, datasetFilename, datasetProfile?.columns).then(newTitle => {
         setSessions(prev => prev.map(s => s.id === currentSessionId ? { ...s, title: newTitle } : s));
-        setDatasetFilename(newTitle); // Update the active UI title as well
+        
       }).catch(console.error);
     }
     
@@ -782,9 +878,9 @@ export default function Chat() {
       let errorMessage = 'Sorry, I encountered an error. Please try again.';
       
       if (error.message?.includes('Failed to fetch') || error.message?.includes('Failed to connect') || error.message?.includes('Cannot connect')) {
-        errorMessage = 'Failed to connect to the backend. Please make sure:\n\n1. The backend is running on http://127.0.0.1:8000\n2. CORS is properly configured\n3. No firewall is blocking the connection\n\nYou can start the backend with: `cd datagem_backend && python main.py`';
+        errorMessage = 'Failed to connect to the backend. Please make sure:\n\n1. The backend is running on ${API_BASE_URL}\n2. CORS is properly configured\n3. No firewall is blocking the connection\n\nYou can start the backend with: `cd datagem_backend && python main.py`';
       } else if (error.message?.includes('Failed to stream') || error.message?.includes('Failed to connect')) {
-        errorMessage = 'Failed to connect to the chat service. Please make sure the backend is running on http://127.0.0.1:8000';
+        errorMessage = 'Failed to connect to the chat service. Please make sure the backend is running on ${API_BASE_URL}';
       } else if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
         errorMessage = 'Server authentication error. Please try again.';
       } else if (error.message?.includes('Network Error') || error.message?.includes('ERR_NETWORK')) {
@@ -814,31 +910,21 @@ export default function Chat() {
   return (
     <>
     <AnimatePresence>
-      <CommandPalette 
-        isOpen={isPaletteOpen} 
-        onClose={() => setIsPaletteOpen(false)} 
-        onAction={handlePaletteAction} 
-      />
+      {isPaletteOpen && (
+        <CommandPalette 
+          isOpen={isPaletteOpen} 
+          onClose={() => setIsPaletteOpen(false)} 
+          onAction={handlePaletteAction} 
+        />
+      )}
     </AnimatePresence>
-    <div className="flex h-screen bg-gray-50 dark:bg-[#0B0F19] transition-colors relative overflow-hidden z-0">
+    <div className="flex h-screen bg-gray-50 dark:bg-black transition-colors relative overflow-hidden z-0">
       
-      {/* Universal Floating Animated Background Blobs */}
+      {/* Universal Static Background Blobs (Optimized for Safari) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <motion.div 
-          animate={{ scale: [1, 1.2, 1], rotate: [0, 45, 0] }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-indigo-500/20 dark:bg-indigo-600/20 rounded-full blur-[120px]" 
-        />
-        <motion.div 
-          animate={{ scale: [1, 1.3, 1], rotate: [0, -45, 0] }}
-          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-10%] -right-[10%] w-[70vw] h-[70vw] bg-purple-500/20 dark:bg-purple-600/20 rounded-full blur-[120px]" 
-        />
-        <motion.div 
-          animate={{ scale: [0.8, 1.1, 0.8], opacity: [0.5, 0.8, 0.5] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[20%] left-[20%] w-[60vw] h-[60vw] bg-blue-500/10 dark:bg-blue-600/15 rounded-full blur-[150px]" 
-        />
+        <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-indigo-500/10 dark:bg-indigo-600/10 rounded-full blur-[100px] opacity-70" />
+        <div className="absolute bottom-[-10%] -right-[10%] w-[70vw] h-[70vw] bg-purple-500/10 dark:bg-purple-600/10 rounded-full blur-[100px] opacity-70" />
+        <div className="absolute top-[20%] left-[20%] w-[60vw] h-[60vw] bg-blue-500/5 dark:bg-blue-600/10 rounded-full blur-[100px] opacity-50" />
       </div>
       
       {/* Sidebar */}
@@ -849,7 +935,7 @@ export default function Chat() {
             animate={{ marginLeft: 0, opacity: 1 }}
             exit={{ marginLeft: -320, opacity: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="w-80 flex-shrink-0 backdrop-blur-xl bg-white/70 dark:bg-gray-900/80 border-r border-gray-200/50 dark:border-gray-700/50 overflow-hidden transition-colors flex flex-col z-20"
+            className="w-80 flex-shrink-0 backdrop-blur-xl bg-white/70 dark:bg-[#09090b]/90 border-white/5 border-r border-gray-200/50 dark:border-white/5 overflow-hidden transition-colors flex flex-col z-20"
           >
             <div className="w-80 h-full overflow-y-auto overflow-x-hidden">
                     <div className="p-4 flex flex-col h-full">
@@ -862,50 +948,106 @@ export default function Chat() {
             </button>
             
             {datasetProfile && (
-              <div className="mb-6 flex-shrink-0 border-b border-gray-200 dark:border-gray-700 pb-6">
+              <div className="mb-6 flex-shrink-0 border-b border-gray-200 dark:border-white/5 pb-6">
                 <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                   Dataset Profile
                 </h2>
                 
-                <div className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                <div className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500 dark:text-gray-400 font-medium">Filename</span>
                     <span className="text-gray-900 dark:text-gray-100 font-semibold truncate max-w-[120px]" title={datasetFilename}>{datasetFilename}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500 dark:text-gray-400 font-medium">Rows</span>
-                    <span className="text-gray-900 dark:text-gray-100 font-semibold">{datasetProfile.rows?.toLocaleString() || "..."}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium">Duplicates</span>
-                    <span className="text-gray-900 dark:text-gray-100 font-semibold">{datasetProfile.duplicates !== undefined ? datasetProfile.duplicates.toLocaleString() : "..."}</span>
+                    <span className="text-gray-900 dark:text-gray-100 font-semibold">{datasetProfile.shape?.rows?.toLocaleString() || "..."}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-500 dark:text-gray-400 font-medium">Columns</span>
-                    <span className="text-gray-900 dark:text-gray-100 font-semibold">{datasetProfile.columns?.length || 0}</span>
+                    <span className="text-gray-900 dark:text-gray-100 font-semibold">{datasetProfile.shape?.cols?.toLocaleString() || "..."}</span>
                   </div>
                   
-                  <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Column Schema</label>
-                    <select className="w-full text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-1.5 px-2 text-gray-700 dark:text-gray-200 outline-none focus:ring-1 focus:ring-accent-500">
-                      <option disabled selected>View all columns...</option>
-                      {datasetProfile.columns?.map((col, idx) => (
-                        <option key={idx} disabled>{col.name} ({col.type})</option>
-                      ))}
-                    </select>
+                  <div className="pt-2 mt-2 border-t border-gray-200 dark:border-white/5">
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Column Schema (Drag & Drop)</label>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {datasetProfile.columns?.map((col, idx) => {
+                        const colName = typeof col === 'string' ? col : col.name;
+                        return (
+                          <div 
+                            key={idx} 
+                            draggable 
+                            onDragStart={(e) => { e.dataTransfer.setData('text/plain', `\`${colName}\``); }}
+                            className="text-[10px] bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-700 dark:text-gray-200 cursor-grab hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            {colName}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
             )}
             
-            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex-shrink-0">Chat History</h2>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+
+            
+            {/* DYNAMIC DONUT CHART BUTTON */}
+            <div className="mb-6 border-b border-white/10 pb-6 flex flex-col items-center">
+                <a href={(isCalculatingHealth || !dataset || dataset.length === 0) ? "#" : "/data-health"} className={`group relative flex flex-col items-center justify-center p-4 rounded-xl transition-all w-full no-underline ${isCalculatingHealth ? 'cursor-wait opacity-80' : 'cursor-pointer hover:bg-white/5'}`}>
+                  <span className="text-white font-bold text-lg mb-2">
+                      {isCalculatingHealth ? "Data Health Calculating..." : "Data Health Score"}
+                  </span>
+                  
+                  <div className="relative flex items-center justify-center">
+                      <div className="pointer-events-none">
+                          <PieChart width={140} height={140}>
+                              <Pie 
+                                data={[{value: isCalculatingHealth ? 100 : chatHealthScore}, {value: isCalculatingHealth ? 0 : (100 - chatHealthScore)}]} 
+                                cx={70} cy={70} innerRadius={50} outerRadius={65} dataKey="value" stroke="none"
+                              >
+                                  <Cell fill={isCalculatingHealth ? "rgba(255,255,255,0.1)" : (dataset ? "#22d3ee" : "#10B981")} />
+                                  <Cell fill="rgba(255,255,255,0.05)" />
+                              </Pie>
+                          </PieChart>
+                      </div>
+                      
+                      {isCalculatingHealth ? (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-8 h-8 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
+                          </div>
+                      ) : (
+                          <span className="absolute text-white font-black text-3xl font-sans tracking-tighter">
+                              {(!dataset || dataset.length === 0) ? '--%' : `${chatHealthScore}%`}
+                          </span>
+                      )}
+                  </div>
+                  
+                  <div className={`mt-4 flex items-center gap-2 text-xs font-bold transition-colors ${isCalculatingHealth ? 'text-zinc-500' : 'text-cyan-400 group-hover:text-cyan-300'}`}>
+                      {isCalculatingHealth ? (
+                          <span>Scanning Vectors...</span>
+                      ) : (
+                          <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                              {(!dataset || dataset.length === 0) ? 'AWAITING DATA' : 'CLICK TO OPEN MATRIX'}
+                          </>
+                      )}
+                  </div>
+                </a>
+            </div>
+            
+            <div className="flex justify-between items-center cursor-pointer mb-3" onClick={() => setIsHistoryOpen(!isHistoryOpen)}>
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex-shrink-0">Chat History</h2>
+              <svg className={`w-4 h-4 text-gray-500 transition-transform ${isHistoryOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </div>
+            <div className={`flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar transition-all duration-300 ${!isHistoryOpen ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-[50vh] opacity-100'}`}>
+              
               {sessions.map(s => (
                 <div
                   key={s.id}
                   onClick={() => restoreSession(s)}
-                  className={`w-full group cursor-pointer flex flex-col px-4 py-3 rounded-lg text-sm transition-colors ${currentSessionId === s.id ? 'bg-gray-900 text-white dark:bg-gray-700 border border-gray-300 dark:border-gray-700' : 'text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-800'}`}
+                  className={`w-full group cursor-pointer flex flex-col px-4 py-3 rounded-lg text-sm transition-colors ${currentSessionId === s.id ? 'bg-gray-900 text-white dark:bg-gray-700 border border-gray-300 dark:border-white/5' : 'text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-800'}`}
                 >
                   {editingSessionId === s.id ? (
                     <div className="flex items-center gap-2">
@@ -914,11 +1056,11 @@ export default function Chat() {
                         value={editSessionTitle} 
                         onChange={(e) => setEditSessionTitle(e.target.value)} 
                         onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => e.key === 'Enter' && saveRenaming(e, s.id)}
+                        onKeyDown={(e) => { e.stopPropagation(); if(e.key === 'Enter') saveRenaming(e, s.id); }}
                         className="flex-1 px-2 py-1 text-sm bg-white dark:bg-gray-600 text-black dark:text-white rounded border-none outline-none focus:ring-2 focus:ring-accent-500" 
                         autoFocus 
                       />
-                      <button onClick={(e) => saveRenaming(e, s.id)} className="text-green-500 hover:text-green-400">
+                      <button onClick={(e) => { e.stopPropagation(); saveRenaming(e, s.id); }} className="text-green-500 hover:text-green-400 z-10 relative">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                       </button>
                     </div>
@@ -960,7 +1102,7 @@ export default function Chat() {
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="flex-shrink-0 backdrop-blur-xl bg-white/70 dark:bg-gray-900/80 border-b border-gray-200/50 dark:border-gray-700/50 transition-colors z-20 relative flex flex-col"
+          className="flex-shrink-0 backdrop-blur-xl bg-white/70 dark:bg-[#09090b]/90 border-white/5 border-b border-gray-200/50 dark:border-white/5 transition-colors z-20 relative flex flex-col"
         >
           {/* Top Row: Brand & Theme Toggle */}
           <div className="px-6 py-4 flex items-center justify-between">
@@ -1012,7 +1154,7 @@ export default function Chat() {
           </div>
 
           {/* Sub Row: Tools & Navigation */}
-          <div className="px-6 py-2.5 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-900/30 flex items-center justify-between overflow-x-auto gap-4 custom-scrollbar">
+          <div className="px-6 py-2.5 border-t border-gray-200/50 dark:border-white/5 bg-gray-50/50 dark:bg-gray-900/30 flex items-center justify-between overflow-x-auto gap-4 custom-scrollbar">
             <div className="flex items-center gap-2">
               <Link
                 to="/dashboard"
@@ -1029,7 +1171,7 @@ export default function Chat() {
                 About
               </Link>
               
-              {(user?.tier?.toLowerCase() === 'enterprise' || user?.email === 'aakshitmalik@gmail.com') && (
+              {(user?.tier?.toLowerCase() === 'enterprise' || user?.tier?.toLowerCase() === 'enterprise') && (
                 <Link
                   to="/admin"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg transition-colors border border-emerald-200 dark:border-emerald-800/30 whitespace-nowrap"
@@ -1125,7 +1267,7 @@ export default function Chat() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.5 }}
                     onClick={() => fileInputRef.current?.click()}
-                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-indigo-500/50 dark:hover:border-indigo-400/50 hover:shadow-2xl hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/20 transition-all cursor-pointer flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
+                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-white/5 hover:border-indigo-500/50 dark:hover:border-indigo-400/50 hover:shadow-2xl hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/20 transition-all cursor-pointer flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
@@ -1143,7 +1285,7 @@ export default function Chat() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.5 }}
-                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/20 transition-all flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
+                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-white/5 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/20 transition-all flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="w-14 h-14 bg-blue-600 dark:bg-blue-500 text-white rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center mb-4 z-10">
@@ -1156,7 +1298,7 @@ export default function Chat() {
                         placeholder="Paste URL..." 
                         value={importUrl}
                         onChange={(e) => setImportUrl(e.target.value)}
-                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
+                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
                       />
                       <button 
                         onClick={() => handleExternalImport('url', importUrl)}
@@ -1174,7 +1316,7 @@ export default function Chat() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.5 }}
-                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-green-500/50 dark:hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 dark:hover:shadow-green-500/20 transition-all flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
+                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-white/5 hover:border-green-500/50 dark:hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 dark:hover:shadow-green-500/20 transition-all flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="w-14 h-14 bg-green-600 dark:bg-green-500 text-white rounded-2xl shadow-lg shadow-green-500/30 flex items-center justify-center mb-4 z-10">
@@ -1187,7 +1329,7 @@ export default function Chat() {
                         placeholder="Public Sheet URL..." 
                         value={gsheetUrl}
                         onChange={(e) => setGsheetUrl(e.target.value)}
-                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
+                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
                       />
                       <button 
                         onClick={() => handleExternalImport('gsheet', gsheetUrl)}
@@ -1205,7 +1347,7 @@ export default function Chat() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-orange-500/50 dark:hover:border-orange-400/50 hover:shadow-2xl hover:shadow-orange-500/10 dark:hover:shadow-orange-500/20 transition-all flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
+                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-white/5 hover:border-orange-500/50 dark:hover:border-orange-400/50 hover:shadow-2xl hover:shadow-orange-500/10 dark:hover:shadow-orange-500/20 transition-all flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="w-14 h-14 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl shadow-lg flex items-center justify-center mb-4 z-10">
@@ -1218,7 +1360,7 @@ export default function Chat() {
                         placeholder="postgresql://..." 
                         value={connectionString}
                         onChange={(e) => setConnectionString(e.target.value)}
-                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
+                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
                       />
                       <button 
                         onClick={() => handleConnectDb(connectionString)}
@@ -1234,7 +1376,7 @@ export default function Chat() {
 
                 {/* Right Column: Prompt Suggestions */}
                 <div className="w-full xl:w-[450px] flex-shrink-0">
-                  <div className="bg-white/20 dark:bg-white/5 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
+                  <div className="bg-white/20 dark:bg-white/5 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-white/5 shadow-2xl">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Inspiration</h3>
                     <PromptSuggestions
                       dataset={datasetProfile}
@@ -1245,7 +1387,7 @@ export default function Chat() {
 
               </motion.div>
             ) : (
-              <div className="max-w-4xl mx-auto space-y-8">
+              <div className="max-w-6xl mx-auto space-y-8">
 <AnimatePresence mode="popLayout">
             {messages.map((message, index) => (
                 <motion.div
@@ -1276,10 +1418,10 @@ export default function Chat() {
                   )}
 
                   <motion.div
-                    className={`max-w-3xl rounded-2xl px-6 py-4 relative shadow-sm ${
+                    className={`max-w-5xl rounded-2xl px-6 py-4 relative shadow-sm ${
                       message.role === 'user'
-                        ? 'bg-white/50 dark:bg-gray-800/50 backdrop-blur-md text-gray-900 dark:text-gray-100 rounded-tr-sm border border-gray-200/50 dark:border-gray-700/50'
-                        : 'bg-white/70 dark:bg-[#1E1E1E]/70 backdrop-blur-md text-gray-900 dark:text-gray-100 rounded-tl-sm border border-gray-200/50 dark:border-gray-700/50'
+                        ? 'bg-white/50 dark:bg-gray-800/50 backdrop-blur-md text-gray-900 dark:text-gray-100 rounded-tr-sm border border-gray-200/50 dark:border-white/5'
+                        : 'bg-white/70 dark:bg-[#1E1E1E]/70 backdrop-blur-md text-gray-900 dark:text-gray-100 rounded-tl-sm border border-gray-200/50 dark:border-white/5'
                     }`}
                   >
                   {message.role === 'assistant' && (
@@ -1317,9 +1459,9 @@ export default function Chat() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.1 }}
-                            className="rounded-xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 max-h-[60vh] flex flex-col mb-2"
+                            className="rounded-xl overflow-hidden border border-gray-200/50 dark:border-white/5 bg-gray-50/50 dark:bg-gray-800/30 max-h-[60vh] flex flex-col mb-2"
                           >
-                            <div className="dark:dark:border-b border-gray-200 dark:border-gray-700 overflow-hidden flex-shrink-0">
+                            <div className="dark:dark:border-b border-gray-200 dark:border-white/5 overflow-hidden flex-shrink-0">
                               <motion.button
                                 
                                 onClick={() => {
@@ -1356,7 +1498,7 @@ export default function Chat() {
                                     animate={{ height: 'auto', opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
                                     transition={{ duration: 0.3, ease: 'easeInOut' }}
-                                    className="border-t border-gray-200 dark:border-gray-700 overflow-hidden max-h-[50vh] overflow-y-auto"
+                                    className="border-t border-gray-200 dark:border-white/5 overflow-hidden max-h-[50vh] overflow-y-auto"
                                   >
                                     <CodeBlock
                                       code={codeBlock.code}
@@ -1397,9 +1539,9 @@ export default function Chat() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.1 }}
-                            className="rounded-xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 max-h-[60vh] flex flex-col mb-2"
+                            className="rounded-xl overflow-hidden border border-gray-200/50 dark:border-white/5 bg-gray-50/50 dark:bg-gray-800/30 max-h-[60vh] flex flex-col mb-2"
                           >
-                            <div className="dark:dark:border-b border-gray-200 dark:border-gray-700 overflow-hidden flex-shrink-0">
+                            <div className="dark:dark:border-b border-gray-200 dark:border-white/5 overflow-hidden flex-shrink-0">
                               <motion.button
                                 
                                 onClick={() => {
@@ -1436,7 +1578,7 @@ export default function Chat() {
                                     animate={{ height: 'auto', opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
                                     transition={{ duration: 0.3, ease: 'easeInOut' }}
-                                    className="border-t border-gray-200 dark:border-gray-700 overflow-hidden max-h-[50vh] overflow-y-auto"
+                                    className="border-t border-gray-200 dark:border-white/5 overflow-hidden max-h-[50vh] overflow-y-auto"
                                   >
                                     {tableData && tableData.rows && tableData.rows.length > 0 ? (
                                       <div className="p-4">
@@ -1476,7 +1618,7 @@ export default function Chat() {
                     };
 
                     return (
-                      <div key={i} className="my-4 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 w-full relative group z-0">
+                      <div key={i} className="my-4 overflow-hidden rounded-xl border border-gray-200 dark:border-white/5 bg-white dark:bg-gray-800 w-full relative group z-0">
                         <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={async () => {
@@ -1509,6 +1651,26 @@ export default function Chat() {
                   {(message.content || (message.code && message.code.length > 0) || (message.outputs && message.outputs.length > 0) || (message.plots && message.plots.length > 0)) && (
                   <div className={`prose prose-sm leading-relaxed max-w-none ${message.role === 'user' ? 'prose-invert' : 'dark:prose-invert'} ${message.role === 'assistant' ? 'response-enhanced' : ''}`}>
 {message.content && message.content.trim() ? (
+                    <>
+                      {/* GLASS BOX UI ENHANCEMENT */}
+                      <div className="flex flex-col gap-2 mb-4">
+                        {(() => {
+                          const parts = message.content.match(/(\[⚡ Returning instantaneous cached response.*?\]|\[🧠 AI Planner.*?\]|🤖 \*\*Executing:\*\* `.*?`)/g) || [];
+                          return parts.map((part, i) => {
+                            if (part.startsWith('[⚡ Returning')) {
+                              return <div key={i} className="glass-box-step text-yellow-400 border-yellow-400/20 bg-yellow-900/10"><div className="glass-box-icon">⚡</div><span>Cache Hit: Returning instantaneous response (Cost: $0.00)</span></div>;
+                            } else if (part.startsWith('[🧠 AI Planner')) {
+                              return <div key={i} className="glass-box-step text-blue-400 border-blue-400/20 bg-blue-900/10"><div className="glass-box-icon"><div className="glass-box-spinner"></div></div><span>AI Planner is evaluating execution strategy...</span></div>;
+                            } else if (part.startsWith('🤖 **Executing:**')) {
+                              const match = part.match(/`(.*?)`/);
+                              const name = match ? match[1] : 'script';
+                              return <div key={i} className="glass-box-step text-emerald-400 border-emerald-400/20 bg-emerald-900/10"><div className="glass-box-icon">⚙️</div><span>Sandboxed Execution: {name}()</span></div>;
+                            }
+                            return null;
+                          });
+                        })()}
+                      </div>
+                      
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -1528,7 +1690,7 @@ export default function Chat() {
                             <code className={`px-2 py-1 rounded-md text-sm font-mono ${
                               message.role === 'user' 
                                 ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100' 
-                                : 'bg-accent-50 dark:bg-gray-800 text-accent-700 dark:text-accent-300 border border-accent-200 dark:border-gray-700'
+                                : 'bg-accent-50 dark:bg-gray-800 text-accent-700 dark:text-accent-300 border border-accent-200 dark:border-white/5'
                             }`} {...props}>
                               {children}
                             </code>
@@ -1537,19 +1699,19 @@ export default function Chat() {
                         ul: ({ children }) => <ul className="list-disc list-outside mb-4 ml-4 space-y-2 text-gray-700 dark:text-gray-300">{children}</ul>,
                         ol: ({ children }) => <ol className="list-decimal list-outside mb-4 ml-4 space-y-2 text-gray-700 dark:text-gray-300">{children}</ol>,
                         li: ({ children }) => <li className="pl-2">{children}</li>,
-                        h1: ({ children }) => <h1 className="text-2xl font-bold mb-3 mt-4 first:mt-0 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">{children}</h1>,
+                        h1: ({ children }) => <h1 className="text-2xl font-bold mb-3 mt-4 first:mt-0 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-white/5 pb-2">{children}</h1>,
                         h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-gray-900 dark:text-gray-100 flex items-center gap-2">
                           <span className="w-1 h-6 bg-gray-200 dark:bg-gray-800 rounded-full"></span>
                           {children}
                         </h2>,
                         h3: ({ children }) => <h3 className="text-lg font-semibold mb-2 mt-3 first:mt-0 text-gray-800 dark:text-gray-200">{children}</h3>,
                         blockquote: ({ children }) => (
-                          <blockquote className="border-l-4 border-gray-300 dark:border-gray-700 dark:border-gray-700 pl-4 py-2 my-3 bg-gray-200 dark:bg-gray-700 rounded-r-lg italic text-gray-700 dark:text-gray-300">
+                          <blockquote className="border-l-4 border-gray-300 dark:border-white/5 dark:border-white/5 pl-4 py-2 my-3 bg-gray-200 dark:bg-gray-700 rounded-r-lg italic text-gray-700 dark:text-gray-300">
                             {children}
                           </blockquote>
                         ),
                         table: ({ children }) => (
-                          <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700 ">
+                          <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-white/5 ">
                             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
                               {children}
                             </table>
@@ -1589,11 +1751,12 @@ export default function Chat() {
                             {children}
                           </a>
                         ),
-                        hr: () => <hr className="my-4 border-gray-200 dark:border-gray-700" />,
+                        hr: () => <hr className="my-4 border-gray-200 dark:border-white/5" />,
                       }}
                     >
-                      {message.content.replace(/^DataGem:\s*/i, '').replace(/^\*\*Executing:\*\* `run_python_code`[\s\S]*?(?=\n\n|$)/i, '')}
+                      {message.content.replace(/^DataGem:\s*/i, '').replace(/\[⚡ Returning instantaneous cached response.*?\]|\[🧠 AI Planner.*?\]|🤖 \*\*Executing:\*\* `.*?`/g, '')}
                     </ReactMarkdown>
+                    </>
                       ) : (
                         // If we have code/output/images but no text content, show a minimal completion message
                         (message.code && message.code.length > 0) || (message.outputs && message.outputs.length > 0) || (message.images && message.images.length > 0) ? (
@@ -1622,7 +1785,7 @@ export default function Chat() {
                   initial={{ scale: 0.95 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring' }}
-                  className="max-w-3xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100  border border-gray-200 dark:border-gray-700 rounded-2xl px-6 py-4"
+                  className="max-w-5xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100  border border-gray-200 dark:border-white/5 rounded-2xl px-6 py-4"
                 >
                   {/* Show images in streaming response */}
                   {(() => {
@@ -1636,7 +1799,7 @@ export default function Chat() {
                     return images.length > 0 ? (
                       <div className="mb-4 space-y-3">
                         {images.map((imgSrc, idx) => (
-                          <div key={idx} className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                          <div key={idx} className="rounded-lg overflow-hidden border border-gray-200 dark:border-white/5">
                             <img
                               src={imgSrc}
                               alt={`Visualization ${idx + 1}`}
@@ -1666,26 +1829,26 @@ export default function Chat() {
                             </code>
                           ),
                         pre: ({ children }) => (
-                          <pre className="p-4 rounded-xl overflow-x-auto my-4  border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                          <pre className="p-4 rounded-xl overflow-x-auto my-4  border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-gray-900">
                             {children}
                           </pre>
                         ),
                         ul: ({ children }) => <ul className="list-disc list-outside mb-4 ml-4 space-y-2 text-gray-700 dark:text-gray-300">{children}</ul>,
                         ol: ({ children }) => <ol className="list-decimal list-outside mb-4 ml-4 space-y-2 text-gray-700 dark:text-gray-300">{children}</ol>,
                         li: ({ children }) => <li className="pl-2">{children}</li>,
-                        h1: ({ children }) => <h1 className="text-2xl font-bold mb-3 mt-4 first:mt-0 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">{children}</h1>,
+                        h1: ({ children }) => <h1 className="text-2xl font-bold mb-3 mt-4 first:mt-0 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-white/5 pb-2">{children}</h1>,
                         h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-gray-900 dark:text-gray-100 flex items-center gap-2">
                           <span className="w-1 h-6 bg-gray-200 dark:bg-gray-800 rounded-full"></span>
                           {children}
                         </h2>,
                         h3: ({ children }) => <h3 className="text-lg font-semibold mb-2 mt-3 first:mt-0 text-gray-800 dark:text-gray-200">{children}</h3>,
                         blockquote: ({ children }) => (
-                          <blockquote className="border-l-4 border-gray-300 dark:border-gray-700 dark:border-gray-700 pl-4 py-2 my-3 bg-gray-200 dark:bg-gray-700 rounded-r-lg italic text-gray-700 dark:text-gray-300">
+                          <blockquote className="border-l-4 border-gray-300 dark:border-white/5 dark:border-white/5 pl-4 py-2 my-3 bg-gray-200 dark:bg-gray-700 rounded-r-lg italic text-gray-700 dark:text-gray-300">
                             {children}
                           </blockquote>
                         ),
                         table: ({ children }) => (
-                          <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700 ">
+                          <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-white/5 ">
                             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
                               {children}
                             </table>
@@ -1721,7 +1884,7 @@ export default function Chat() {
                             {children}
                           </a>
                         ),
-                        hr: () => <hr className="my-4 border-gray-200 dark:border-gray-700" />,
+                        hr: () => <hr className="my-4 border-gray-200 dark:border-white/5" />,
                       }}
                     >
                       {currentResponse
@@ -1753,7 +1916,7 @@ export default function Chat() {
                   initial={{ scale: 0.95 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring' }}
-                  className="max-w-3xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100  border border-gray-200 dark:border-gray-700 rounded-2xl px-6 py-4"
+                  className="max-w-5xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100  border border-gray-200 dark:border-white/5 rounded-2xl px-6 py-4"
                 >
                   {executionStep !== null && (
                     <div className="mb-4">
@@ -1797,7 +1960,7 @@ export default function Chat() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-4xl mx-auto mt-8 bg-white/20 dark:bg-white/5 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 shadow-2xl"
+                className="w-full max-w-6xl mx-auto mt-8 bg-white/20 dark:bg-white/5 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-white/5 shadow-2xl"
               >
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Suggested Analysis</h3>
                 <PromptSuggestions
@@ -1812,14 +1975,14 @@ export default function Chat() {
         </div>
 
         {/* Input Area - Fixed at Bottom */}
-        <div className="flex-shrink-0 bg-white/60 dark:bg-[#0B0F19]/60 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20 relative">
+        <div className="flex-shrink-0 bg-white/60 dark:bg-black/60 backdrop-blur-xl border-t border-gray-200/50 dark:border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20 relative">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
             className="px-6 py-4 transition-colors"
           >
-          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+          <form onSubmit={handleSubmit} className="max-w-6xl mx-auto">
             <AnimatePresence>
             </AnimatePresence>
 
@@ -1829,15 +1992,18 @@ export default function Chat() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask a question or describe what you'd like to analyze..."
-                  className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  disabled={loading}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); setInput(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + e.dataTransfer.getData('text/plain') + ' '); }}
+                  placeholder={(!dataset && !isConnected) ? "Upload a dataset (Cmd + K) to begin chatting..." : "Ask a question or describe what you'd like to analyze..."}
+                  className={`w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${(!dataset && !isConnected) ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-60' : 'bg-white dark:bg-gray-700 focus:ring-2 focus:ring-accent-500 focus:border-transparent'}`}
+                  disabled={loading || (!dataset && !isConnected)}
                 />
                 
               </div>
               <motion.button
                 type="button"
                 onClick={toggleListening}
+                disabled={loading || (!dataset && !isConnected)}
                 
                 
                 className={`px-4 py-3 rounded-xl transition-all  flex items-center justify-center ${

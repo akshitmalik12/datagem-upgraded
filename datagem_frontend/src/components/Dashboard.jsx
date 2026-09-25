@@ -35,13 +35,17 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 p-8 font-sans">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 p-8 font-sans relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-indigo-500/10 blur-[120px]" />
+        <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-purple-500/10 blur-[120px]" />
+      </div>
+      <div className="max-w-7xl mx-auto relative z-10">
         
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-400">My Dashboard</h1>
+            <h1 className="text-5xl font-extrabold tracking-tight mb-2">My <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">Dashboard.</span></h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1">Your saved visualizations and insights.</p>
           </div>
           <button onClick={() => navigate('/chat')} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
@@ -55,7 +59,7 @@ export default function Dashboard() {
             <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : charts.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-center py-32 bg-white/50 dark:bg-gray-800/30 backdrop-blur-md rounded-[3rem] border border-gray-200 dark:border-gray-700/50 shadow-xl">
             <div className="text-5xl mb-4">📊</div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No charts saved yet</h3>
             <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">When you generate interesting visualizations in the chat, click "Save to Dashboard" to pin them here.</p>
@@ -90,9 +94,9 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   key={chart.id} 
-                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col group"
+                  className="bg-white/80 dark:bg-gray-800/40 backdrop-blur-md rounded-3xl border border-gray-200 dark:border-gray-700/50 shadow-xl overflow-hidden flex flex-col group hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-500"
                 >
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800/50">
+                  <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white truncate" title={chart.title}>
                         {chart.title && chart.title.text ? chart.title.text : chart.title}

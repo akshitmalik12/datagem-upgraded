@@ -104,7 +104,7 @@ google_search_tool_schema = Tool(
     function_declarations=[
         FunctionDeclaration(
             name="google_search",
-            description="Simulates a Google Search for educational use (returns mock data).",
+            description="Executes a LIVE web search via DuckDuckGo to answer questions with real-time data.",
             parameters={
                 "type": "OBJECT",
                 "properties": {
@@ -422,7 +422,18 @@ Be helpful, thorough, and always provide value with comprehensive summaries incl
                             break # Success!
                     
                     if tool_result:
-                        yield f"\n**Code Output:**\n```\n{tool_result}\n```\n\n"
+                        if "Code execution failed" in tool_result or "Error:" in tool_result:
+                            # Hide the ugly traceback from the user UI
+                            yield f"\n❌ **Analysis Failed:** I ran into a technical issue while crunching the numbers. Please try asking in a different way or check your dataset columns.\n\n"
+                            # Override the tool_result so the LLM doesn't try to explain the stack trace in the summary
+                            tool_result = "Execution failed. Tell the user you couldn't process the request."
+                        else:
+                            # We only show output if it's NOT a massive plotly JSON block
+                            if "<<<PLOTLY_JSON_START>>>" not in tool_result:
+                                yield f"\n**Code Output:**\n```\n{tool_result[:1000]}\n```\n\n"
+                            else:
+                                # We yield the raw plotly json so the frontend can catch it and render it
+                                yield f"\n{tool_result}\n" 
             elif tool_name == "google_search":
                 query = tool_args.get("query", "")
                 tool_result = tools.google_search(query)
@@ -649,7 +660,12 @@ IMPORTANT:
                                             logger.warning("Skipping duplicate tool call from event.candidates")
 
         except Exception as e:
-            error_msg = f"❌ Error generating response: {e}"
+            error_str = str(e).lower()
+            if "429" in error_str or "quota" in error_str or "exhausted" in error_str:
+                error_msg = "❌ **Quota over for the day, resets at midnight UTC.**"
+            else:
+                error_msg = f"❌ Error generating response: {e}"
+                
             logger.error(error_msg)
             traceback.print_exc()
             yield f"\n{error_msg}\n"

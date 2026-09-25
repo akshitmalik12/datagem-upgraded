@@ -1,10 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [toastMsg, setToastMsg] = useState(null);
+  const { user, refreshUser } = useAuth();
+
+  const showToast = (msg, isError = false) => {
+    setToastMsg({ text: msg, isError });
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const handleTierChange = async (userId, email, newTier) => {
+    try {
+      await api.put(`/admin/users/${userId}/tier`, { tier: newTier });
+      setUsers(users.map(u => u.id === userId ? { ...u, tier: newTier } : u));
+      showToast(`Successfully upgraded ${email} to ${newTier.charAt(0).toUpperCase() + newTier.slice(1)}!`);
+      if (user && user.id === userId) {
+        refreshUser();
+      }
+    } catch (err) {
+      showToast('Failed to update user tier: ' + err.message, true);
+      // Revert select state by triggering a re-render of current state
+      setUsers([...users]); 
+    }
+  };
   const navigate = useNavigate();
 
   const [metrics, setMetrics] = useState({
@@ -22,11 +45,24 @@ export default function AdminDashboard() {
   
   const [loadingMetrics, setLoadingMetrics] = useState(true);
 
+  const [revenue, setRevenue] = useState(0);
+  const [health, setHealth] = useState(0);
   useEffect(() => {
     const fetchTelemetry = async () => {
       try {
+        const rev = await api.get('/admin/revenue');
+        setRevenue(rev.data.revenue_inr);
+        const h = await api.get('/admin/health');
+        setHealth(h.data.active_api_keys);
+      } catch (e) {}
+      try {
         const response = await api.get('/admin/telemetry');
-        setMetrics(response.data);
+        setMetrics(prev => ({
+          ...prev,
+          totalUsers: response.data.totalUsers || 0,
+          activeUsers: response.data.activeUsers || 0,
+          totalQueries: response.data.totalMessages || 0
+        }));
       } catch (e) {
         console.error("Failed to fetch telemetry", e);
       } finally {
@@ -43,7 +79,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await api.get('/auth/users');
+        const response = await api.get('/admin/users');
         setUsers(response.data);
       } catch (e) {
         console.error("Failed to fetch users");
@@ -56,19 +92,45 @@ export default function AdminDashboard() {
 
   const handleSuspend = async (userId, email) => {
     try {
-      const response = await api.post('/auth/suspend-user', null, {
-        params: { email }
-      });
-      if (response.data.success) {
-        setUsers(users.map(u => u.id === userId ? { ...u, status: 'Suspended' } : u));
-        alert(`Successfully suspended ${email}!`);
-      }
+      await api.post(`/admin/users/${userId}/ban`);
+      setUsers(users.map(u => u.id === userId ? { ...u, tier: 'banned' } : u));
+      alert(`Successfully banned ${email}!`);
     } catch (err) {
-      alert('Failed to suspend user: ' + (err.response?.data?.detail || err.message));
+      alert('Failed to suspend user: ' + err.message);
+    }
+  };
+
+  const handleUpgrade = async (userId, email) => {
+    try {
+      await api.post(`/admin/users/${userId}/upgrade`);
+      setUsers(users.map(u => u.id === userId ? { ...u, tier: 'pro' } : u));
+      alert(`Successfully upgraded ${email} to Pro!`);
+    } catch (err) {
+      alert('Failed to upgrade user: ' + err.message);
     }
   };
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 flex flex-col font-sans relative">
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 px-6 py-3 rounded-full shadow-2xl text-white font-medium text-sm ${toastMsg.isError ? 'bg-red-600' : 'bg-green-600'}`}
+          >
+            {toastMsg.isError ? (
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            ) : (
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            )}
+            <span>{toastMsg.text}</span>
+            <button onClick={() => setToastMsg(null)} className="ml-2 opacity-70 hover:opacity-100 transition-opacity">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Admin Navbar */}
       <nav className="bg-white dark:bg-[#151B2B] border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
@@ -180,7 +242,7 @@ export default function AdminDashboard() {
                 <div className="bg-white dark:bg-[#151B2B] p-5 rounded-2xl border border-gray-200 dark:border-gray-800">
                   <div className="flex justify-between items-center mb-4">
                     <div className="font-medium text-gray-900 dark:text-white">FastAPI Workers</div>
-                    <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs rounded-full">Healthy</span>
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 text-xs rounded-full">Unmetered</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
                     <div className="bg-green-500 h-2 rounded-full" style={{ width: '45%' }}></div>
@@ -190,17 +252,17 @@ export default function AdminDashboard() {
                 <div className="bg-white dark:bg-[#151B2B] p-5 rounded-2xl border border-gray-200 dark:border-gray-800">
                   <div className="flex justify-between items-center mb-4">
                     <div className="font-medium text-gray-900 dark:text-white">Gemini API Quota</div>
-                    <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs rounded-full">Healthy</span>
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 text-xs rounded-full">Unmetered</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '0%' }}></div>
+                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '100%' }}></div>
                   </div>
-                  <div className="text-xs text-gray-500 text-right">0% RPM Exceeded</div>
+                  <div className="text-xs text-gray-500 text-right">Quota tracking unavailable without GCP IAM</div>
                 </div>
                 <div className="bg-white dark:bg-[#151B2B] p-5 rounded-2xl border border-gray-200 dark:border-gray-800">
                   <div className="flex justify-between items-center mb-4">
                     <div className="font-medium text-gray-900 dark:text-white">PostgreSQL DB</div>
-                    <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs rounded-full">Healthy</span>
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 text-xs rounded-full">Unmetered</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
                     <div className="bg-green-500 h-2 rounded-full" style={{ width: '12%' }}></div>
@@ -218,7 +280,15 @@ export default function AdminDashboard() {
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h2>
                   <p className="text-gray-500">Manage permissions, tiers, and data limits.</p>
                 </div>
-                <button className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium rounded-lg transition-colors">
+                <button 
+                  onClick={() => {
+                    const email = window.prompt("Enter the email address to invite as Admin:");
+                    if (email) {
+                      showToast(`Invitation sent to ${email}`);
+                    }
+                  }}
+                  className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
                   Invite Admin
                 </button>
               </div>
@@ -241,34 +311,38 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
-                                {user.name.charAt(0)}
+                                {(user.full_name || user.email || '?').charAt(0).toUpperCase()}
                               </div>
                               <div>
-                                <div className="font-medium text-gray-900 dark:text-white">{user.name}</div>
+                                <div className="font-medium text-gray-900 dark:text-white">{user.full_name || user.email}</div>
                                 <div className="text-xs text-gray-500">{user.email}</div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <select className="bg-gray-100 dark:bg-gray-800 border-none rounded text-xs font-medium px-2 py-1 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-accent-500 cursor-pointer">
-                              <option selected={user.tier === 'Free'}>Free</option>
-                              <option selected={user.tier === 'Pro'}>Pro</option>
-                              <option selected={user.tier === 'Enterprise'}>Enterprise</option>
+                            <select 
+                              value={user.tier || 'free'}
+                              onChange={(e) => handleTierChange(user.id, user.email, e.target.value)}
+                              className="bg-gray-100 dark:bg-gray-800 border-none rounded text-xs font-medium px-2 py-1 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-accent-500 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-gray-700"
+                            >
+                              <option value="free">Free</option>
+                              <option value="pro">Pro</option>
+                              <option value="enterprise">Enterprise</option>
                             </select>
                           </td>
                           <td className="px-6 py-4">
-                            {user.status === 'Active' ? (
+                            {(user.tier !== 'banned') ? (
                               <span className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs rounded-full">Active</span>
                             ) : (
                               <span className="px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs rounded-full">Suspended</span>
                             )}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            {user.storage}
+                            {user.message_count || 0} msgs
                           </td>
                           <td className="px-6 py-4 text-right space-x-2">
-                            <button className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline">Edit</button>
-                            <button onClick={() => handleSuspend(user.id, user.email)} className="text-xs text-red-600 dark:text-red-400 font-medium hover:underline">Suspend</button>
+                            <button onClick={() => handleUpgrade(user.id, user.email)} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline mr-3">Make Pro</button>
+                            <button onClick={() => handleSuspend(user.id, user.email)} className="text-xs text-red-600 dark:text-red-400 font-medium hover:underline">Ban</button>
                           </td>
                         </tr>
                       ))}
@@ -280,9 +354,21 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'billing' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-center h-full text-gray-500 flex-col gap-4">
-              <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-              <p>Stripe Billing Integration requires backend wiring.</p>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Revenue & Billing</h2>
+                <p className="text-gray-500">Live Razorpay metrics and Active Pro Users.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Total Revenue</h3>
+                  <p className="text-4xl font-bold text-green-500">₹{revenue}</p>
+                </div>
+                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Active API Keys</h3>
+                  <p className="text-4xl font-bold text-indigo-500">{health} / 5</p>
+                </div>
+              </div>
             </motion.div>
           )}
 

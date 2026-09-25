@@ -319,3 +319,16 @@ async def suspend_user(
     target_user.is_active = 0
     db.commit()
     return {"success": True, "message": f"User {email} suspended."}
+
+from pydantic import BaseModel
+class PromptUpdate(BaseModel):
+    system_prompt: str
+
+@router.put("/me/prompt")
+def update_system_prompt(payload: PromptUpdate, current_user: db_models.User = Depends(get_current_active_user), db: Session = Depends(database.get_db)):
+    user = db.query(db_models.User).filter(db_models.User.id == current_user.id).first()
+    if user:
+        user.system_prompt = payload.system_prompt
+        db.commit()
+        return {"status": "success"}
+    raise HTTPException(status_code=404)

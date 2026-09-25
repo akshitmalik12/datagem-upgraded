@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 # 1. Look for a DATABASE_URL in environment variables (Supabase)
 # 2. If not found, fall back to the local SQLite database
-SQLALCHEMY_DATABASE_URL = "sqlite:///./datagem.db"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./datagem.db")
 
 # SQLAlchemy needs postgresql:// instead of postgres://
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):

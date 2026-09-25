@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 from fastapi import UploadFile, File, Depends, HTTPException
 from auth.security import get_current_active_user
 from database.models import User
-from cloud.storage import upload_dataset
+from cloud.gcp_storage import upload_to_gcp
 import traceback
 
 # Internal imports
@@ -149,7 +149,7 @@ async def upload_dataset_endpoint(
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
         
-    result = upload_dataset(file, current_user.id)
+    result = upload_to_gcp(file, current_user.id)
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error"))
         
@@ -184,3 +184,34 @@ async def upload_dataset_endpoint(
         profile = {"columns": [], "rows": "Unknown", "duplicates": "Unknown"}
         
     return {"path": duckdb_path, "url": result["url"], "profile": profile}
+
+import shutil
+import tempfile
+import os
+
+@router.post("/transcribe")
+async def transcribe(audio_file: UploadFile = File(...)):
+    if not audio_file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+    try:
+        suffix = f".{audio_file.filename.split('.')[-1]}" if '.' in audio_file.filename else ".wav"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+            shutil.copyfileobj(audio_file.file, tmp_file)
+            tmp_file_path = tmp_file.name
+
+        import google.generativeai as genai
+        # fallback to current API Key
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        audio_file_genai = genai.upload_file(path=tmp_file_path)
+        response = model.generate_content([
+            "Please transcribe the following audio accurately. Reply ONLY with the transcription text, nothing else.",
+            audio_file_genai
+        ])
+        transcription_text = response.text.strip()
+        genai.delete_file(audio_file_genai.name)
+        os.remove(tmp_file_path)
+        return {"transcription": transcription_text}
+    except Exception as e:
+        if 'tmp_file_path' in locals() and os.path.exists(tmp_file_path):
+            os.remove(tmp_file_path)
+        raise HTTPException(status_code=500, detail=str(e))

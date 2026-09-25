@@ -10,6 +10,7 @@ from database import models as db_models
 from chat import chat
 from auth import auth
 from routers import admin
+from routers import billing
 from routers import dashboard
 import data_import
 
@@ -31,41 +32,22 @@ app = FastAPI(
 # Custom middleware to handle OPTIONS requests BEFORE FastAPI routing
 class CORSOptionsMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        # Handle OPTIONS preflight requests immediately - before routing
+        origin = request.headers.get("origin", "*")
+        
         if request.method == "OPTIONS":
-            origin = request.headers.get("origin", "")
-            # Allow all localhost ports and local network IPs for development
             response = Response()
-            if (origin.startswith("http://localhost:") or 
-                origin.startswith("http://127.0.0.1:") or
-                origin.startswith("http://192.168.") or
-                origin.startswith("http://10.") or
-                origin.startswith("http://172.")):
-                response.headers["Access-Control-Allow-Origin"] = origin
-            else:
-                # Fallback for non-localhost origins
-                response.headers["Access-Control-Allow-Origin"] = "http://localhost:5188"
-            
+            response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
             response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, Origin, X-Requested-With"
             response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Max-Age"] = "3600"
+            response.headers["Access-Control-Max-Age"] = "86400"
             return response
-        
-        # For all other requests, process normally and add CORS headers
+            
         response = await call_next(request)
-        origin = request.headers.get("origin", "")
-        # Allow all localhost ports and local network IPs for development
-        if (origin.startswith("http://localhost:") or 
-            origin.startswith("http://127.0.0.1:") or
-            origin.startswith("http://192.168.") or
-            origin.startswith("http://10.") or
-            origin.startswith("http://172.")):
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            # Ensure streaming responses have proper headers
-            response.headers["Cache-Control"] = "no-cache"
-            response.headers["X-Accel-Buffering"] = "no"
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["X-Accel-Buffering"] = "no"
         return response
 
 # Add our custom middleware - this MUST be added LAST so it runs FIRST
@@ -76,6 +58,7 @@ app.add_middleware(CORSOptionsMiddleware)
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(admin.router, prefix="/admin", tags=["Admin"])
+app.include_router(billing.router, prefix="/billing", tags=["Billing"])
 app.include_router(data_import.router, prefix="/import", tags=["Import"])
 
 @app.get("/", tags=["Root"])

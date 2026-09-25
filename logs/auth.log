@@ -1,0 +1,89 @@
+INFO:     Started server process [44340]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51072 - "GET /auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:51072 - "GET /auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:51072 - "GET /auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:51072 - "GET /auth/me HTTP/1.1" 401 Unauthorized
+(trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/opt/miniconda3/lib/python3.13/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+INFO:     127.0.0.1:51297 - "POST /auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51297 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51374 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51374 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51384 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51384 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51428 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51428 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51431 - "POST /auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51431 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51441 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51441 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51451 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51451 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51521 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51521 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51543 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51543 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51543 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51543 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51543 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51543 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51556 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51556 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51566 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51566 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51566 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51566 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51566 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51566 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51593 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51593 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51598 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51599 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51602 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51602 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51618 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51618 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51629 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51629 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51629 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51629 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51656 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51657 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51676 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51676 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51680 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51680 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51680 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51680 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51680 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51680 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51692 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51692 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51702 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51702 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51712 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51712 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51738 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51738 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51756 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51756 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51756 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51756 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51760 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51760 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51781 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51781 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51781 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53216 - "GET /auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53216 - "GET /auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:53824 - "POST /auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53824 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53833 - "GET /auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53833 - "GET /auth/me HTTP/1.1" 200 OK

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 // Create axios instance
 const api = axios.create({
@@ -175,7 +175,34 @@ export default api;
 
 
 export const dashboardApi = {
-  getCharts: () => api.get('/dashboard/charts'),
-  saveChart: (title, plotlyJson) => api.post('/dashboard/charts', { title, plotly_json: plotlyJson }),
-  deleteChart: (id) => api.delete(`/dashboard/charts/${id}`)
+  getCharts: async () => {
+    const charts = JSON.parse(localStorage.getItem('datagem_charts') || '[]');
+    return { data: charts };
+  },
+  saveChart: async (title, plotlyJson) => {
+    const charts = JSON.parse(localStorage.getItem('datagem_charts') || '[]');
+    const newChart = { id: Date.now(), title, plotly_json: plotlyJson, created_at: new Date().toISOString() };
+    charts.push(newChart);
+    localStorage.setItem('datagem_charts', JSON.stringify(charts));
+    return { data: newChart };
+  },
+  deleteChart: async (id) => {
+    let charts = JSON.parse(localStorage.getItem('datagem_charts') || '[]');
+    charts = charts.filter(c => c.id !== id);
+    localStorage.setItem('datagem_charts', JSON.stringify(charts));
+    return { success: true };
+  }
+};
+
+export const voiceApi = {
+  transcribe: async (audioBlob) => {
+    const formData = new FormData();
+    formData.append("audio_file", audioBlob, "recording.webm");
+    const response = await fetch(`${API_BASE_URL}/chat/transcribe`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) throw new Error("Transcription failed");
+    return response.json();
+  }
 };

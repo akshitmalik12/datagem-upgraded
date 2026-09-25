@@ -88,7 +88,7 @@ def run_python_code(code: str, dataset_data: list[dict] | None = None, dataset_p
             text=True,
             timeout=15,  # 15-second timeout to prevent hanging
             check=False,  # Don't raise on error, we'll handle it
-            env={**os.environ, 'PYTHONUNBUFFERED': '1'}  # Ensure unbuffered output
+            env={'PYTHONUNBUFFERED': '1', 'PATH': os.environ.get('PATH', '')},  # SECURITY HARDENING: Explicitly drop all API keys and secrets from the sandbox environment!\n            cwd=temp_path_dir  # Restrict working directory
         )
         
         # Combine stdout and stderr for better error visibility

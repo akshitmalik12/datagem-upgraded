@@ -215,12 +215,14 @@ export default function PromptSuggestions({ dataset, onSelectPrompt }) {
                 
                 className="group relative inline-block"
               >
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handlePromptClick(prompt)}
-                  className="px-4 py-2 text-xs font-medium backdrop-blur-xl bg-white/30 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl hover:bg-white/50 dark:hover:bg-white/20 transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-accent-500 dark:hover:border-accent-500 shadow-none hover:shadow-none whitespace-nowrap cursor-pointer"
+                  className="px-4 py-2 text-xs font-medium backdrop-blur-xl bg-white/30 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-accent-500 dark:hover:border-accent-500 shadow-sm hover:shadow-md hover:shadow-accent-500/10 hover:bg-white/50 dark:hover:bg-white/20 whitespace-nowrap cursor-pointer"
                 >
                   {prompt}
-                </button>
+                </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.2 }}
                   whileTap={{ scale: 0.9 }}

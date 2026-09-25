@@ -144,7 +144,7 @@ export default function InteractiveChart({ imageSrc, data, chartType = 'auto', t
         )}
         <img
           src={imageSrc}
-          alt="Visualization"
+          alt="Interactive Chart"
           className="w-full h-auto"
         />
         <AnimatePresence>
@@ -549,7 +549,7 @@ export default function InteractiveChart({ imageSrc, data, chartType = 'auto', t
                 </motion.button>
               </div>
               {imageSrc ? (
-                <img src={imageSrc} alt="Fullscreen chart" className="w-full h-auto rounded-lg" />
+                <img src={imageSrc} alt="Interactive Chart" className="w-full h-auto rounded-lg" />
               ) : (
                 <ResponsiveContainer width="100%" height={600}>
                   {renderChart()}

@@ -7,6 +7,7 @@ export default function Signup() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +80,7 @@ export default function Signup() {
               <input
                 type="text"
                 value={fullName}
+                autoFocus
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full px-4 py-3 bg-white dark:bg-[#151B2B] border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition-colors"
                 placeholder="John Doe"
@@ -95,7 +97,7 @@ export default function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-white dark:bg-[#151B2B] border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition-colors"
-                placeholder="akshitmalik@gmail.com"
+                placeholder="name@company.com"
                 required
               />
             </div>

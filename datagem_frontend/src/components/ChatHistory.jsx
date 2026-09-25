@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Pricing from './Pricing';
+import SettingsModal from './SettingsModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { 
   getChatSessionsList, 
@@ -8,7 +10,8 @@ import {
   setCurrentDatasetId 
 } from '../utils/chatHistory';
 
-export default function ChatHistory({ 
+export default function ChatHistory({
+ 
   isOpen, 
   onClose, 
   onSelectChat,
@@ -17,6 +20,8 @@ export default function ChatHistory({
 }) {
   const [sessions, setSessions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showPricing, setShowPricing] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -113,7 +118,7 @@ export default function ChatHistory({
                   placeholder="Search chats..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 pl-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                  className="w-full px-4 py-3 pl-10 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-all"
                 />
                 <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -162,10 +167,10 @@ export default function ChatHistory({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         onClick={() => handleSelectChat(session.id)}
-                        className={`group relative p-4 rounded-lg cursor-pointer transition-all ${
+                        className={`group relative p-4 rounded-xl cursor-pointer transition-all duration-300 relative z-10 ${
                           isActive
-                            ? 'bg-indigo-100 dark:bg-indigo-900/30 border-2 border-indigo-500 dark:border-indigo-400'
-                            : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-transparent'
+                            ? 'bg-white dark:bg-indigo-900/20 border border-indigo-500/50 shadow-md shadow-indigo-500/10'
+                            : 'bg-white/50 dark:bg-gray-800/30 hover:bg-white dark:hover:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50'
                         }`}
                       >
                         <div className="flex items-start justify-between">
@@ -221,11 +226,17 @@ export default function ChatHistory({
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                {sessions.length} {sessions.length === 1 ? 'chat session' : 'chat sessions'}
-              </p>
+            <div className="p-6 border-t border-gray-200/50 dark:border-gray-800/50 flex justify-between items-center relative z-10">
+              <button onClick={() => setShowSettings(true)} className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                Settings
+              </button>
+              <button onClick={() => setShowPricing(true)} className="text-sm px-4 py-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-full hover:shadow-lg hover:shadow-purple-500/25 transition-all font-bold tracking-wide">
+                Upgrade
+              </button>
             </div>
+            <Pricing isOpen={showPricing} onClose={() => setShowPricing(false)} />
+            <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
           </motion.div>
         </>
       )}
