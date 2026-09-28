@@ -78,7 +78,7 @@ function AppContent() {
   
   const handleSplashComplete = () => {
     sessionStorage.setItem('splashShown', 'true');
-    handleSplashComplete();
+    setShowSplash(false);
   };
 
   if (showSplash) {
