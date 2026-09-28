@@ -30,7 +30,8 @@
     "react-router-dom": "^6.28.0",
     "react-syntax-highlighter": "^16.1.0",
     "recharts": "^2.15.4",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "vite-plugin-node-polyfills": "^0.28.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
