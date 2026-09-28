@@ -147,7 +147,7 @@ export default function EnhancedTableViewer({ data, columns: initialColumns }) {
               value={globalFilter ?? ''}
               onChange={(e) => setGlobalFilter(e.target.value)}
               placeholder="Search table..."
-              className="w-full pl-10 pr-4 py-2 text-sm border-2 border-white/30 dark:border-gray-600/50 rounded-lg backdrop-blur-sm bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/50 focus:border-gray-300 dark:border-gray-700 outline-none transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-2 text-sm border-2 border-white/30 dark:border-gray-600/50 rounded-lg backdrop-blur-sm bg-white/70 dark:bg-gray-700/70 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500/50 focus:border-gray-300 dark:border-gray-700 outline-none transition-all shadow-sm"
             />
           </div>
           <span className="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
@@ -178,7 +178,7 @@ export default function EnhancedTableViewer({ data, columns: initialColumns }) {
                       type="checkbox"
                       checked={column.getIsVisible()}
                       onChange={column.getToggleVisibilityHandler()}
-                      className="rounded border-gray-300 text-gray-900 dark:text-gray-100 focus:ring-indigo-500"
+                      className="rounded border-gray-300 text-gray-900 dark:text-gray-100 focus:ring-sky-500"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">
                       {typeof column.columnDef.header === 'string' 
@@ -223,7 +223,7 @@ export default function EnhancedTableViewer({ data, columns: initialColumns }) {
                     type="checkbox"
                     checked={table.getIsAllRowsSelected()}
                     onChange={table.getToggleAllRowsSelectedHandler()}
-                    className="rounded border-gray-300 text-gray-900 dark:text-gray-100 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-gray-900 dark:text-gray-100 focus:ring-sky-500"
                   />
                 </th>
                 {headerGroup.headers.map((header) => (
@@ -275,7 +275,7 @@ export default function EnhancedTableViewer({ data, columns: initialColumns }) {
                     type="checkbox"
                     checked={row.getIsSelected()}
                     onChange={row.getToggleSelectedHandler()}
-                    className="rounded border-gray-300 text-gray-900 dark:text-gray-100 focus:ring-indigo-500"
+                    className="rounded border-gray-300 text-gray-900 dark:text-gray-100 focus:ring-sky-500"
                   />
                 </td>
                 {row.getVisibleCells().map((cell) => (
@@ -300,7 +300,7 @@ export default function EnhancedTableViewer({ data, columns: initialColumns }) {
           <select
             value={table.getState().pagination.pageSize}
             onChange={(e) => table.setPageSize(Number(e.target.value))}
-            className="px-2 py-1 text-sm border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="px-2 py-1 text-sm border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-sky-500 outline-none transition-all"
           >
             {[5, 10, 20, 50, 100, 200].map((size) => (
               <option key={size} value={size}>

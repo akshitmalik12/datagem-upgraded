@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEO from "./SEO";
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authAPI } from '../services/api';
@@ -59,9 +60,11 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-[#0B0F19]">
+    <div className="flex min-h-screen bg-[#0B0F19]">
+      <SEO title="ForgotPassword | DataGem" description="DataGem ForgotPassword - AI Data Analyst Platform." path="/forgotpassword" />
+      
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-slate-900 via-gray-900 to-[#0B0F19] relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-16">
@@ -72,7 +75,7 @@ export default function ForgotPassword() {
             <h1 className="text-5xl font-extrabold text-white mb-6 leading-tight">
               Secure Account<br />Recovery.
             </h1>
-            <p className="text-indigo-100 text-lg mb-12 max-w-md">
+            <p className="text-sky-100 text-lg mb-12 max-w-md">
               We'll send a one-time verification code to your email address to help you securely reset your password.
             </p>
           </motion.div>
@@ -97,7 +100,7 @@ export default function ForgotPassword() {
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-3 bg-white dark:bg-[#151B2B] border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white" placeholder="name@company.com" />
                   </div>
                   {error && <div className="text-red-500 text-sm">{error}</div>}
-                  <button type="submit" disabled={isLoading} className="w-full py-3 px-4 bg-accent-600 hover:bg-accent-700 text-white font-medium rounded-lg">{isLoading ? 'Sending...' : 'Send OTP'}</button>
+                  <button type="submit" disabled={isLoading} className="w-full py-3 px-4 bg-sky-500 hover:bg-sky-400 text-white font-medium rounded-lg">{isLoading ? 'Sending...' : 'Send OTP'}</button>
                 </form>
               </motion.div>
             )}
@@ -115,7 +118,7 @@ export default function ForgotPassword() {
                     <input type="text" maxLength="6" value={otp} onChange={(e) => setOtp(e.target.value)} required className="w-full px-4 py-3 text-center tracking-[1em] text-2xl font-bold bg-white dark:bg-[#151B2B] border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white" placeholder="••••••" />
                   </div>
                   {error && <div className="text-red-500 text-sm">{error}</div>}
-                  <button type="submit" disabled={isLoading} className="w-full py-3 px-4 bg-accent-600 hover:bg-accent-700 text-white font-medium rounded-lg">{isLoading ? 'Verifying...' : 'Verify OTP'}</button>
+                  <button type="submit" disabled={isLoading} className="w-full py-3 px-4 bg-sky-500 hover:bg-sky-400 text-white font-medium rounded-lg">{isLoading ? 'Verifying...' : 'Verify OTP'}</button>
                 </form>
               </motion.div>
             )}
@@ -147,7 +150,7 @@ export default function ForgotPassword() {
                   </div>
                   <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Password Updated!</h2>
                   <p className="text-gray-600 dark:text-gray-400 mb-8">You can now securely log in to your account with your new password.</p>
-                  <Link to="/login" className="block w-full py-3 px-4 bg-accent-600 hover:bg-accent-700 text-white font-medium rounded-lg transition-colors">
+                  <Link to="/login" className="block w-full py-3 px-4 bg-sky-500 hover:bg-sky-400 text-white font-medium rounded-lg transition-colors">
                     Back to Login
                   </Link>
                 </div>

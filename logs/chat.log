@@ -248,3 +248,7 @@ WHERE users.email = ?
 [parameters: ('anonymous@datagem.ai', 1, 0)]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
 INFO:     127.0.0.1:51570 - "POST /chat/ HTTP/1.1" 500 Internal Server Error
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [44342]

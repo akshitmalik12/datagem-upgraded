@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Breadcrumbs from "./Breadcrumbs";
+import SEO from "./SEO";
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import Plot from 'react-plotly.js';
@@ -36,19 +38,24 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 p-8 font-sans relative overflow-hidden">
+      <SEO title="Dashboard | DataGem" description="DataGem Dashboard - AI Data Analyst Platform." path="/dashboard" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8"><Breadcrumbs paths={[{"name": "Home", "url": "/"}, {"name": "Dashboard", "url": "/dashboard"}]} /></div>
+      
+      
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-indigo-500/10 blur-[120px]" />
-        <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-purple-500/10 blur-[120px]" />
+        <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-sky-500/10 blur-[120px]" />
+        <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-cyan-500/10 blur-[120px]" />
       </div>
       <div className="max-w-7xl mx-auto relative z-10">
         
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-5xl font-extrabold tracking-tight mb-2">My <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">Dashboard.</span></h1>
+            <h1 className="text-5xl font-extrabold tracking-tight mb-2">My <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-500 via-cyan-500 to-slate-500">Dashboard.</span></h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1">Your saved visualizations and insights.</p>
           </div>
-          <button onClick={() => navigate('/chat')} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
+          <button onClick={() => navigate('/chat')} className="px-4 py-2 bg-sky-500 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             Back to Chat
           </button>
@@ -56,14 +63,14 @@ export default function Dashboard() {
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : charts.length === 0 ? (
           <div className="text-center py-32 bg-white/50 dark:bg-gray-800/30 backdrop-blur-md rounded-[3rem] border border-gray-200 dark:border-gray-700/50 shadow-xl">
             <div className="text-5xl mb-4">📊</div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No charts saved yet</h3>
             <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">When you generate interesting visualizations in the chat, click "Save to Dashboard" to pin them here.</p>
-            <button onClick={() => navigate('/chat')} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors inline-block">
+            <button onClick={() => navigate('/chat')} className="px-6 py-3 bg-sky-500 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors inline-block">
               Start Analyzing Data
             </button>
           </div>
@@ -94,7 +101,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   key={chart.id} 
-                  className="bg-white/80 dark:bg-gray-800/40 backdrop-blur-md rounded-3xl border border-gray-200 dark:border-gray-700/50 shadow-xl overflow-hidden flex flex-col group hover:shadow-indigo-500/10 hover:border-indigo-500/30 transition-all duration-500"
+                  className="bg-white/80 dark:bg-gray-800/40 backdrop-blur-md rounded-3xl border border-gray-200 dark:border-gray-700/50 shadow-xl overflow-hidden flex flex-col group hover:shadow-sky-500/10 hover:border-sky-500/30 transition-all duration-500"
                 >
                   <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
                     <div>

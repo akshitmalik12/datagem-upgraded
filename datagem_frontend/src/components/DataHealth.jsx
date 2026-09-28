@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Breadcrumbs from "./Breadcrumbs";
+import SEO from "./SEO";
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import { useNavigate } from 'react-router-dom';
@@ -186,6 +188,11 @@ export default function DataHealth() {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 font-sans relative overflow-hidden">
+      <SEO title="DataHealth | DataGem" description="DataGem DataHealth - AI Data Analyst Platform." path="/datahealth" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8"><Breadcrumbs paths={[{"name": "Home", "url": "/"}, {"name": "Data Health", "url": "/data-health"}]} /></div>
+      
+      
+
       {/* SOTA Backgrounds */}
       <div className="noise-bg" />
       <div className="absolute inset-0 bg-dot-white/[0.1] z-0 pointer-events-none" />

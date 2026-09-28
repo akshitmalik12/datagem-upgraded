@@ -118,7 +118,7 @@ export default function ChatHistory({
                   placeholder="Search chats..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pl-10 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-all"
+                  className="w-full px-4 py-3 pl-10 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-all"
                 />
                 <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -128,8 +128,8 @@ export default function ChatHistory({
 
             {/* Current Chat Indicator */}
             {currentDatasetId && (
-              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-200 dark:border-indigo-800">
-                <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-1">
+              <div className="p-4 bg-sky-50 dark:bg-sky-900/20 border-b border-sky-200 dark:border-sky-800">
+                <p className="text-xs font-medium text-sky-600 dark:text-sky-400 mb-1">
                   Current Chat
                 </p>
                 <p className="text-sm text-gray-900 dark:text-white truncate">
@@ -169,7 +169,7 @@ export default function ChatHistory({
                         onClick={() => handleSelectChat(session.id)}
                         className={`group relative p-4 rounded-xl cursor-pointer transition-all duration-300 relative z-10 ${
                           isActive
-                            ? 'bg-white dark:bg-indigo-900/20 border border-indigo-500/50 shadow-md shadow-indigo-500/10'
+                            ? 'bg-white dark:bg-sky-900/20 border border-sky-500/50 shadow-md shadow-sky-500/10'
                             : 'bg-white/50 dark:bg-gray-800/30 hover:bg-white dark:hover:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50'
                         }`}
                       >
@@ -177,7 +177,7 @@ export default function ChatHistory({
                           <div className="flex-1 min-w-0">
                             <h3 className={`font-medium truncate ${
                               isActive
-                                ? 'text-indigo-900 dark:text-indigo-100'
+                                ? 'text-sky-900 dark:text-sky-100'
                                 : 'text-gray-900 dark:text-white'
                             }`}>
                               {sessionName}
@@ -185,14 +185,14 @@ export default function ChatHistory({
                             <div className="flex items-center gap-3 mt-1">
                               <span className={`text-xs ${
                                 isActive
-                                  ? 'text-indigo-700 dark:text-indigo-300'
+                                  ? 'text-sky-700 dark:text-sky-300'
                                   : 'text-gray-500 dark:text-gray-400'
                               }`}>
                                 {messageCount} {messageCount === 1 ? 'message' : 'messages'}
                               </span>
                               <span className={`text-xs ${
                                 isActive
-                                  ? 'text-indigo-600 dark:text-indigo-400'
+                                  ? 'text-sky-600 dark:text-sky-400'
                                   : 'text-gray-400 dark:text-gray-500'
                               }`}>
                                 {formatDate(session.lastUpdated)}
@@ -201,7 +201,7 @@ export default function ChatHistory({
                             {session.shape && (
                               <p className={`text-xs mt-1 ${
                                 isActive
-                                  ? 'text-indigo-600 dark:text-indigo-400'
+                                  ? 'text-sky-600 dark:text-sky-400'
                                   : 'text-gray-400 dark:text-gray-500'
                               }`}>
                                 {session.shape.rows} rows × {session.shape.cols} columns
@@ -227,11 +227,11 @@ export default function ChatHistory({
 
             {/* Footer */}
             <div className="p-6 border-t border-gray-200/50 dark:border-gray-800/50 flex justify-between items-center relative z-10">
-              <button onClick={() => setShowSettings(true)} className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2">
+              <button onClick={() => setShowSettings(true)} className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 Settings
               </button>
-              <button onClick={() => setShowPricing(true)} className="text-sm px-4 py-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-full hover:shadow-lg hover:shadow-purple-500/25 transition-all font-bold tracking-wide">
+              <button onClick={() => setShowPricing(true)} className="text-sm px-4 py-2 bg-gradient-to-r from-sky-500 via-cyan-500 to-slate-500 text-white rounded-full hover:shadow-lg hover:shadow-cyan-500/25 transition-all font-bold tracking-wide">
                 Upgrade
               </button>
             </div>

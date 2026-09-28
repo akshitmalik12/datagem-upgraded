@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import SEO from "./SEO";
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 
@@ -48,6 +49,11 @@ export default function About() {
 
   return (
     <div ref={containerRef} className="bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 font-sans min-h-[250vh]">
+      <SEO 
+        title="About Us | DataGem" 
+        description="Learn more about DataGem and our mission." 
+        path="/about" 
+      />
       
       {/* Background ambient glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">

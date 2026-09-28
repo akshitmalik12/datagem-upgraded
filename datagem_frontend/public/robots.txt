@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /chat
+Disallow: /admin
+Disallow: /dashboard
+
+Sitemap: https://datagem.app/sitemap.xml

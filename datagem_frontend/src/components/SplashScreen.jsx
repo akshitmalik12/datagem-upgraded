@@ -44,7 +44,7 @@ export default function SplashScreen({ onComplete }) {
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 0.5, scale: 1 }}
             transition={{ duration: 2, ease: "easeOut" }}
-            className="absolute w-[600px] h-[600px] bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 rounded-full blur-[100px]"
+            className="absolute w-[600px] h-[600px] bg-gradient-to-tr from-sky-600/30 to-cyan-600/30 rounded-full blur-[100px]"
           />
 
           <div className="flex items-center gap-4 relative z-10">
@@ -53,7 +53,7 @@ export default function SplashScreen({ onComplete }) {
               initial={{ opacity: 0, rotate: -90, scale: 0 }}
               animate={{ opacity: 1, rotate: 0, scale: 1 }}
               transition={{ duration: 1.2, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.6)] flex items-center justify-center"
+              className="w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-sky-400 to-cyan-500 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.6)] flex items-center justify-center"
               style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
             >
                 <div className="w-1/2 h-1/2 bg-white/20 rounded-full blur-sm"></div>
@@ -79,7 +79,7 @@ export default function SplashScreen({ onComplete }) {
             initial={{ opacity: 0, width: 0 }}
             animate={{ opacity: 1, width: "200px" }}
             transition={{ delay: 1, duration: 1, ease: "easeOut" }}
-            className="h-[2px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent mt-8 relative z-10"
+            className="h-[2px] bg-gradient-to-r from-transparent via-sky-500 to-transparent mt-8 relative z-10"
           />
         </motion.div>
       )}

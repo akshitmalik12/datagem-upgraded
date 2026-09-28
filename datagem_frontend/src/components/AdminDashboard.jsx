@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import Breadcrumbs from "./Breadcrumbs";
+import SEO from "./SEO";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -110,7 +112,12 @@ export default function AdminDashboard() {
     }
   };
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 flex flex-col font-sans relative">
+    <div className="min-h-screen bg-[#0B0F19] text-gray-900 dark:text-gray-100 flex flex-col font-sans relative">
+      <SEO title="Admin Portal | DataGem" description="DataGem Admin Portal - AI Data Analyst Platform." path="/admin portal" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8"><Breadcrumbs paths={[{"name": "Home", "url": "/"}, {"name": "Admin Portal", "url": "/admin"}]} /></div>
+      
+      
+
       <AnimatePresence>
         {toastMsg && (
           <motion.div
@@ -135,11 +142,11 @@ export default function AdminDashboard() {
       {/* Admin Navbar */}
       <nav className="bg-white dark:bg-[#151B2B] border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
+          <div className="p-2 bg-gradient-to-br from-sky-500 to-cyan-600 rounded-lg">
             <span className="text-xl">🛡️</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-400">DataGem Admin</h1>
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-cyan-400">DataGem Admin</h1>
             <p className="text-xs text-gray-500 font-medium">Enterprise Control Plane</p>
           </div>
         </div>
@@ -161,28 +168,28 @@ export default function AdminDashboard() {
           <div className="p-4 space-y-2">
             <button 
               onClick={() => setActiveTab('overview')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'overview' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'overview' ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
               Overview
             </button>
             <button 
               onClick={() => setActiveTab('users')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'users' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'users' ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
               User Management
             </button>
             <button 
               onClick={() => setActiveTab('billing')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'billing' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'billing' ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
               Billing & Tiers
             </button>
             <button 
               onClick={() => setActiveTab('services')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'services' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === 'services' ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
               Microservices
@@ -287,7 +294,7 @@ export default function AdminDashboard() {
                       showToast(`Invitation sent to ${email}`);
                     }
                   }}
-                  className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white text-sm font-medium rounded-lg transition-colors"
                 >
                   Invite Admin
                 </button>
@@ -310,7 +317,7 @@ export default function AdminDashboard() {
                         <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-[#1A2234]/50 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white font-bold text-xs">
                                 {(user.full_name || user.email || '?').charAt(0).toUpperCase()}
                               </div>
                               <div>
@@ -323,7 +330,7 @@ export default function AdminDashboard() {
                             <select 
                               value={user.tier || 'free'}
                               onChange={(e) => handleTierChange(user.id, user.email, e.target.value)}
-                              className="bg-gray-100 dark:bg-gray-800 border-none rounded text-xs font-medium px-2 py-1 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-accent-500 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-gray-700"
+                              className="bg-gray-100 dark:bg-gray-800 border-none rounded text-xs font-medium px-2 py-1 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-sky-500 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-gray-700"
                             >
                               <option value="free">Free</option>
                               <option value="pro">Pro</option>
@@ -341,7 +348,7 @@ export default function AdminDashboard() {
                             {user.message_count || 0} msgs
                           </td>
                           <td className="px-6 py-4 text-right space-x-2">
-                            <button onClick={() => handleUpgrade(user.id, user.email)} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline mr-3">Make Pro</button>
+                            <button onClick={() => handleUpgrade(user.id, user.email)} className="text-xs text-sky-400 dark:text-sky-400 font-medium hover:underline mr-3">Make Pro</button>
                             <button onClick={() => handleSuspend(user.id, user.email)} className="text-xs text-red-600 dark:text-red-400 font-medium hover:underline">Ban</button>
                           </td>
                         </tr>
@@ -366,7 +373,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Active API Keys</h3>
-                  <p className="text-4xl font-bold text-indigo-500">{health} / 5</p>
+                  <p className="text-4xl font-bold text-sky-500">{health} / 5</p>
                 </div>
               </div>
             </motion.div>

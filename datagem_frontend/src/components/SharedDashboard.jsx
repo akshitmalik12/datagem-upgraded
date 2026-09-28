@@ -14,12 +14,12 @@ export default function SharedDashboard() {
       >
         <div className="flex justify-between items-center mb-8 border-b border-gray-200 dark:border-gray-800 pb-6">
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-cyan-600">
               DataGem Dashboard
             </h1>
             <p className="text-gray-500 mt-2">Shared View: #{id}</p>
           </div>
-          <button onClick={() => window.location.href='/signup'} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-lg">
+          <button onClick={() => window.location.href='/signup'} className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition-colors shadow-lg">
             Create Your Own
           </button>
         </div>

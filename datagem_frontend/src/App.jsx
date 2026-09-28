@@ -64,7 +64,7 @@ const AnimatedRoutes = () => {
         <Route path="/share/:id" element={<PageWrapper><SharedDashboard /></PageWrapper>} />
         <Route path="/chat" element={<ProtectedRoute><PageWrapper><Chat /></PageWrapper></ProtectedRoute>} />
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<PageWrapper><div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-white"><h1 className="text-6xl font-bold mb-4">404</h1><p className="text-xl text-gray-500 mb-8">Page not found</p><a href="/" className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">Go Home</a></div></PageWrapper>} />
+        <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
       </Routes>
     </AnimatePresence>
   );
@@ -83,9 +83,11 @@ function AppContent() {
   }
 
   return (
+    <HelmetProvider>
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AnimatedRoutes />
     </Router>
+    </HelmetProvider>
   );
 }
 

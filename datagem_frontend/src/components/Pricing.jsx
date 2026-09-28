@@ -1,4 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
+import SEO from "./SEO";
 import api from '../services/api';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -90,7 +91,7 @@ export default function Pricing({ isOpen, onClose, isStandalone = false }) {
         exit={{ opacity: 0, scale: 0.95 }}
         className="flex-1 bg-white dark:bg-[#111827] rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-xl flex flex-col relative group"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="p-10 border-b border-gray-100 dark:border-gray-800 relative z-10">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Pro</h3>
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 h-10">Perfect for power users who need advanced reasoning.</p>
@@ -110,7 +111,7 @@ export default function Pricing({ isOpen, onClose, isStandalone = false }) {
           <button
             onClick={() => handleUpgrade('Pro')}
             disabled={loading !== false}
-            className="w-full py-4 px-6 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+            className="w-full py-4 px-6 bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 text-sky-400 dark:text-sky-400 font-bold rounded-xl transition-all flex items-center justify-center gap-2"
           >
             {loading === 'Pro' ? "Processing..." : "Upgrade to Pro"}
           </button>
@@ -123,19 +124,19 @@ export default function Pricing({ isOpen, onClose, isStandalone = false }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="flex-1 bg-gradient-to-br from-gray-900 via-indigo-950 to-purple-900 rounded-3xl overflow-hidden shadow-2xl shadow-indigo-500/20 flex flex-col relative transform md:-translate-y-4 border border-indigo-500/30 group"
+        className="flex-1 bg-gradient-to-br from-gray-900 via-sky-950 to-cyan-900 rounded-3xl overflow-hidden shadow-2xl shadow-sky-500/20 flex flex-col relative transform md:-translate-y-4 border border-sky-500/30 group"
       >
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-        <div className="p-10 border-b border-indigo-500/20 relative z-10">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-sky-500 via-cyan-500 to-slate-500"></div>
+        <div className="p-10 border-b border-sky-500/20 relative z-10">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-xl font-semibold text-white">Enterprise</h3>
-            <span className="px-3 py-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold rounded-full tracking-wider">RECOMMENDED</span>
+            <span className="px-3 py-1 bg-gradient-to-r from-sky-500 to-cyan-500 text-white text-xs font-bold rounded-full tracking-wider">RECOMMENDED</span>
           </div>
-          <p className="text-indigo-200/70 text-sm mb-6 h-10">For teams that need maximum security and performance.</p>
+          <p className="text-sky-200/70 text-sm mb-6 h-10">For teams that need maximum security and performance.</p>
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-5xl font-black tracking-tight text-white">$79</span>
-            <span className="text-indigo-300 font-medium">/mo</span>
+            <span className="text-sky-300 font-medium">/mo</span>
           </div>
         </div>
         <div className="p-10 flex-1 flex flex-col relative z-10 text-white">
@@ -149,7 +150,7 @@ export default function Pricing({ isOpen, onClose, isStandalone = false }) {
           <button
             onClick={() => handleUpgrade('Enterprise')}
             disabled={loading !== false}
-            className="w-full py-4 px-6 bg-white hover:bg-gray-100 text-indigo-900 font-bold rounded-xl transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.5)] flex items-center justify-center gap-2"
+            className="w-full py-4 px-6 bg-white hover:bg-gray-100 text-sky-900 font-bold rounded-xl transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.5)] flex items-center justify-center gap-2"
           >
             {loading === 'Enterprise' ? "Processing..." : "Upgrade to Enterprise"}
           </button>
@@ -161,15 +162,17 @@ export default function Pricing({ isOpen, onClose, isStandalone = false }) {
   if (isStandalone) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 flex flex-col font-sans relative">
+      <SEO title="Pricing | DataGem" description="DataGem Pricing - AI Data Analyst Platform." path="/pricing" />
+      
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-indigo-500/10 blur-[120px]" />
-          <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-purple-500/10 blur-[120px]" />
+          <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-sky-500/10 blur-[120px]" />
+          <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-cyan-500/10 blur-[120px]" />
         </div>
         
         {/* Simple navbar for standalone */}
         <nav className="relative z-10 px-8 py-6 flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.location.href = '/'}>
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/30">
+            <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center text-white font-bold shadow-lg shadow-sky-500/30">
               D
             </div>
             <span className="text-2xl font-bold tracking-tight">DataGem</span>
@@ -181,7 +184,7 @@ export default function Pricing({ isOpen, onClose, isStandalone = false }) {
 
         <div className="flex-1 flex flex-col items-center py-20 px-6 relative z-10 overflow-y-auto">
           <div className="text-center mb-16 max-w-3xl mx-auto">
-            <h1 className="text-6xl font-black mb-6 tracking-tight">Simple pricing, <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">infinite insights.</span></h1>
+            <h1 className="text-6xl font-black mb-6 tracking-tight">Simple pricing, <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-cyan-500">infinite insights.</span></h1>
             <p className="text-xl text-gray-500 dark:text-gray-400">Stop wasting time writing SQL. Get DataGem and automate your data workflow forever.</p>
           </div>
           {content}
@@ -218,14 +221,14 @@ export default function Pricing({ isOpen, onClose, isStandalone = false }) {
 function Feature({ text, highlight, dark = false }) {
   return (
     <div className="flex items-center">
-      <div className={`mt-0.5 mr-3 shrink-0 rounded-full p-0.5 ${dark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400'}`}>
+      <div className={`mt-0.5 mr-3 shrink-0 rounded-full p-0.5 ${dark ? 'bg-sky-500/20 text-sky-300' : 'bg-sky-100 dark:bg-sky-900/30 text-sky-500 dark:text-sky-400'}`}>
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
         </svg>
       </div>
       <div className="flex items-center gap-2">
-        <p className={`font-medium ${dark ? 'text-indigo-50' : 'text-gray-700 dark:text-gray-300'}`}>{text}</p>
-        {highlight && <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${dark ? 'bg-pink-500/20 text-pink-300' : 'bg-indigo-100 text-indigo-600'}`}>{highlight}</span>}
+        <p className={`font-medium ${dark ? 'text-sky-50' : 'text-gray-700 dark:text-gray-300'}`}>{text}</p>
+        {highlight && <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${dark ? 'bg-slate-500/20 text-slate-300' : 'bg-sky-100 text-sky-400'}`}>{highlight}</span>}
       </div>
     </div>
   );

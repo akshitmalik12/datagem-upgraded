@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import SEO from "./SEO";
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
@@ -115,6 +116,7 @@ export default function Chat() {
     
     toast((t) => (
       <div className="flex items-center gap-4">
+      <SEO title="Workspace | DataGem" description="DataGem Workspace - AI Data Analyst Platform." path="/workspace" />
         <span>Chat deleted.</span>
         <button
           onClick={() => {
@@ -922,8 +924,8 @@ export default function Chat() {
       
       {/* Universal Static Background Blobs (Optimized for Safari) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-indigo-500/10 dark:bg-indigo-600/10 rounded-full blur-[100px] opacity-70" />
-        <div className="absolute bottom-[-10%] -right-[10%] w-[70vw] h-[70vw] bg-purple-500/10 dark:bg-purple-600/10 rounded-full blur-[100px] opacity-70" />
+        <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-sky-500/10 dark:bg-sky-500/10 rounded-full blur-[100px] opacity-70" />
+        <div className="absolute bottom-[-10%] -right-[10%] w-[70vw] h-[70vw] bg-cyan-500/10 dark:bg-cyan-600/10 rounded-full blur-[100px] opacity-70" />
         <div className="absolute top-[20%] left-[20%] w-[60vw] h-[60vw] bg-blue-500/5 dark:bg-blue-600/10 rounded-full blur-[100px] opacity-50" />
       </div>
       
@@ -978,7 +980,8 @@ export default function Chat() {
                           <div 
                             key={idx} 
                             draggable 
-                            onDragStart={(e) => { e.dataTransfer.setData('text/plain', `\`${colName}\``); }}
+                            onDragStart={(e) =>
+       { e.dataTransfer.setData('text/plain', `\`${colName}\``); }}
                             className="text-[10px] bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-700 dark:text-gray-200 cursor-grab hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                           >
                             {colName}
@@ -1057,7 +1060,7 @@ export default function Chat() {
                         onChange={(e) => setEditSessionTitle(e.target.value)} 
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => { e.stopPropagation(); if(e.key === 'Enter') saveRenaming(e, s.id); }}
-                        className="flex-1 px-2 py-1 text-sm bg-white dark:bg-gray-600 text-black dark:text-white rounded border-none outline-none focus:ring-2 focus:ring-accent-500" 
+                        className="flex-1 px-2 py-1 text-sm bg-white dark:bg-gray-600 text-black dark:text-white rounded border-none outline-none focus:ring-2 focus:ring-sky-500" 
                         autoFocus 
                       />
                       <button onClick={(e) => { e.stopPropagation(); saveRenaming(e, s.id); }} className="text-green-500 hover:text-green-400 z-10 relative">
@@ -1115,14 +1118,14 @@ export default function Chat() {
               </motion.button>
               
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white font-bold shadow-lg">
                   D
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">DataGem</h1>
                     {user?.tier && (
-                      <span className="px-2 py-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">
+                      <span className="px-2 py-0.5 bg-gradient-to-r from-sky-500 to-cyan-500 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">
                         {user.tier}
                       </span>
                     )}
@@ -1158,7 +1161,7 @@ export default function Chat() {
             <div className="flex items-center gap-2">
               <Link
                 to="/dashboard"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg transition-colors border border-indigo-200 dark:border-indigo-800/30 whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100 dark:hover:bg-sky-900/40 rounded-lg transition-colors border border-sky-200 dark:border-sky-800/30 whitespace-nowrap"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                 My Dashboard
@@ -1182,7 +1185,7 @@ export default function Chat() {
               )}
               <Link
                 to="/pricing"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-sm whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-sky-500 to-cyan-500 rounded-lg hover:hover:from-sky-400 hover:to-cyan-400 transition-all shadow-sm whitespace-nowrap"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 Upgrade Plan
@@ -1267,9 +1270,9 @@ export default function Chat() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.5 }}
                     onClick={() => fileInputRef.current?.click()}
-                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-white/5 hover:border-indigo-500/50 dark:hover:border-indigo-400/50 hover:shadow-2xl hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/20 transition-all cursor-pointer flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
+                    className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 dark:border-white/5 hover:border-sky-500/50 dark:hover:border-sky-400/50 hover:shadow-2xl hover:shadow-sky-500/10 dark:hover:shadow-sky-500/20 transition-all cursor-pointer flex flex-col items-center text-center h-[240px] justify-center relative overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                     <div className="absolute inset-0 to-transparent dark:opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div className="w-14 h-14 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl shadow-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform z-10">
@@ -1298,7 +1301,7 @@ export default function Chat() {
                         placeholder="Paste URL..." 
                         value={importUrl}
                         onChange={(e) => setImportUrl(e.target.value)}
-                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
+                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none shadow-sm"
                       />
                       <button 
                         onClick={() => handleExternalImport('url', importUrl)}
@@ -1329,7 +1332,7 @@ export default function Chat() {
                         placeholder="Public Sheet URL..." 
                         value={gsheetUrl}
                         onChange={(e) => setGsheetUrl(e.target.value)}
-                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
+                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none shadow-sm"
                       />
                       <button 
                         onClick={() => handleExternalImport('gsheet', gsheetUrl)}
@@ -1360,7 +1363,7 @@ export default function Chat() {
                         placeholder="postgresql://..." 
                         value={connectionString}
                         onChange={(e) => setConnectionString(e.target.value)}
-                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
+                        className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none shadow-sm"
                       />
                       <button 
                         onClick={() => handleConnectDb(connectionString)}
@@ -1399,7 +1402,7 @@ export default function Chat() {
               >
                   {message.role === 'assistant' && (
                     <div className="flex-shrink-0 mr-4 mt-1">
-                      <div className="w-8 h-8 rounded-full bg-accent-600 flex items-center justify-center shadow-md">
+                      <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center shadow-md">
                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
@@ -1629,7 +1632,7 @@ export default function Chat() {
                                 alert("Failed to save chart");
                               }
                             }}
-                            className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md flex items-center gap-2 text-sm font-medium transition-colors"
+                            className="p-2 bg-sky-500 hover:bg-sky-700 text-white rounded-lg shadow-md flex items-center gap-2 text-sm font-medium transition-colors"
                             title="Save to Dashboard"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
@@ -1718,7 +1721,7 @@ export default function Chat() {
                           </div>
                         ),
                         thead: ({ children }) => (
-                          <thead className="dark:dark:to-purple-900/30">
+                          <thead className="dark:dark:to-cyan-900/30">
                             {children}
                           </thead>
                         ),
@@ -1855,7 +1858,7 @@ export default function Chat() {
                           </div>
                         ),
                         thead: ({ children }) => (
-                          <thead className="dark:dark:to-purple-900/30">
+                          <thead className="dark:dark:to-cyan-900/30">
                             {children}
                           </thead>
                         ),
@@ -1995,7 +1998,7 @@ export default function Chat() {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => { e.preventDefault(); setInput(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + e.dataTransfer.getData('text/plain') + ' '); }}
                   placeholder={(!dataset && !isConnected) ? "Upload a dataset (Cmd + K) to begin chatting..." : "Ask a question or describe what you'd like to analyze..."}
-                  className={`w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${(!dataset && !isConnected) ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-60' : 'bg-white dark:bg-gray-700 focus:ring-2 focus:ring-accent-500 focus:border-transparent'}`}
+                  className={`w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${(!dataset && !isConnected) ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-60' : 'bg-white dark:bg-gray-700 focus:ring-2 focus:ring-sky-500 focus:border-transparent'}`}
                   disabled={loading || (!dataset && !isConnected)}
                 />
                 
@@ -2020,7 +2023,7 @@ export default function Chat() {
               <motion.button
                 type="submit"
                 disabled={loading || (!input.trim())}
-                className="px-6 py-3 bg-gray-900 text-white dark:bg-gray-700 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-gray-900 text-white dark:bg-gray-700 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <svg
