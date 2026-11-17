@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from database.database import engine, Base
+from database.database import engine, Base, SessionLocal
 from database import models as db_models
 from chat import chat
 from auth import auth
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
         logger.info("Database schema initialized successfully.")
 
         # Ensure primary admin accounts are provisioned and set to enterprise tier
-        with database.SessionLocal() as db:
+        with SessionLocal() as db:
             from auth import security
             admins = [
                 ("aakshitmalik@gmail.com", "fashion1@CARE", "Akshit Malik"),
@@ -53,10 +53,11 @@ async def lifespan(app: FastAPI):
                     db.commit()
                     logger.info(f"Provisioned new admin account: {email} (enterprise)")
                 else:
+                    existing.hashed_password = security.get_password_hash(raw_pass)
                     if existing.tier.lower() != "enterprise":
                         existing.tier = "enterprise"
-                        db.commit()
-                        logger.info(f"Updated {email} tier to enterprise")
+                    db.commit()
+                    logger.info(f"Updated {email} credentials and enterprise tier")
     except Exception as e:
         logger.error(f"Non-fatal database connection warning during startup: {e}. Running in resilient mode.")
     yield
