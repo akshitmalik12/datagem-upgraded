@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import Landing from './components/Landing';
 import Chat from './components/Chat';
 import About from './components/About';
 import DesignShowcase from './components/studio/DesignShowcase';
@@ -49,7 +50,7 @@ const AnimatedRoutes = () => {
         <Route path="/dashboard" element={<ProtectedRoute><PageWrapper><Dashboard /></PageWrapper></ProtectedRoute>} />
         <Route path="/data-health" element={<ProtectedRoute><PageWrapper><DataHealth /></PageWrapper></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><PageWrapper><Chat /></PageWrapper></ProtectedRoute>} />
-        <Route path="/" element={<Navigate to="/chat" replace />} />
+        <Route path="/" element={<PageWrapper><Landing /></PageWrapper>} />
         <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
       </Routes>
     </AnimatePresence>
