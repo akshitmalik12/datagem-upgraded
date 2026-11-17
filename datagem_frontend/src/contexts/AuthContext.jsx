@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
       if (error.response) {
         errorMessage = error.response.data?.detail || error.response.data?.message || `Server error: ${error.response.status}`;
       } else if (error.request) {
-        errorMessage = 'Cannot connect to server. Please make sure the backend is running on http://127.0.0.1:8000';
+        errorMessage = 'Cannot connect to server. Please make sure the backend is running on http://127.0.0.1:8001';
       } else if (error.message) {
         errorMessage = error.message;
       } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }) => {
         errorMessage = error.response.data?.detail || error.response.data?.message || `Server error: ${error.response.status}`;
       } else if (error.request) {
         // Request was made but no response received
-        errorMessage = 'Cannot connect to server. Please make sure the backend is running on http://127.0.0.1:8000';
+        errorMessage = 'Cannot connect to server. Please make sure the backend is running on http://127.0.0.1:8001';
       } else if (error.message) {
         // Something else happened
         errorMessage = error.message;
@@ -101,20 +101,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const refreshUser = async () => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      try {
-        const userData = await authAPI.getMe();
-        setUser(userData);
-      } catch (error) {
-        console.error("Failed to refresh user", error);
-      }
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, refreshUser, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

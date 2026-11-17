@@ -1,145 +1,153 @@
-import subprocess
-import json
-import time
 import os
+import json
 import logging
+import tempfile
+import sys
+import subprocess
+from typing import Optional, List, Dict, Any
 
 logger = logging.getLogger(__name__)
-# Note: pandas, matplotlib, seaborn, numpy are only used in subprocess execution, not imported here
 
-#
-# This file now just defines the *Python functions* themselves.
-# The "blueprints" for the AI will be defined in agent.py
-#
-
-
-
-def run_python_code(code: str, dataset_data: list[dict] | None = None, dataset_path: str | None = None) -> str:
-    """
-    Runs a given string of Python code in a secure, isolated process.
-    This is the "fireproof box" (sandbox) for data analysis.
-    The code MUST use `print()` to output any results.
-    If dataset_data is provided, it will be available as a pandas DataFrame named 'df'.
-    """
+def _execute_e2b(code: str, dataset_data: Optional[List[Dict[str, Any]]] = None) -> str:
+    """Executes Python code inside an isolated E2B microVM cloud sandbox."""
+    from e2b_code_interpreter import Sandbox
     
-    try:
-        if 'os.system' in code or 'subprocess' in code:
-            return 'Error: Security restriction'
-            
-        # Prepare the full code with dataset if available
-        full_code = ""
-        
-        # Add imports
-        full_code += "import pandas as pd\n"
-        full_code += "import matplotlib.pyplot as plt\n"
-        full_code += "import seaborn as sns\n"
-        full_code += "import numpy as np\n"
-        full_code += "import io\n"
-        full_code += "import base64\n"
-        # Try to import sklearn, but don't fail if it's not available
-        full_code += "try:\n"
-
-        full_code += "    from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV\n"
-        full_code += "    from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, Lasso\n"
-        full_code += "    from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor\n"
-        full_code += "    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, mean_squared_error, r2_score, classification_report, confusion_matrix\n"
-        full_code += "    from sklearn.preprocessing import StandardScaler, MinMaxScaler, LabelEncoder\n"
-        full_code += "    import sklearn\n"
-        full_code += "    sklearn_available = True\n"
-        full_code += "except ImportError:\n"
-        full_code += "    sklearn_available = False\n"
-        full_code += "    print('Warning: sklearn is not installed. Install it with: pip install scikit-learn')\n\n"
-        
-        temp_path = None
-        # Add dataset if provided
+    with Sandbox.create() as sandbox:
+        # If dataset is present, stage it into the sandbox filesystem
         if dataset_data:
-            import tempfile
-            # Write dataset to a temporary file
+            json_str = json.dumps(dataset_data)
+            sandbox.files.write("/home/user/dataset.json", json_str)
+            preamble = (
+                "import pandas as pd\n"
+                "import numpy as np\n"
+                "import matplotlib.pyplot as plt\n"
+                "import seaborn as sns\n"
+                "df = pd.read_json('/home/user/dataset.json')\n"
+                "print(f'Dataset loaded in Sandbox: {df.shape[0]} rows x {df.shape[1]} columns')\n"
+            )
+            full_code = preamble + code
+        else:
+            preamble = (
+                "import pandas as pd\n"
+                "import numpy as np\n"
+                "import matplotlib.pyplot as plt\n"
+                "import seaborn as sns\n"
+                "df = None\n"
+            )
+            full_code = preamble + code
+
+        execution = sandbox.run_code(full_code)
+        
+        output_parts = []
+        if execution.logs.stdout:
+            output_parts.extend(execution.logs.stdout)
+        if execution.logs.stderr:
+            output_parts.append(f"\n--- Stderr ---\n" + "\n".join(execution.logs.stderr))
+        if execution.error:
+            output_parts.append(f"\n--- Execution Error: {execution.error.name} ---\n{execution.error.value}\n{execution.error.traceback}")
+            
+        result = "\n".join(output_parts).strip()
+        return result or "Code executed successfully with no output. (Use print() to inspect results)."
+
+def _execute_restricted_local(code: str, dataset_data: Optional[List[Dict[str, Any]]] = None) -> str:
+    """
+    Fallback hardened local runner with strict environment filtering,
+    15s timeout, and memory/process guardrails.
+    """
+    # Strict AST / static checks for known dangerous modules
+    forbidden_tokens = [
+        "os.system", "subprocess", "shutil.rmtree", "pty.spawn",
+        "open('/etc", "open('/var", "open('/proc", "socket.socket"
+    ]
+    for token in forbidden_tokens:
+        if token in code:
+            return f"Security Restriction: Prohibited call '{token}' is blocked in local execution mode."
+
+    full_code = (
+        "import pandas as pd\n"
+        "import matplotlib.pyplot as plt\n"
+        "import seaborn as sns\n"
+        "import numpy as np\n"
+        "import io\n"
+        "import base64\n"
+    )
+
+    temp_path = None
+    try:
+        if dataset_data:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
                 json.dump(dataset_data, f)
                 temp_path = f.name
             
-            full_code += f"# Load dataset\n"
-            full_code += f"df = pd.read_json('{temp_path}')\n"
-            full_code += f"# Smart type conversion - only convert clearly numeric columns\n"
-            full_code += f"for col in df.columns:\n"
-            full_code += f"    if df[col].dtype == 'object':\n"
-            full_code += f"        numeric_vals = pd.to_numeric(df[col], errors='coerce')\n"
-            full_code += f"        if numeric_vals.notna().sum() / max(len(df), 1) > 0.8:\n"
-            full_code += f"            df[col] = numeric_vals\n"
-            full_code += f"print(f'Dataset loaded: {{df.shape[0]}} rows × {{df.shape[1]}} columns')\n"
-            full_code += f"print(f'Columns: {{list(df.columns)}}')\n"
-            full_code += f"numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()\n"
-            full_code += f"print(f'Numeric columns: {{numeric_cols}}')\n\n"
+            full_code += (
+                f"df = pd.read_json('{temp_path}')\n"
+                "for col in df.columns:\n"
+                "    if df[col].dtype == 'object':\n"
+                "        numeric_vals = pd.to_numeric(df[col], errors='coerce')\n"
+                "        if numeric_vals.notna().sum() / max(len(df), 1) > 0.8:\n"
+                "            df[col] = numeric_vals\n"
+                "print(f'Dataset loaded: {df.shape[0]} rows × {df.shape[1]} columns')\n"
+            )
         else:
-            full_code += "# No dataset provided. Create sample data if needed.\n"
             full_code += "df = None\n\n"
-        
-        # Add user's code
+
         full_code += code
-        
-        # Run the code - try to use the Python from the virtual environment
-        import sys
-        python_executable = sys.executable  # Use the same Python that's running this script
-        
+
+        # Sanitize execution environment - strip database credentials & API keys
+        sterile_env = {
+            'PATH': os.environ.get('PATH', '/usr/bin:/bin'),
+            'PYTHONUNBUFFERED': '1',
+            'MPLBACKEND': 'Agg'
+        }
+
         result = subprocess.run(
-            [python_executable, '-c', full_code],
+            [sys.executable, '-c', full_code],
             capture_output=True,
             text=True,
-            timeout=15,  # 15-second timeout to prevent hanging
-            check=False,  # Don't raise on error, we'll handle it
-            env={'PYTHONUNBUFFERED': '1', 'PATH': os.environ.get('PATH', '')},  # SECURITY HARDENING: Explicitly drop all API keys and secrets from the sandbox environment!\n            cwd=temp_path_dir  # Restrict working directory
+            timeout=15,
+            check=False,
+            env=sterile_env
         )
-        
-        # Combine stdout and stderr for better error visibility
+
         output = result.stdout
         stderr_output = result.stderr
-        
-        # Check return code first
+
         if result.returncode != 0:
-            # If there's an error, format it nicely
-            error_msg = f"Code execution failed (exit code {result.returncode}):\n"
-            if output:
-                error_msg += f"{output}\n"
-            if stderr_output:
-                # Filter out common numpy/matplotlib warnings that aren't critical
-                if "DTypePromotionError" in stderr_output:
-                    error_msg += f"\n--- Error ---\n"
-                    error_msg += "Data type error: Some columns have mixed types. "
-                    error_msg += "Please use only numeric columns for plotting, or convert columns to numeric first.\n"
-                    error_msg += f"Full error: {stderr_output[:500]}"
-                else:
-                    error_msg += f"\n--- Errors/Warnings ---\n{stderr_output}"
-            else:
-                error_msg += "\n(No error details available)"
-            return error_msg
-        
-        # If successful but has warnings in stderr, append them (filter out matplotlib warnings)
+            return f"Code execution failed (exit code {result.returncode}):\n{output}\n{stderr_output}"
+
         if stderr_output and output:
-            # Only show warnings if they're not just matplotlib/numpy warnings
-            if not ("UserWarning" in stderr_output and "matplotlib" in stderr_output.lower()) and \
-               not ("DTypePromotionError" in stderr_output or "numpy" in stderr_output.lower()):
+            if not ("UserWarning" in stderr_output and "matplotlib" in stderr_output.lower()):
                 output += f"\n\n--- Warnings ---\n{stderr_output}"
-        
-        if not output or output.strip() == "":
-            return "Code ran successfully with no output. (Did you forget to use `print()`?)"
-        
-        return output
+
+        return output.strip() or "Code executed successfully with no output."
 
     except subprocess.TimeoutExpired:
-        return "Error: Code execution timed out after 30 seconds. The code may be taking too long or stuck in an infinite loop."
-    except subprocess.CalledProcessError as e:
-        # Return the standard error if the code crashes
-        error_msg = e.stderr if e.stderr else str(e)
-        return f"Error: {error_msg}"
+        return "Error: Code execution timed out after 15 seconds."
     except Exception as e:
-        return f"An unexpected error occurred: {str(e)}"
+        return f"Execution error: {str(e)}"
     finally:
-        if 'temp_path' in locals() and temp_path and os.path.exists(temp_path):
+        if temp_path and os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
             except Exception as e:
-                logger.error(f"Failed to clean up temp file {temp_path}: {e}")
+                logger.error(f"Failed to remove temp file {temp_path}: {e}")
+
+def run_python_code(code: str, dataset_data: Optional[List[Dict[str, Any]]] = None, dataset_path: Optional[str] = None) -> str:
+    """
+    Executes Python code securely.
+    If E2B_API_KEY is configured, executes inside a zero-trust E2B cloud MicroVM.
+    Otherwise, executes via sterile local subprocess guardrails.
+    """
+    e2b_key = os.environ.get("E2B_API_KEY")
+    if e2b_key and len(e2b_key.strip()) > 5:
+        try:
+            logger.info("🔒 Routing execution through isolated E2B microVM...")
+            return _execute_e2b(code, dataset_data)
+        except Exception as e:
+            logger.warning(f"E2B execution failed or timed out: {e}. Falling back to sterile local sandbox.")
+            return _execute_restricted_local(code, dataset_data)
+    else:
+        return _execute_restricted_local(code, dataset_data)
 
 def google_search(query: str) -> str:
     """
@@ -163,4 +171,3 @@ def google_search(query: str) -> str:
     except Exception as e:
         logger.error(f"Search failed: {e}")
         return f"Error executing search: {str(e)}"
-

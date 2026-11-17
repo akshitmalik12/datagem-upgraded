@@ -1,104 +1,101 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext';
+import { 
+  Search, 
+  Terminal, 
+  FileSpreadsheet, 
+  Globe, 
+  Plus, 
+  Sparkles, 
+  Zap, 
+  Database,
+  ArrowRight
+} from 'lucide-react';
 
 export default function CommandPalette({ isOpen, onClose, onAction }) {
   const [query, setQuery] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
-
-  const actions = [
-    { id: 'new_chat', label: 'New Chat', icon: '💬', handler: () => { onAction('new_chat'); onClose(); } },
-    { id: 'focus_chat', label: 'Focus Chat Input (Cmd + /)', icon: '⌨️', handler: () => { onAction('focus_chat'); onClose(); } },
-    { id: 'toggle_theme', label: `Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`, icon: theme === 'dark' ? '☀️' : '🌙', handler: () => { toggleTheme(); onClose(); } },
-    { id: 'go_admin', label: 'Admin Dashboard', icon: '🛡️', handler: () => { navigate('/admin'); onClose(); } },
-    { id: 'go_billing', label: 'Upgrade to Pro / Billing', icon: '⭐', handler: () => { navigate('/pricing'); onClose(); } },
-    { id: 'upload_csv', label: 'Upload CSV Dataset', icon: '📊', handler: () => { onAction('upload_csv'); onClose(); } },
-    { id: 'import_web', label: 'Import from Web', icon: '🌐', handler: () => { onAction('import_web'); onClose(); } },
-  ];
-
-  const filteredActions = actions.filter(a => a.label.toLowerCase().includes(query.toLowerCase()));
-
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (isOpen) onClose();
+        else onAction('open');
+      }
+      if (e.key === 'Escape' && isOpen) {
         onClose();
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex(prev => (prev < filteredActions.length - 1 ? prev + 1 : prev));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        if (filteredActions[selectedIndex]) {
-          filteredActions[selectedIndex].handler();
-        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, filteredActions, selectedIndex]);
+  }, [isOpen, onClose, onAction]);
+
+  if (!isOpen) return null;
+
+  const actions = [
+    { id: 'new_chat', title: 'Start New Analytical Session', icon: Plus, shortcut: 'N' },
+    { id: 'upload_csv', title: 'Ingest Local Dataset (CSV/Parquet)', icon: FileSpreadsheet, shortcut: 'U' },
+    { id: 'import_web', title: 'Live Google Sheets / Web Import', icon: Globe, shortcut: 'I' },
+    { id: 'run_sql', title: 'Open DuckDB Vectorized SQL Runner', icon: Terminal, shortcut: 'S' },
+  ];
+
+  const filtered = actions.filter(a => a.title.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-start justify-center pt-[20vh] bg-black/40 backdrop-blur-md" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/75 backdrop-blur-md" onClick={onClose}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: -20 }}
+        initial={{ opacity: 0, scale: 0.98, y: -10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: -20 }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        exit={{ opacity: 0, scale: 0.98, y: -10 }}
+        transition={{ duration: 0.12, ease: "easeOut" }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-2xl shadow-2xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50"
+        className="w-full max-w-xl bg-[#090D14] rounded-xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] overflow-hidden border border-slate-800"
       >
-        <div className="flex items-center px-4 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
-          <svg className="w-5 h-5 text-accent-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+        <div className="flex items-center px-4 py-3.5 border-b border-slate-800/80 bg-slate-950/40">
+          <Search className="w-4 h-4 text-slate-500 mr-2.5 shrink-0" />
           <input
             autoFocus
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a command or search..."
-            className="flex-1 bg-transparent border-none outline-none px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-lg"
+            placeholder="Type a command or jump to metric... (⌘K)"
+            className="flex-1 bg-transparent border-none outline-none text-xs font-mono text-slate-100 placeholder-slate-500"
           />
-          <kbd className="hidden sm:inline-block px-2.5 py-1 text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <kbd className="px-2 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 rounded">
             ESC
           </kbd>
         </div>
-        <div className="max-h-[60vh] overflow-y-auto p-2">
-          {filteredActions.length > 0 ? (
-            <div className="space-y-1">
-              <div className="px-3 py-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                Quick Actions
-              </div>
-              {filteredActions.map((action, idx) => (
-                <button
-                  key={action.id}
-                  onClick={action.handler}
-                  onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`w-full text-left px-4 py-3 rounded-xl transition-all flex items-center gap-4 group ${
-                    selectedIndex === idx ? 'bg-gray-100 dark:bg-gray-800 shadow-sm' : 'hover:bg-gray-100/80 dark:hover:bg-gray-800/80'
-                  } text-gray-900 dark:text-gray-100`}
-                >
-                  <span className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg group-hover:scale-110 transition-transform shadow-sm">
-                    {action.icon}
-                  </span>
-                  <span className="font-medium text-sm">{action.label}</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-              No results found for "{query}"
-            </div>
-          )}
+
+        <div className="max-h-80 overflow-y-auto p-2 space-y-1">
+          <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+            Commands & Workflows
+          </div>
+          {filtered.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => { onAction(item.id); onClose(); }}
+                className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800 text-slate-200 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 group-hover:text-cyan-300 group-hover:border-cyan-500/30 transition-colors">
+                    <Icon className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-mono text-slate-300 group-hover:text-slate-100">{item.title}</span>
+                </div>
+                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[10px] font-mono text-slate-500">Run</span>
+                  <ArrowRight className="w-3 h-3 text-cyan-400" />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="px-4 py-2 border-t border-slate-800/80 bg-slate-950/80 flex items-center justify-between text-[11px] font-mono text-slate-500">
+          <span>DataGem Raycast Engine</span>
+          <span className="text-slate-400">↑↓ to navigate · ↵ to select</span>
         </div>
       </motion.div>
     </div>

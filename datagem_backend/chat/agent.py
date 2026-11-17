@@ -1,5 +1,8 @@
+from chat.native_engine import NativeAnalyticsEngine
 import os
 import time
+from dotenv import load_dotenv
+load_dotenv(override=True)
 import google.generativeai as genai
 from google.generativeai.types import Tool, FunctionDeclaration
 from PIL.Image import Image
@@ -18,49 +21,22 @@ from chat import db_tools
 # GEMINI API KEY CONFIGURATION
 # =====================
 
-# =====================
-# API KEY ROTATION LOGIC
-# =====================
-def get_all_gemini_keys():
-    keys = []
-    # Primary key
-    if os.getenv("GEMINI_API_KEY"):
-        keys.append(os.getenv("GEMINI_API_KEY"))
-    
-    # Secondary keys
-    for i in range(2, 6):
-        key = os.getenv(f"GEMINI_API_KEY_{i}")
-        if key:
-            keys.append(key)
-            
-    # Fallback for old .env formats
-    if os.getenv("GEMINI_API_KEY_1") and os.getenv("GEMINI_API_KEY_1") not in keys:
-        keys.append(os.getenv("GEMINI_API_KEY_1"))
-        
-    return keys
+# ⚠️ Recommended: use environment variable, fallback to rotating keys in .env
+GEMINI_API_KEY = (
+    os.getenv("GEMINI_API_KEY") or 
+    os.getenv("GEMINI_API_KEY_1") or 
+    os.getenv("GEMINI_API_KEY_2") or 
+    os.getenv("GEMINI_API_KEY_3")
+)
 
-GEMINI_API_KEYS = get_all_gemini_keys()
-CURRENT_KEY_INDEX = 0
-
-if not GEMINI_API_KEYS:
-    raise ValueError("❌ GEMINI_API_KEY not found. Set it in your environment or .env file.")
+if not GEMINI_API_KEY:
+    logger.warning("⚠️ No GEMINI_API_KEY provided; agent running in fallback mock mode.")
+    GEMINI_API_KEY = "demo_key"
 
 try:
-    genai.configure(api_key=GEMINI_API_KEYS[0])
+    genai.configure(api_key=GEMINI_API_KEY)
 except Exception as e:
     logger.error(f"Error configuring Gemini: {e}")
-
-def rotate_api_key():
-    global CURRENT_KEY_INDEX, GEMINI_API_KEYS
-    if len(GEMINI_API_KEYS) <= 1:
-        return False # Nothing to rotate to
-        
-    CURRENT_KEY_INDEX = (CURRENT_KEY_INDEX + 1) % len(GEMINI_API_KEYS)
-    new_key = GEMINI_API_KEYS[CURRENT_KEY_INDEX]
-    genai.configure(api_key=new_key)
-    logger.warning(f"🔄 Rotated to Gemini API Key #{CURRENT_KEY_INDEX + 1}")
-    return True
-
 
 
 # =====================
@@ -137,7 +113,7 @@ google_search_tool_schema = Tool(
     function_declarations=[
         FunctionDeclaration(
             name="google_search",
-            description="Executes a LIVE web search via DuckDuckGo to answer questions with real-time data.",
+            description="Simulates a Google Search for educational use (returns mock data).",
             parameters={
                 "type": "OBJECT",
                 "properties": {
@@ -455,18 +431,7 @@ Be helpful, thorough, and always provide value with comprehensive summaries incl
                             break # Success!
                     
                     if tool_result:
-                        if "Code execution failed" in tool_result or "Error:" in tool_result:
-                            # Hide the ugly traceback from the user UI
-                            yield f"\n❌ **Analysis Failed:** I ran into a technical issue while crunching the numbers. Please try asking in a different way or check your dataset columns.\n\n"
-                            # Override the tool_result so the LLM doesn't try to explain the stack trace in the summary
-                            tool_result = "Execution failed. Tell the user you couldn't process the request."
-                        else:
-                            # We only show output if it's NOT a massive plotly JSON block
-                            if "<<<PLOTLY_JSON_START>>>" not in tool_result:
-                                yield f"\n**Code Output:**\n```\n{tool_result[:1000]}\n```\n\n"
-                            else:
-                                # We yield the raw plotly json so the frontend can catch it and render it
-                                yield f"\n{tool_result}\n" 
+                        yield f"\n**Code Output:**\n```\n{tool_result}\n```\n\n"
             elif tool_name == "google_search":
                 query = tool_args.get("query", "")
                 tool_result = tools.google_search(query)
@@ -534,22 +499,28 @@ Be helpful, thorough, and always provide value with comprehensive summaries incl
             content=prompt
         )
 
-        # Strategy 2: Local Rule-Based NLP for Basic Stats (No API calls!)
-        prompt_lower = prompt.lower().strip()
+        # Strategy 1: High-Performance Zero-Cost Native Engine (DuckDB + Pandas + Plotly)
         if self.dataset and len(self.dataset) > 0:
-            if prompt_lower in ["how many rows?", "how many rows", "row count", "count rows", "dataset size"]:
-                yield f"\nThis dataset contains **{len(self.dataset)} rows**.\n"
-                return
-            elif prompt_lower in ["what are the columns?", "what are the columns", "list columns", "show columns"]:
-                columns = list(self.dataset[0].keys())
-                yield f"\nThe dataset has {len(columns)} columns:\n\n" + "\n".join([f"- `{col}`" for col in columns]) + "\n"
-                return
-            elif prompt_lower in ["show me the top 5 rows", "top 5 rows", "head", "preview"]:
-                import pandas as pd
-                df = pd.DataFrame(self.dataset)
-                yield f"\nHere are the top 5 rows:\n\n{df.head().to_markdown()}\n"
-                return
-                
+            try:
+                native_engine = NativeAnalyticsEngine(dataset=self.dataset)
+                if native_engine.is_analytical_query(prompt):
+                    handled, response_md, chart = native_engine.execute_query(prompt)
+                    if handled and response_md:
+                        logger.info(f"Query answered 100% locally by NativeAnalyticsEngine without LLM: {prompt[:50]}")
+                        yield "[⚡ Executed via DuckDB In-Memory OLAP Sandbox (0 API tokens consumed)]\n\n"
+
+                        yield response_md
+                        
+                        crud.save_chat_message(
+                            db=self.db,
+                            user_id=self.user.id,
+                            session_id=self.session_id,
+                            role="assistant",
+                            content=response_md
+                        )
+                        return
+            except Exception as ne_err:
+                logger.warning(f"NativeAnalyticsEngine error, falling back to agent: {ne_err}")
         is_conversational = self._is_conversational(prompt)
         
         # --- MULTI-AGENT PLANNER ---
@@ -693,17 +664,7 @@ IMPORTANT:
                                             logger.warning("Skipping duplicate tool call from event.candidates")
 
         except Exception as e:
-            error_str = str(e).lower()
-            if "429" in error_str or "quota" in error_str or "exhausted" in error_str:
-                # Try rotating key!
-                import chat.agent
-                if hasattr(chat.agent, 'rotate_api_key') and chat.agent.rotate_api_key():
-                    error_msg = "🔄 **API Rate limit reached. Rotating to backup key... Please send your message again.**"
-                else:
-                    error_msg = "❌ **Quota over for the day, resets at midnight UTC.**"
-            else:
-                error_msg = f"❌ Error generating response: {e}"
-                
+            error_msg = f"❌ Error generating response: {e}"
             logger.error(error_msg)
             traceback.print_exc()
             yield f"\n{error_msg}\n"

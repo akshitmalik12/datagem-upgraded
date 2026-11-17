@@ -1,32 +1,120 @@
-import { Link } from 'react-router-dom';
-import SEO from './SEO';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 export default function NotFound() {
+  const navigate = useNavigate();
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#05070A] text-gray-100">
-      <SEO 
-        title="404 - Page Not Found | DataGem" 
-        description="The page you are looking for does not exist."
-        path="/404"
-      />
-      <div className="text-center p-8 bg-[#0B0F19] border border-gray-800 rounded-2xl shadow-2xl max-w-lg w-full relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 to-cyan-400" />
-        <h1 className="text-8xl font-bold mb-4 text-gray-800 dark:text-gray-200 tracking-tighter">404</h1>
-        <h2 className="text-2xl font-semibold mb-6 text-sky-400">Page not found</h2>
-        <p className="text-gray-400 mb-8 leading-relaxed">
-          The autonomous AI analyst couldn't locate this route in your workspace. 
-          It might have been moved or deleted.
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#090a0f',
+      color: '#f8fafc',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '2rem',
+      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Background glow effects */}
+      <div style={{
+        position: 'absolute',
+        top: '20%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '500px',
+        height: '500px',
+        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(0,0,0,0) 70%)',
+        pointerEvents: 'none'
+      }} />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{
+          maxWidth: '520px',
+          width: '100%',
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '16px',
+          padding: '3rem 2.5rem',
+          textAlign: 'center',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+        }}
+      >
+        <div style={{
+          fontSize: '4.5rem',
+          fontWeight: '800',
+          letterSpacing: '-0.05em',
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          marginBottom: '0.5rem',
+          lineHeight: 1
+        }}>
+          404
+        </div>
+
+        <h1 style={{
+          fontSize: '1.5rem',
+          fontWeight: '600',
+          color: '#f8fafc',
+          marginBottom: '0.75rem'
+        }}>
+          Page Not Found
+        </h1>
+
+        <p style={{
+          fontSize: '0.95rem',
+          color: '#94a3b8',
+          lineHeight: '1.6',
+          marginBottom: '2rem'
+        }}>
+          The page or analytical view you are looking for does not exist or has been relocated in DataGem 2.0.
         </p>
-        <Link 
-          to="/chat" 
-          className="inline-flex items-center gap-2 px-6 py-3 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-xl transition-all shadow-lg shadow-sky-500/20"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Return to Workspace
-        </Link>
-      </div>
+
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <button
+            onClick={() => navigate('/chat')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#10b981',
+              color: '#041c14',
+              fontWeight: '600',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 4px 14px 0 rgba(16, 185, 129, 0.39)'
+            }}
+          >
+            Go to Analytical Chat →
+          </button>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              padding: '0.75rem 1.25rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              color: '#94a3b8',
+              fontWeight: '500',
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            ← Back
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }

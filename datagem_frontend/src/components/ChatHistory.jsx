@@ -1,78 +1,127 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Pricing from './Pricing';
-import SettingsModal from './SettingsModal';
-import { useTheme } from '../contexts/ThemeContext';
 import { 
-  getChatSessionsList, 
-  deleteChatSession, 
-  getCurrentDatasetId,
-  setCurrentDatasetId 
+  FolderPlus, 
+  Plus, 
+  Search, 
+  Trash2, 
+  X, 
+  Clock, 
+  Layers, 
+  Database,
+  ExternalLink,
+  ChevronRight
+} from 'lucide-react';
+import { 
+  Message01Icon, 
+  Folder01Icon, 
+  SparklesIcon, 
+  Analytics01Icon
+} from '@hugeicons/core-free-icons';
+import BranchedMenu from './BranchedMenu';
+import { 
+  getProjects, 
+  createProject, 
+  addChatToProject, 
+  deleteChatFromProject, 
+  deleteProject,
+  getCurrentProjectId,
+  setCurrentProjectId
 } from '../utils/chatHistory';
 
 export default function ChatHistory({
- 
   isOpen, 
   onClose, 
   onSelectChat,
-  currentDatasetId,
-  currentDatasetName 
+  currentChatId
 }) {
-  const [sessions, setSessions] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showPricing, setShowPricing] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const { theme } = useTheme();
+  const [activeChat, setActiveChat] = useState(currentChatId || 'chat_roas');
+  const [newProjectName, setNewProjectName] = useState('');
+  const [showNewProjectInput, setShowNewProjectInput] = useState(false);
+  const [newChatTitle, setNewChatTitle] = useState('');
+  const [activeTargetProject, setActiveTargetProject] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
-      loadSessions();
+      loadData();
     }
   }, [isOpen]);
 
-  const loadSessions = () => {
-    const chatSessions = getChatSessionsList();
-    setSessions(chatSessions);
+  const loadData = () => {
+    const list = getProjects();
+    setProjects(list);
   };
 
-  const handleSelectChat = (sessionId) => {
-    setCurrentDatasetId(sessionId);
-    onSelectChat(sessionId);
-    onClose();
-  };
-
-  const handleDeleteChat = (e, sessionId) => {
-    e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this chat session?')) {
-      deleteChatSession(sessionId);
-      loadSessions();
-      if (sessionId === currentDatasetId) {
-        setCurrentDatasetId(null);
-        onSelectChat(null);
-      }
+  const handleSelect = (value, item) => {
+    setActiveChat(value);
+    if (onSelectChat) {
+      onSelectChat(value, item);
     }
   };
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'Unknown';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+  const handleCreateProject = (e) => {
+    e.preventDefault();
+    if (!newProjectName.trim()) return;
+    const created = createProject(newProjectName);
+    setNewProjectName('');
+    setShowNewProjectInput(false);
+    loadData();
+    if (created.chats[0]) {
+      handleSelect(created.chats[0].id, created.chats[0]);
+    }
   };
 
-  const filteredSessions = sessions.filter(session => {
-    const name = session.name || session.filename || 'Untitled Dataset';
-    return name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const handleAddChat = (e, projectId) => {
+    e.preventDefault();
+    if (!newChatTitle.trim()) return;
+    const added = addChatToProject(projectId, newChatTitle);
+    setNewChatTitle('');
+    setActiveTargetProject(null);
+    loadData();
+    if (added) {
+      handleSelect(added.id, added);
+    }
+  };
+
+  const handleDeleteChat = (e, projectId, chatId) => {
+    e.stopPropagation();
+    if (window.confirm('Delete this chat thread?')) {
+      deleteChatFromProject(projectId, chatId);
+      loadData();
+    }
+  };
+
+  const handleDeleteProject = (e, projectId) => {
+    e.stopPropagation();
+    if (window.confirm('Delete this entire project and its chats?')) {
+      deleteProject(projectId);
+      loadData();
+    }
+  };
+
+  // Convert projects to BranchedMenu structure
+  const branchedMenuItems = projects
+    .filter(proj => {
+      if (!searchQuery) return true;
+      const matchProj = proj.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchChat = proj.chats.some(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchProj || matchChat;
+    })
+    .map(proj => ({
+      label: proj.name,
+      value: proj.id,
+      children: proj.chats
+        .filter(c => !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase()))
+        .map(c => ({
+          value: c.id,
+          label: c.title,
+          icon: Message01Icon,
+          raw: c,
+          projectId: proj.id
+        }))
+    }));
 
   return (
     <AnimatePresence>
@@ -84,163 +133,191 @@ export default function ChatHistory({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
           />
 
-          {/* Sidebar */}
+          {/* Sidebar drawer */}
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-96 bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col"
+            transition={{ type: 'spring', damping: 28, stiffness: 240 }}
+            className="fixed right-0 top-0 h-full w-[420px] max-w-[95vw] bg-[#070A0F] border-l border-slate-800/90 shadow-2xl z-50 flex flex-col font-sans"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Chat History
-              </h2>
+            <div className="p-5 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/40">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.9)]" />
+                <h2 className="text-sm font-mono font-bold tracking-wider text-slate-100 uppercase">
+                  Projects & Chat Trees
+                </h2>
+              </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
               >
-                <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Search */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            {/* Sub-header & Action Bar */}
+            <div className="p-4 border-b border-slate-900 bg-[#090E17]/60 flex flex-col gap-3">
+              {/* Search */}
               <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search chats..."
+                  placeholder="Filter projects & threads..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pl-10 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-all"
+                  className="w-full bg-[#05070B] border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 transition-colors"
                 />
-                <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
               </div>
-            </div>
 
-            {/* Current Chat Indicator */}
-            {currentDatasetId && (
-              <div className="p-4 bg-sky-50 dark:bg-sky-900/20 border-b border-sky-200 dark:border-sky-800">
-                <p className="text-xs font-medium text-sky-600 dark:text-sky-400 mb-1">
-                  Current Chat
-                </p>
-                <p className="text-sm text-gray-900 dark:text-white truncate">
-                  {currentDatasetName || 'Current Dataset'}
-                </p>
+              {/* New Project Button */}
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+                  Workspaces ({projects.length})
+                </span>
+                <button
+                  onClick={() => setShowNewProjectInput(prev => !prev)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/80 border border-cyan-800/80 text-cyan-300 hover:bg-cyan-900 text-xs font-mono transition-colors"
+                >
+                  <FolderPlus className="w-3.5 h-3.5" />
+                  <span>New Project</span>
+                </button>
               </div>
-            )}
 
-            {/* Sessions List */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {filteredSessions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                  <svg className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <p className="text-gray-500 dark:text-gray-400 mb-2">
-                    {searchQuery ? 'No chats found' : 'No chat history yet'}
-                  </p>
-                  {!searchQuery && (
-                    <p className="text-sm text-gray-400 dark:text-gray-500">
-                      Upload a dataset to start a new chat
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredSessions.map((session) => {
-                    const isActive = session.id === currentDatasetId;
-                    const sessionName = session.title || session.name || session.filename || 'Untitled Chat';
-                    const messageCount = session.messages?.length || 0;
-
-                    return (
-                      <motion.div
-                        key={session.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        onClick={() => handleSelectChat(session.id)}
-                        className={`group relative p-4 rounded-xl cursor-pointer transition-all duration-300 relative z-10 ${
-                          isActive
-                            ? 'bg-white dark:bg-sky-900/20 border border-sky-500/50 shadow-md shadow-sky-500/10'
-                            : 'bg-white/50 dark:bg-gray-800/30 hover:bg-white dark:hover:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <h3 className={`font-medium truncate ${
-                              isActive
-                                ? 'text-sky-900 dark:text-sky-100'
-                                : 'text-gray-900 dark:text-white'
-                            }`}>
-                              {sessionName}
-                            </h3>
-                            <div className="flex items-center gap-3 mt-1">
-                              <span className={`text-xs ${
-                                isActive
-                                  ? 'text-sky-700 dark:text-sky-300'
-                                  : 'text-gray-500 dark:text-gray-400'
-                              }`}>
-                                {messageCount} {messageCount === 1 ? 'message' : 'messages'}
-                              </span>
-                              <span className={`text-xs ${
-                                isActive
-                                  ? 'text-sky-600 dark:text-sky-400'
-                                  : 'text-gray-400 dark:text-gray-500'
-                              }`}>
-                                {formatDate(session.lastUpdated)}
-                              </span>
-                            </div>
-                            {session.shape && (
-                              <p className={`text-xs mt-1 ${
-                                isActive
-                                  ? 'text-sky-600 dark:text-sky-400'
-                                  : 'text-gray-400 dark:text-gray-500'
-                              }`}>
-                                {session.shape.rows} rows × {session.shape.cols} columns
-                              </p>
-                            )}
-                          </div>
-                          <button
-                            onClick={(e) => handleDeleteChat(e, session.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-all"
-                            title="Delete chat"
-                          >
-                            <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+              {/* Inline Project Creator */}
+              {showNewProjectInput && (
+                <form onSubmit={handleCreateProject} className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    placeholder="Project name (e.g. Q4 Margins)"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    autoFocus
+                    className="flex-1 bg-[#05070B] border border-cyan-500/50 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-1 rounded bg-cyan-400 text-slate-950 font-bold text-xs font-mono"
+                  >
+                    Add
+                  </button>
+                </form>
               )}
             </div>
 
-            {/* Footer */}
-            <div className="p-6 border-t border-gray-200/50 dark:border-gray-800/50 flex justify-between items-center relative z-10">
-              <button onClick={() => setShowSettings(true)} className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                Settings
-              </button>
-              <button onClick={() => setShowPricing(true)} className="text-sm px-4 py-2 bg-gradient-to-r from-sky-500 via-cyan-500 to-slate-500 text-white rounded-full hover:shadow-lg hover:shadow-cyan-500/25 transition-all font-bold tracking-wide">
-                Upgrade
+            {/* Tree View using React Bits BranchedMenu */}
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {branchedMenuItems.length > 0 ? (
+                <div className="mb-6">
+                  <BranchedMenu
+                    items={branchedMenuItems}
+                    defaultOpen={[0, 1]}
+                    defaultActive={activeChat}
+                    onSelect={handleSelect}
+                    color="#94a3b8"
+                    accentColor="#22d3ee"
+                    lineColor="#1e293b"
+                    width={360}
+                    rowHeight={34}
+                    indent={38}
+                    trunk={14}
+                    radius={10}
+                    lineWidth={1.5}
+                    fontSize={13}
+                    drawDuration={350}
+                    foldDuration={250}
+                  />
+                </div>
+              ) : (
+                <div className="text-center py-12 text-slate-500 text-xs">
+                  No matching projects or chat threads found.
+                </div>
+              )}
+
+              {/* Project Quick Actions / Quick Chat Adders */}
+              <div className="mt-8 border-t border-slate-900 pt-6">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500 block mb-3">
+                  Project Management
+                </span>
+                <div className="space-y-2">
+                  {projects.map(proj => (
+                    <div 
+                      key={proj.id}
+                      className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60 hover:border-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium text-slate-200 truncate flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                          {proj.name}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setActiveTargetProject(activeTargetProject === proj.id ? null : proj.id)}
+                            title="New Thread"
+                            className="p-1 rounded text-cyan-400 hover:bg-cyan-950/60 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteProject(e, proj.id)}
+                            title="Delete Project"
+                            className="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {activeTargetProject === proj.id && (
+                        <form onSubmit={(e) => handleAddChat(e, proj.id)} className="flex gap-2 mt-2 pt-2 border-t border-slate-800/80">
+                          <input
+                            type="text"
+                            placeholder="Chat title (e.g. Return Rate Spike)"
+                            value={newChatTitle}
+                            onChange={(e) => setNewChatTitle(e.target.value)}
+                            autoFocus
+                            className="flex-1 bg-[#05070B] border border-cyan-500/50 rounded px-2 py-0.5 text-[11px] text-slate-200 focus:outline-none"
+                          />
+                          <button
+                            type="submit"
+                            className="px-2 py-0.5 rounded bg-cyan-400 text-slate-950 font-bold text-[11px] font-mono"
+                          >
+                            Create
+                          </button>
+                        </form>
+                      )}
+
+                      <div className="text-[10px] font-mono text-slate-500 flex items-center gap-3 mt-1">
+                        <span>{proj.chats.length} threads</span>
+                        <span>•</span>
+                        <span>Created {new Date(proj.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Summary */}
+            <div className="p-4 border-t border-slate-800/80 bg-slate-950/80 flex items-center justify-between text-xs font-mono text-slate-400">
+              <div className="flex items-center gap-2">
+                <span className="text-cyan-400 font-bold">Active Thread:</span>
+                <span className="text-slate-200 truncate max-w-[180px]">{activeChat}</span>
+              </div>
+              <button
+                onClick={onClose}
+                className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs transition-colors"
+              >
+                Close
               </button>
             </div>
-            <Pricing isOpen={showPricing} onClose={() => setShowPricing(false)} />
-            <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
           </motion.div>
         </>
       )}
     </AnimatePresence>
   );
 }
-

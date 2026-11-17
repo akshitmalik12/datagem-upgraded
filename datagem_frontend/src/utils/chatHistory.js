@@ -1,11 +1,136 @@
 /**
- * Chat History Management Utility
- * Manages chat sessions per dataset
+ * Chat & Project History Management Utility
+ * Manages projects and their nested chat threads
  */
+
+const STORAGE_KEY_SESSIONS = 'datagem_chat_sessions';
+const STORAGE_KEY_PROJECTS = 'datagem_projects';
+const STORAGE_KEY_ACTIVE_PROJECT = 'datagem_current_project_id';
+const STORAGE_KEY_ACTIVE_DATASET = 'datagem_current_dataset_id';
+
+// Default initial demo projects if empty
+const DEFAULT_PROJECTS = [
+  {
+    id: 'proj_ecommerce',
+    name: 'E-commerce Analytics',
+    description: 'Shopify & Amazon blended metrics and ROAS attribution',
+    createdAt: Date.now() - 86400000 * 7,
+    chats: [
+      { id: 'chat_roas', title: 'Blended ROAS by SKU', lastUpdated: Date.now() - 3600000 * 2, queryCount: 14 },
+      { id: 'chat_cohorts', title: 'Repeat Purchase Cohorts', lastUpdated: Date.now() - 3600000 * 18, queryCount: 8 },
+      { id: 'chat_inventory', title: 'Dead Inventory & Working Capital', lastUpdated: Date.now() - 86400000 * 2, queryCount: 5 }
+    ]
+  },
+  {
+    id: 'proj_finance',
+    name: 'Financial Modeling',
+    description: 'Cash runway, gross margin per unit, and burn rate monitor',
+    createdAt: Date.now() - 86400000 * 14,
+    chats: [
+      { id: 'chat_runway', title: 'Runway Forecast (Base vs Worst)', lastUpdated: Date.now() - 3600000 * 26, queryCount: 9 },
+      { id: 'chat_cogs', title: 'COGS Variance Analysis', lastUpdated: Date.now() - 86400000 * 4, queryCount: 6 }
+    ]
+  },
+  {
+    id: 'proj_growth',
+    name: 'Growth & Acquisition',
+    description: 'Paid channels CAC, funnel conversion drops',
+    createdAt: Date.now() - 86400000 * 20,
+    chats: [
+      { id: 'chat_meta', title: 'Meta Ads Retargeting Fatigue', lastUpdated: Date.now() - 3600000 * 5, queryCount: 11 },
+      { id: 'chat_google', title: 'PMax vs Search Keyword Bids', lastUpdated: Date.now() - 86400000 * 3, queryCount: 7 }
+    ]
+  }
+];
+
+export function getProjects() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PROJECTS);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(DEFAULT_PROJECTS));
+      return DEFAULT_PROJECTS;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error reading projects:', e);
+    return DEFAULT_PROJECTS;
+  }
+}
+
+export function saveProjects(projects) {
+  try {
+    localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(projects));
+  } catch (e) {
+    console.error('Error saving projects:', e);
+  }
+}
+
+export function createProject(name, description = '') {
+  const projects = getProjects();
+  const newProj = {
+    id: `proj_${Date.now()}`,
+    name: name.trim() || 'Untitled Project',
+    description: description.trim(),
+    createdAt: Date.now(),
+    chats: [
+      {
+        id: `chat_${Date.now()}`,
+        title: 'Initial Metric Briefing',
+        lastUpdated: Date.now(),
+        queryCount: 0
+      }
+    ]
+  };
+  projects.unshift(newProj);
+  saveProjects(projects);
+  return newProj;
+}
+
+export function addChatToProject(projectId, chatTitle) {
+  const projects = getProjects();
+  const proj = projects.find(p => p.id === projectId);
+  if (!proj) return null;
+  const newChat = {
+    id: `chat_${Date.now()}`,
+    title: chatTitle.trim() || 'New Chat Thread',
+    lastUpdated: Date.now(),
+    queryCount: 0
+  };
+  proj.chats.unshift(newChat);
+  saveProjects(projects);
+  return newChat;
+}
+
+export function deleteChatFromProject(projectId, chatId) {
+  const projects = getProjects();
+  const proj = projects.find(p => p.id === projectId);
+  if (!proj) return false;
+  proj.chats = proj.chats.filter(c => c.id !== chatId);
+  saveProjects(projects);
+  return true;
+}
+
+export function deleteProject(projectId) {
+  let projects = getProjects();
+  projects = projects.filter(p => p.id !== projectId);
+  saveProjects(projects);
+  return true;
+}
+
+export function getCurrentProjectId() {
+  return localStorage.getItem(STORAGE_KEY_ACTIVE_PROJECT) || 'proj_ecommerce';
+}
+
+export function setCurrentProjectId(projectId) {
+  if (projectId) {
+    localStorage.setItem(STORAGE_KEY_ACTIVE_PROJECT, projectId);
+  } else {
+    localStorage.removeItem(STORAGE_KEY_ACTIVE_PROJECT);
+  }
+}
 
 // Generate a unique ID for a dataset based on its content and metadata
 export function generateDatasetId(dataset, filename = null) {
-  // Create a hash from dataset shape, columns, and first few rows
   const datasetInfo = {
     shape: dataset.length,
     columns: Object.keys(dataset[0] || {}),
@@ -13,23 +138,21 @@ export function generateDatasetId(dataset, filename = null) {
     filename: filename || 'unknown',
   };
   
-  // Simple hash function
   const str = JSON.stringify(datasetInfo);
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+    hash = hash & hash;
   }
   
-  // Add timestamp for uniqueness
   return `dataset_${Math.abs(hash)}_${datasetInfo.filename}`;
 }
 
 // Get all chat sessions
 export function getAllChatSessions() {
   try {
-    const sessions = localStorage.getItem('datagem_chat_sessions');
+    const sessions = localStorage.getItem(STORAGE_KEY_SESSIONS);
     return sessions ? JSON.parse(sessions) : {};
   } catch (error) {
     console.error('Error loading chat sessions:', error);
@@ -51,7 +174,7 @@ export function saveChatSession(datasetId, sessionData) {
       ...sessionData,
       lastUpdated: Date.now(),
     };
-    localStorage.setItem('datagem_chat_sessions', JSON.stringify(sessions));
+    localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(sessions));
     return true;
   } catch (error) {
     console.error('Error saving chat session:', error);
@@ -64,7 +187,7 @@ export function deleteChatSession(datasetId) {
   try {
     const sessions = getAllChatSessions();
     delete sessions[datasetId];
-    localStorage.setItem('datagem_chat_sessions', JSON.stringify(sessions));
+    localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(sessions));
     return true;
   } catch (error) {
     console.error('Error deleting chat session:', error);
@@ -86,7 +209,7 @@ export function getChatSessionsList() {
 // Clear all chat sessions
 export function clearAllChatSessions() {
   try {
-    localStorage.removeItem('datagem_chat_sessions');
+    localStorage.removeItem(STORAGE_KEY_SESSIONS);
     return true;
   } catch (error) {
     console.error('Error clearing chat sessions:', error);
@@ -96,15 +219,14 @@ export function clearAllChatSessions() {
 
 // Get current active dataset ID
 export function getCurrentDatasetId() {
-  return localStorage.getItem('datagem_current_dataset_id');
+  return localStorage.getItem(STORAGE_KEY_ACTIVE_DATASET);
 }
 
 // Set current active dataset ID
 export function setCurrentDatasetId(datasetId) {
   if (datasetId) {
-    localStorage.setItem('datagem_current_dataset_id', datasetId);
+    localStorage.setItem(STORAGE_KEY_ACTIVE_DATASET, datasetId);
   } else {
-    localStorage.removeItem('datagem_current_dataset_id');
+    localStorage.removeItem(STORAGE_KEY_ACTIVE_DATASET);
   }
 }
-

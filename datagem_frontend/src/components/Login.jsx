@@ -1,243 +1,212 @@
-import React, { useState, useEffect } from 'react';
-import SEO from "./SEO";
-import { useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Terminal, Lock, Sparkles, ArrowRight, ShieldCheck, Database, Activity } from 'lucide-react';
+import TechText from './TechText';
+import Lightfall from './Lightfall';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Animated background shapes positions
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePos({
-        x: e.clientX / window.innerWidth - 0.5,
-        y: e.clientY / window.innerHeight - 0.5,
-      });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
-    
+    setLoading(true);
+
     try {
-      const result = await login(email, password);
-      if (result && result.success === false) {
-        setError(result.error);
-        setIsLoading(false);
-        return;
-      }
+      await login(email, password);
       navigate('/chat');
     } catch (err) {
-      setError(err.message || 'Failed to login. Please check your credentials.');
+      setError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-[#0B0F19] text-gray-900 dark:text-gray-100 overflow-hidden relative">
-      <SEO title="Login | DataGem" description="DataGem Login - AI Data Analyst Platform." path="/login" />
+    <div className="min-h-screen bg-[#05070A] text-slate-100 font-sans tracking-tight flex items-center justify-center p-6 relative overflow-hidden selection:bg-sky-500 selection:text-black">
       
-      
-      {/* Background ambient glow that follows mouse slightly */}
-      <motion.div 
-        className="fixed inset-0 pointer-events-none z-0"
-        animate={{
-          x: mousePos.x * 20,
-          y: mousePos.y * 20
-        }}
-        transition={{ type: "spring", stiffness: 50, damping: 20 }}
-      >
-        <div className="absolute top-[20%] left-[30%] w-[50%] h-[50%] rounded-full bg-sky-500/10 blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[20%] w-[40%] h-[40%] rounded-full bg-cyan-500/10 blur-[120px]" />
-      </motion.div>
-
-      {/* Left Panel - Brand Showcase */}
-      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-slate-900 to-[#05070A] border-r border-white/10 shadow-2xl">
-        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
-        
-        <motion.div 
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative z-10"
-        >
-          <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white font-bold shadow-lg border border-white/20">
-              D
-            </div>
-            <span className="text-3xl font-bold text-white tracking-tight">DataGem</span>
-          </div>
-
-          <h1 className="text-5xl xl:text-6xl font-extrabold text-white mb-6 leading-[1.1] tracking-tight">
-            Unlock the power<br />of your <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-300 to-cyan-300">raw data.</span>
-          </h1>
-          <p className="text-sky-100 text-lg xl:text-xl mb-12 max-w-lg font-light leading-relaxed">
-            DataGem replaces entire analytical teams with one intelligent chat interface. Ask questions, get interactive dashboards.
-          </p>
-        </motion.div>
-
-        {/* Floating animated elements */}
-        <div className="relative z-10 space-y-4">
-          {[
-            { icon: "⚡", title: "Lightning Fast", desc: "Complex pandas processing in milliseconds." },
-            { icon: "📊", title: "Auto-Visualizations", desc: "Interactive Plotly charts generated instantly." },
-            { icon: "🔒", title: "Secure Sandbox", desc: "Enterprise-grade isolated code execution." }
-          ].map((item, idx) => (
-            <motion.div 
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + (idx * 0.15), duration: 0.6 }}
-              className="bg-white/10 backdrop-blur-md border border-white/10 p-5 rounded-2xl flex items-center gap-5 w-fit hover:bg-white/20 transition-colors cursor-default shadow-lg"
-            >
-              <div className="bg-white/20 p-3 rounded-xl text-xl shadow-inner border border-white/10">{item.icon}</div>
-              <div>
-                <h3 className="text-white font-semibold">{item.title}</h3>
-                <p className="text-sky-200 text-sm font-light">{item.desc}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="relative z-10 mt-12 flex items-center gap-4 text-sky-200/60 text-sm font-medium tracking-wide"
-        >
-          <div className="w-8 h-[1px] bg-sky-200/60" />
-          Engineered by Akshit Malik
-        </motion.div>
+      {/* Dynamic WebGL Lightfall Background with Deep Cyan-Blue & Emerald Streaks */}
+      <div className="fixed inset-0 pointer-events-auto z-0 opacity-80">
+        <Lightfall
+          colors={['#0284c7', '#0ea5e9', '#10b981', '#34d399', '#ffffff']}
+          backgroundColor="#041f2e"
+          speed={0.28}
+          streakCount={3}
+          streakWidth={0.75}
+          streakLength={1.1}
+          twinkle={0.35}
+          backgroundGlow={0.16}
+          headGlow={0.65}
+          bloom={0.4}
+          mouseInteraction
+          mouseStrength={0.45}
+          mouseRadius={0.4}
+          lens={0.4}
+          holdToWarp
+          intro
+        />
       </div>
 
-      {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative z-10">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="w-full max-w-[420px]"
+      {/* Subtle Dark Vignette Overlay for Crisp Card Contrast */}
+      <div className="fixed inset-0 pointer-events-none z-[1] bg-gradient-to-t from-[#05070A] via-transparent to-[#05070A]/60" />
+
+      <div className="w-full max-w-5xl relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        
+        {/* Left Side: Value Proposition with TechText in Inter Font */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          className="hidden md:flex flex-col justify-center"
         >
-          {/* Mobile Header (Only visible on small screens) */}
-          <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
-            <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center text-white font-bold shadow-lg">
-              D
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-300 text-xs font-sans uppercase tracking-widest mb-4 shadow-[0_0_15px_rgba(2,132,199,0.2)] w-max">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" /> Continuous Intelligence
+          </div>
+
+          {/* TechText using Inter Font and Deep Cyan-Blue */}
+          <div style={{ width: '100%', height: '220px', position: 'relative' }} className="my-1">
+            <TechText
+              text="DataGem"
+              fontWeight={700}
+              fontSize={100}
+              reveal="letter"
+              dashLength={4}
+              dashGap={2}
+              specks={6}
+              intro="metrics"
+              introDuration={2.8}
+              clickKick
+              guides
+              fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+              letterSpacing={-0.04}
+              accentColor="currentColor"
+              reach={200}
+              softness={0.7}
+              lineStyle="solid"
+              strokeWidth={1.25}
+              speed={1}
+              bounce={0.75}
+              selection
+              labels
+              color="#0284c7"
+              align="left"
+              draggable
+              sweep
+            />
+          </div>
+
+          <h2 className="text-xl font-bold tracking-tight text-slate-200 mt-2 font-sans">
+            Autonomous data intelligence for high-velocity teams.
+          </h2>
+          <p className="text-xs text-slate-400 font-sans font-light leading-relaxed mt-2">
+            Zero SQL complexity. Connect Shopify, Google Sheets, or PostgreSQL and let AI compile and verify metrics instantly.
+          </p>
+
+          <div className="space-y-3 pt-6 font-sans">
+            <div className="flex gap-3 items-start">
+              <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 text-sky-400">
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-slate-200 font-sans">Zero-Trust MicroVM Sandbox</h4>
+                <p className="text-[11px] text-slate-400 font-sans mt-0.5">Isolated ephemeral code execution with zero credential leakage.</p>
+              </div>
             </div>
-            <span className="text-2xl font-bold tracking-tight">DataGem</span>
+
+            <div className="flex gap-3 items-start">
+              <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 text-emerald-400">
+                <Activity className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-slate-200 font-sans">Monday 8 AM Executive Digests</h4>
+                <p className="text-[11px] text-slate-400 font-sans mt-0.5">Automated cohort analysis and ad spend alerts sent to Slack and email.</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Right Side: Login Card using Inter Typography */}
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="p-8 rounded-3xl bg-[#090D14]/90 border border-sky-500/30 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.85)] relative overflow-hidden font-sans"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-xs font-sans font-bold text-sky-300">
+              💎
+            </div>
+            <span className="font-bold text-lg tracking-tight font-sans">Sign In to DataGem</span>
           </div>
 
-          <div className="mb-10 text-center lg:text-left">
-            <h2 className="text-4xl font-bold mb-3 tracking-tight">Welcome back</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-lg">Enter your details to access your workspace.</p>
-          </div>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-3 rounded-lg bg-rose-950/40 border border-rose-800 text-rose-300 text-xs font-sans"
+            >
+              {error}
+            </motion.div>
+          )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-1">
-                Email
-              </label>
+          <form onSubmit={handleSubmit} className="space-y-4 font-sans">
+            <div>
+              <label className="text-[11px] font-sans font-medium uppercase tracking-wider text-slate-400 block mb-1.5">Email Address</label>
               <input
                 type="email"
-                value={email}
-                autoFocus
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3.5 bg-white dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all shadow-sm"
-                placeholder="name@company.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="founder@company.com"
+                className="w-full bg-slate-900/90 border border-slate-700/80 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl px-4 py-2.5 text-xs font-sans text-slate-100 outline-none transition-all placeholder-slate-600 shadow-inner"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between ml-1">
-                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Password
-                </label>
-                <Link to="/forgot-password" className="text-sm font-semibold text-sky-400 dark:text-sky-400 hover:text-sky-300 transition-colors">
-                  Forgot Password?
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-[11px] font-sans font-medium uppercase tracking-wider text-slate-400">Password</label>
+                <Link to="/forgot-password" className="text-[10px] font-sans text-sky-400 hover:text-sky-300">
+                  Forgot password?
                 </Link>
               </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3.5 pr-12 bg-white dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all shadow-sm"
-                  placeholder="••••••••"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.29 3.29m0 0a10.05 10.05 0 015.188-1.579c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0l-3.29-3.29" /></svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                  )}
-                </button>
-              </div>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                className="w-full bg-slate-900/90 border border-slate-700/80 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl px-4 py-2.5 text-xs font-sans text-slate-100 outline-none transition-all placeholder-slate-600 shadow-inner"
+              />
             </div>
 
-            <AnimatePresence>
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0, y: -10 }}
-                  animate={{ opacity: 1, height: 'auto', y: 0 }}
-                  exit={{ opacity: 0, height: 0, y: -10 }}
-                  className="overflow-hidden"
-                >
-                  <div className="p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl flex items-center gap-3 text-red-600 dark:text-red-400 text-sm font-medium shadow-sm">
-                    <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                    {error}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
+            {/* Snappy Keycap Submit Button */}
             <motion.button
-              whileHover={{ scale: 1.01, y: -1 }}
-              whileTap={{ scale: 0.99 }}
+              whileHover={{ scale: 1.02, borderColor: '#10B981' }}
+              whileTap={{ scale: 0.96, y: 1 }}
+              transition={{ duration: 0.06 }}
               type="submit"
-              disabled={isLoading}
-              className="w-full py-3.5 px-4 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold font-bold rounded-xl transition-all shadow-lg shadow-gray-900/20 dark:shadow-white/10 flex justify-center items-center mt-6 relative overflow-hidden group"
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-400 text-xs font-sans font-bold text-slate-100 flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(0,0,0,0.6)] group transition-all mt-2"
             >
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-              {isLoading ? (
-                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                <span className="relative z-10 flex items-center gap-2">
-                  Sign In <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                </span>
-              )}
+              <Terminal className="w-3.5 h-3.5 text-emerald-400 group-hover:rotate-12 transition-transform" />
+              <span>{loading ? 'Authenticating...' : 'Sign In to Workspace'}</span>
+              <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-emerald-300 font-sans border border-slate-700 font-semibold">↵</span>
             </motion.button>
-            
-            
           </form>
 
-          <p className="mt-8 text-center text-[15px] text-gray-500 dark:text-gray-400 font-medium">
-            New to DataGem?{' '}
-            <Link to="/signup" className="text-sky-400 dark:text-sky-400 font-bold hover:text-sky-300 transition-colors">
-              Create an account
+          <div className="mt-6 pt-4 border-t border-slate-800 text-center text-xs font-sans text-slate-500">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-emerald-400 hover:text-emerald-300 font-semibold">
+              Create Account
             </Link>
-          </p>
+          </div>
         </motion.div>
       </div>
     </div>
