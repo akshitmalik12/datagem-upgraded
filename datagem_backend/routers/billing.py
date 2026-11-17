@@ -179,3 +179,28 @@ def simulate_payment_webhook(
         "transaction_id": sample_id,
         "message": f"Successfully simulated {payload.provider.upper()} webhook and activated {target_user.tier} plan."
     }
+
+@router.get("/subscription-status")
+def get_subscription_status(
+    current_user: db_models.User = Depends(get_current_active_user)
+):
+    """Returns current user tier, capabilities, and quota limits."""
+    tier = getattr(current_user, "tier", None) or getattr(current_user, "plan_tier", "starter")
+    is_pro_or_enterprise = tier.lower() in ["pro", "enterprise"]
+    
+    return {
+        "user_email": current_user.email,
+        "tier": tier.lower(),
+        "is_pro": is_pro_or_enterprise,
+        "features": {
+            "clawback_auto_dispute": is_pro_or_enterprise,
+            "monday_watchdog_automation": is_pro_or_enterprise,
+            "unlimited_duckdb_queries": is_pro_or_enterprise,
+            "parquet_vault_export": tier.lower() == "enterprise",
+            "dedicated_audit_trail": tier.lower() == "enterprise"
+        },
+        "limits": {
+            "daily_queries": 999999 if is_pro_or_enterprise else 15,
+            "max_file_size_mb": 500 if tier.lower() == "enterprise" else (100 if is_pro_or_enterprise else 10)
+        }
+    }
