@@ -40,6 +40,7 @@ import CallChip from './CallChip';
 import BranchedMenu from './BranchedMenu';
 import { Attachment01Icon, Globe02Icon, Message01Icon } from '@hugeicons/core-free-icons';
 import { getProjects, saveProjects } from '../utils/chatHistory';
+import { DOMAIN_PRESETS } from '../utils/sampleData';
 
 // Global memory cache to persist chat state across page navigations
 let chatMemoryCache = null;
@@ -76,6 +77,8 @@ export default function Chat() {
   const [dataset, setDataset] = useState(chatMemoryCache?.dataset || null);
   const [datasetProfile, setDatasetProfile] = useState(chatMemoryCache?.datasetProfile || null);
   const [executiveBriefing, setExecutiveBriefing] = useState(null);
+  const [activeDomainHub, setActiveDomainHub] = useState('ecom'); // 'ecom' | 'saas' | 'studio'
+  const [showDomainSwitcher, setShowDomainSwitcher] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState(null);
@@ -1163,6 +1166,71 @@ export default function Chat() {
                   <p className="text-[11px] text-slate-400 font-mono hidden sm:block">Zero-Copy In-Memory OLAP Sandbox</p>
                 </div>
               </div>
+
+              {/* 1-Click Domain Hub Switcher Pill */}
+              <div className="relative hidden md:block">
+                <button
+                  onClick={() => setShowDomainSwitcher(!showDomainSwitcher)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs font-mono transition-all text-slate-200"
+                >
+                  <span>{DOMAIN_PRESETS[activeDomainHub]?.icon}</span>
+                  <span className="font-semibold text-white">{DOMAIN_PRESETS[activeDomainHub]?.name}</span>
+                  <span className="text-[10px] text-sky-400 bg-sky-950/70 border border-sky-800/80 px-1.5 py-0.2 rounded">
+                    {DOMAIN_PRESETS[activeDomainHub]?.badge}
+                  </span>
+                  <span className="text-slate-400 text-[10px]">▼</span>
+                </button>
+
+                {showDomainSwitcher && (
+                  <div className="absolute top-full left-0 mt-2 w-72 bg-[#090D14] border border-slate-800 rounded-xl shadow-2xl p-2 z-50 space-y-1">
+                    <div className="text-[10px] uppercase font-mono tracking-wider text-slate-400 px-2 py-1">Active Domain Workspace</div>
+                    {Object.entries(DOMAIN_PRESETS).map(([key, domain]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setActiveDomainHub(key);
+                          setShowDomainSwitcher(false);
+                          // Auto-load instant demo dataset for selected domain hub
+                          const demoRows = domain.data;
+                          setDataset(demoRows);
+                          const profile = {
+                            filename: domain.datasetName,
+                            totalRows: demoRows.length,
+                            columns: Object.keys(demoRows[0] || {}),
+                            columnTypes: Object.keys(demoRows[0] || {}).reduce((acc, col) => {
+                              acc[col] = typeof demoRows[0][col] === 'number' ? 'numeric' : 'categorical';
+                              return acc;
+                            }, {}),
+                            fileSize: "64 KB",
+                            processedAt: new Date().toISOString()
+                          };
+                          setDatasetProfile(profile);
+                          try {
+                            const briefing = analyzeDatasetIntelligence(demoRows, profile.columns);
+                            setExecutiveBriefing(briefing);
+                          } catch (err) {
+                            console.error("Briefing error:", err);
+                          }
+                        }}
+                        className={`w-full text-left p-2.5 rounded-lg flex items-center justify-between text-xs transition-colors ${
+                          activeDomainHub === key 
+                            ? 'bg-sky-500/10 text-sky-400 border border-sky-500/30' 
+                            : 'text-slate-300 hover:bg-slate-900/80'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{domain.icon}</span>
+                          <div>
+                            <div className="font-semibold text-white">{domain.name}</div>
+                            <div className="text-[10px] text-slate-400 font-mono">{domain.datasetName}</div>
+                          </div>
+                        </div>
+                        {activeDomainHub === key && <span className="text-sky-400 font-mono text-xs">✓ Active</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -1326,20 +1394,79 @@ export default function Chat() {
                   className="hidden"
                 />
 
-                                  {/* 1-Click Instant Demo Presets */}
+                                  {/* 1-Click Instant Demo Presets for 3 Domain Hubs */}
                   <div className="flex flex-wrap items-center justify-center gap-2 mt-4 z-10">
-                    <span className="text-xs font-mono text-slate-400">⚡ Test with live demo data:</span>
+                    <span className="text-xs font-mono text-slate-400">⚡ Instant Domain Hubs:</span>
                     <button
-                      onClick={() => loadPresetDataset('amazon_fba')}
-                      className="px-3 py-1 bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 rounded-full text-xs font-mono transition-all flex items-center gap-1.5"
+                      onClick={() => {
+                        setActiveDomainHub('ecom');
+                        const demoRows = DOMAIN_PRESETS.ecom.data;
+                        setDataset(demoRows);
+                        const profile = {
+                          filename: DOMAIN_PRESETS.ecom.datasetName,
+                          totalRows: demoRows.length,
+                          columns: Object.keys(demoRows[0]),
+                          columnTypes: Object.keys(demoRows[0]).reduce((acc, col) => {
+                            acc[col] = typeof demoRows[0][col] === 'number' ? 'numeric' : 'categorical';
+                            return acc;
+                          }, {}),
+                          fileSize: "64 KB",
+                          processedAt: new Date().toISOString()
+                        };
+                        setDatasetProfile(profile);
+                        setExecutiveBriefing(analyzeDatasetIntelligence(demoRows, profile.columns));
+                      }}
+                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5 shadow-sm"
                     >
-                      <span>📦 Amazon FBA Store (₹18L GMV)</span>
+                      <span>🛒 E-Commerce &amp; Retail (₹18L GMV)</span>
                     </button>
+
                     <button
-                      onClick={() => loadPresetDataset('d2c_shopify')}
-                      className="px-3 py-1 bg-slate-900 hover:bg-slate-800 border border-sky-500/40 text-sky-300 rounded-full text-xs font-mono transition-all flex items-center gap-1.5"
+                      onClick={() => {
+                        setActiveDomainHub('saas');
+                        const demoRows = DOMAIN_PRESETS.saas.data;
+                        setDataset(demoRows);
+                        const profile = {
+                          filename: DOMAIN_PRESETS.saas.datasetName,
+                          totalRows: demoRows.length,
+                          columns: Object.keys(demoRows[0]),
+                          columnTypes: Object.keys(demoRows[0]).reduce((acc, col) => {
+                            acc[col] = typeof demoRows[0][col] === 'number' ? 'numeric' : 'categorical';
+                            return acc;
+                          }, {}),
+                          fileSize: "48 KB",
+                          processedAt: new Date().toISOString()
+                        };
+                        setDatasetProfile(profile);
+                        setExecutiveBriefing(analyzeDatasetIntelligence(demoRows, profile.columns));
+                      }}
+                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-sky-500/50 text-sky-300 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5 shadow-sm"
                     >
-                      <span>🛍️ Shopify D2C Brand (CAC vs LTV)</span>
+                      <span>📈 B2B SaaS &amp; Growth (NDR &amp; Churn)</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveDomainHub('studio');
+                        const demoRows = DOMAIN_PRESETS.studio.data;
+                        setDataset(demoRows);
+                        const profile = {
+                          filename: DOMAIN_PRESETS.studio.datasetName,
+                          totalRows: demoRows.length,
+                          columns: Object.keys(demoRows[0]),
+                          columnTypes: Object.keys(demoRows[0]).reduce((acc, col) => {
+                            acc[col] = typeof demoRows[0][col] === 'number' ? 'numeric' : 'categorical';
+                            return acc;
+                          }, {}),
+                          fileSize: "32 KB",
+                          processedAt: new Date().toISOString()
+                        };
+                        setDatasetProfile(profile);
+                        setExecutiveBriefing(analyzeDatasetIntelligence(demoRows, profile.columns));
+                      }}
+                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5 shadow-sm"
+                    >
+                      <span>⚡ Universal Studio (DuckDB OLAP)</span>
                     </button>
                   </div>
 

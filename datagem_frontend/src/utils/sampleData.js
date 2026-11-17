@@ -1,19 +1,74 @@
-export const SAMPLE_ECOMMERCE_DATA = [
-  { order_id: 1001, date: "2026-10-01", customer_segment: "Returning", sku: "HydroFlask-Steel", revenue: 45.0, ad_spend: 12.0, refunds: 0 },
-  { order_id: 1002, date: "2026-10-01", customer_segment: "New", sku: "EcoGrip-Mat", revenue: 78.0, ad_spend: 34.0, refunds: 0 },
-  { order_id: 1003, date: "2026-10-02", customer_segment: "New", sku: "PureSilk-SleepMask", revenue: 29.0, ad_spend: 18.5, refunds: 29.0 },
-  { order_id: 1004, date: "2026-10-02", customer_segment: "Returning", sku: "HydroFlask-Steel", revenue: 90.0, ad_spend: 8.0, refunds: 0 },
-  { order_id: 1005, date: "2026-10-03", customer_segment: "VIP", sku: "AeroPulse-Earbuds", revenue: 149.0, ad_spend: 25.0, refunds: 0 },
-  { order_id: 1006, date: "2026-10-03", customer_segment: "New", sku: "EcoGrip-Mat", revenue: 78.0, ad_spend: 38.0, refunds: 0 },
-  { order_id: 1007, date: "2026-10-04", customer_segment: "Returning", sku: "AeroPulse-Earbuds", revenue: 149.0, ad_spend: 15.0, refunds: 0 },
-  { order_id: 1008, date: "2026-10-04", customer_segment: "New", sku: "PureSilk-SleepMask", revenue: 29.0, ad_spend: 21.0, refunds: 0 },
-  { order_id: 1009, date: "2026-10-05", customer_segment: "VIP", sku: "HydroFlask-Steel", revenue: 135.0, ad_spend: 10.0, refunds: 0 },
-  { order_id: 1010, date: "2026-10-05", customer_segment: "New", sku: "EcoGrip-Mat", revenue: 78.0, ad_spend: 42.0, refunds: 78.0 }
-];
+export const DOMAIN_PRESETS = {
+  ecom: {
+    name: "E-Commerce & Retail",
+    badge: "Amazon FBA & D2C",
+    icon: "🛒",
+    datasetName: "amazon_in_settlement_ledger.csv",
+    description: "Amazon FBA Settlement & Returns Ledger (Oct-Nov 2026)",
+    prompts: [
+      "Find all weight-handling overcharges and calculate reclaimable clawbacks",
+      "Which SKUs are 'Hidden Bleeders' with negative net contribution margin (CM3)?",
+      "Plot daily GMV vs Return Freight losses across categories",
+      "Simulate a +5% price increase on SKU ELEC-W-EARBUDS vs projected demand"
+    ],
+    data: [
+      { order_id: "OD-4081-1", date: "2026-10-01", sku: "ELEC-W-EARBUDS", product_name: "Wireless ANC Earbuds", category: "Electronics", billed_weight_kg: 1.25, actual_weight_kg: 0.38, gross_sales: 2499.0, fba_fee: 142.0, return_freight: 0.0, status: "Delivered" },
+      { order_id: "OD-4081-2", date: "2026-10-01", sku: "FAST-CHARGER-65W", product_name: "GaN Fast Charger 65W", category: "Mobile Accessories", billed_weight_kg: 0.45, actual_weight_kg: 0.42, gross_sales: 1899.0, fba_fee: 64.0, return_freight: 0.0, status: "Delivered" },
+      { order_id: "OD-4081-3", date: "2026-10-02", sku: "ELEC-W-EARBUDS", product_name: "Wireless ANC Earbuds", category: "Electronics", billed_weight_kg: 1.25, actual_weight_kg: 0.38, gross_sales: 2499.0, fba_fee: 142.0, return_freight: 284.0, status: "Customer Return" },
+      { order_id: "OD-4081-4", date: "2026-10-03", sku: "MAG-POWERBANK-10K", product_name: "MagSafe PowerBank 10k", category: "Mobile Accessories", billed_weight_kg: 0.65, actual_weight_kg: 0.60, gross_sales: 3299.0, fba_fee: 86.0, return_freight: 0.0, status: "Delivered" },
+      { order_id: "OD-4081-5", date: "2026-10-04", sku: "ELEC-W-EARBUDS", product_name: "Wireless ANC Earbuds", category: "Electronics", billed_weight_kg: 1.25, actual_weight_kg: 0.38, gross_sales: 2499.0, fba_fee: 142.0, return_freight: 0.0, status: "Delivered" },
+      { order_id: "OD-4081-6", date: "2026-10-05", sku: "FAST-CHARGER-65W", product_name: "GaN Fast Charger 65W", category: "Mobile Accessories", billed_weight_kg: 0.45, actual_weight_kg: 0.42, gross_sales: 1899.0, fba_fee: 64.0, return_freight: 0.0, status: "Delivered" },
+      { order_id: "OD-4081-7", date: "2026-10-06", sku: "ELEC-W-EARBUDS", product_name: "Wireless ANC Earbuds", category: "Electronics", billed_weight_kg: 1.25, actual_weight_kg: 0.38, gross_sales: 2499.0, fba_fee: 142.0, return_freight: 284.0, status: "Customer Return" },
+      { order_id: "OD-4081-8", date: "2026-10-07", sku: "MAG-POWERBANK-10K", product_name: "MagSafe PowerBank 10k", category: "Mobile Accessories", billed_weight_kg: 0.65, actual_weight_kg: 0.60, gross_sales: 3299.0, fba_fee: 86.0, return_freight: 0.0, status: "Delivered" }
+    ]
+  },
 
-export const SAMPLE_PROMPTS = [
-  "Show net profit and blended ROAS by product SKU",
-  "Which customer segment generates the lowest refund rate?",
-  "Plot cumulative daily revenue vs total ad spend",
-  "Calculate repeat purchase rate and average order value (AOV)"
-];
+  saas: {
+    name: "B2B SaaS & Growth",
+    badge: "Stripe & Churn Metrics",
+    icon: "📈",
+    datasetName: "stripe_saas_metrics.csv",
+    description: "Subscription Churn, Expansion ARR & Customer Cohorts",
+    prompts: [
+      "Calculate Monthly Recurring Revenue (MRR) and Net Dollar Retention (NDR)",
+      "Which customer subscription tier has the highest churn rate?",
+      "Plot cohort retention over the last 6 billing cycles",
+      "Find customers with high usage but approaching contract renewal"
+    ],
+    data: [
+      { customer_id: "CUST-901", signup_date: "2026-05-12", plan: "Enterprise", mrr: 1200.0, seats: 24, status: "Active", ltv: 14400.0, churn_risk: "Low" },
+      { customer_id: "CUST-902", signup_date: "2026-06-01", plan: "Pro", mrr: 199.0, seats: 5, status: "Active", ltv: 1194.0, churn_risk: "Medium" },
+      { customer_id: "CUST-903", signup_date: "2026-06-15", plan: "Starter", mrr: 49.0, seats: 1, status: "Churned", ltv: 98.0, churn_risk: "High" },
+      { customer_id: "CUST-904", signup_date: "2026-07-20", plan: "Enterprise", mrr: 2400.0, seats: 50, status: "Active", ltv: 28800.0, churn_risk: "Low" },
+      { customer_id: "CUST-905", signup_date: "2026-08-05", plan: "Pro", mrr: 299.0, seats: 8, status: "Active", ltv: 2392.0, churn_risk: "Low" },
+      { customer_id: "CUST-906", signup_date: "2026-08-22", plan: "Starter", mrr: 49.0, seats: 1, status: "Active", ltv: 147.0, churn_risk: "Medium" },
+      { customer_id: "CUST-907", signup_date: "2026-09-10", plan: "Enterprise", mrr: 1800.0, seats: 35, status: "Active", ltv: 21600.0, churn_risk: "Low" },
+      { customer_id: "CUST-908", signup_date: "2026-09-28", plan: "Pro", mrr: 199.0, seats: 4, status: "Churned", ltv: 398.0, churn_risk: "High" }
+    ]
+  },
+
+  studio: {
+    name: "Universal Ad-Hoc Studio",
+    badge: "Vectorized DuckDB",
+    icon: "⚡",
+    datasetName: "global_demographics_sample.csv",
+    description: "Multivariate Statistical Ledger (Zero-Token OLAP)",
+    prompts: [
+      "Generate executive descriptive statistics and quartile distribution",
+      "Plot correlation heatmap between numeric dimensions",
+      "Detect statistical outliers beyond 2 standard deviations",
+      "Group aggregates by region and compute median values"
+    ],
+    data: [
+      { record_id: "REC-101", region: "North America", gdp_per_capita: 68000, tech_adoption_index: 88.5, population_millions: 375, urban_pct: 82.0 },
+      { record_id: "REC-102", region: "Europe", gdp_per_capita: 46000, tech_adoption_index: 82.1, population_millions: 448, urban_pct: 75.0 },
+      { record_id: "REC-103", region: "Asia Pacific", gdp_per_capita: 24000, tech_adoption_index: 79.4, population_millions: 2200, urban_pct: 54.0 },
+      { record_id: "REC-104", region: "Latin America", gdp_per_capita: 14500, tech_adoption_index: 64.2, population_millions: 660, urban_pct: 81.0 },
+      { record_id: "REC-105", region: "Middle East", gdp_per_capita: 31000, tech_adoption_index: 71.8, population_millions: 280, urban_pct: 70.0 },
+      { record_id: "REC-106", region: "Africa", gdp_per_capita: 6200, tech_adoption_index: 48.0, population_millions: 1400, urban_pct: 44.0 }
+    ]
+  }
+};
+
+export const SAMPLE_ECOMMERCE_DATA = DOMAIN_PRESETS.ecom.data;
+export const SAMPLE_PROMPTS = DOMAIN_PRESETS.ecom.prompts;
