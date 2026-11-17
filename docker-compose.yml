@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./datagem_backend
+      dockerfile: Dockerfile
+    container_name: datagem_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://datagem_user:datagem_secure_pwd_2026@postgres:5432/datagem_db
+      - SECRET_KEY=datagem_production_secret_key_executive_edition
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=43200
+      - ENVIRONMENT=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - parquet_data:/app/uploads/parquet_vault
+
+  frontend:
+    build:
+      context: ./datagem_frontend
+      dockerfile: Dockerfile
+    container_name: datagem_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: datagem_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: datagem_user
+      POSTGRES_PASSWORD: datagem_secure_pwd_2026
+      POSTGRES_DB: datagem_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U datagem_user -d datagem_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  parquet_data:
