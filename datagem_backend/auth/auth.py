@@ -126,6 +126,27 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+@router.post("/login", response_model=auth_models.Token)
+async def login_json(
+    credentials: auth_models.UserLogin, db: Session = Depends(database.get_db)
+):
+    """Log in a user via JSON body and return a JWT access token."""
+    user = crud.get_user_by_email(db, email=credentials.email)
+    
+    if not user or not security.verify_password(credentials.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
 @router.get("/me", response_model=auth_models.UserInDB)
 async def read_users_me(
     current_user: db_models.User = Depends(security.get_current_active_user),

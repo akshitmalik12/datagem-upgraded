@@ -1,0 +1,13 @@
+{
+  "uncaught_page_errors": [],
+  "console_errors": [
+    "[error] Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "[error] Login error: AxiosError"
+  ],
+  "failed_network_requests": [],
+  "http_status_errors": [
+    "POST http://127.0.0.1:8001/auth/login -> 401 Unauthorized"
+  ],
+  "ui_defects": [],
+  "behavioral_anomalies": []
+}

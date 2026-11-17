@@ -1,4 +1,14 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Ensure local .env is loaded regardless of working directory
+env_path = Path(__file__).resolve().parent.parent / '.env'
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+else:
+    load_dotenv()
+
 from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer

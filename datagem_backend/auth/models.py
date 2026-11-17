@@ -31,6 +31,13 @@ class UserCreate(UserBase):
     """
     password: str
 
+class UserLogin(BaseModel):
+    """
+    The shape of data expected when a user logs in via JSON.
+    """
+    email: EmailStr
+    password: str
+
 class UserInDB(UserBase):
     """
     The shape of user data we are *allowed* to send back to the client.

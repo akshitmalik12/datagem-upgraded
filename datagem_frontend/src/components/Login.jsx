@@ -20,10 +20,14 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(email, password);
-      navigate('/chat');
+      const result = await login(email, password);
+      if (result && result.success) {
+        navigate('/chat');
+      } else {
+        setError(result?.error || 'Invalid email or password. Please try again.');
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
+      setError(err.response?.data?.detail || err.message || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
