@@ -5,6 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Landing from './components/Landing';
+import SharedReportView from './components/SharedReportView';
 import Chat from './components/Chat';
 import About from './components/About';
 import DesignShowcase from './components/studio/DesignShowcase';
@@ -47,6 +48,7 @@ const AnimatedRoutes = () => {
         <Route path="/admin" element={<AdminRoute><PageWrapper><AdminDashboard /></PageWrapper></AdminRoute>} />
         <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
         <Route path="/pricing" element={<PageWrapper><Pricing /></PageWrapper>} />
+        <Route path="/shared/:token" element={<PageWrapper><SharedReportView /></PageWrapper>} />
         <Route path="/dashboard" element={<ProtectedRoute><PageWrapper><Dashboard /></PageWrapper></ProtectedRoute>} />
         <Route path="/data-health" element={<ProtectedRoute><PageWrapper><DataHealth /></PageWrapper></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><PageWrapper><Chat /></PageWrapper></ProtectedRoute>} />

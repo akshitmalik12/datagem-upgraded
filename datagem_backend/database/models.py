@@ -1,57 +1,88 @@
-from sqlalchemy import Date
-from sqlalchemy import Column
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Date, Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from datetime import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from .database import Base  # Import the "Base" blueprint from database.py
+from .database import Base
+
+class Organization(Base):
+    """
+    Company / Team Workspace for multi-user collaboration and RBAC.
+    """
+    __tablename__ = "organizations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    slug = Column(String, unique=True, index=True, nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    plan_tier = Column(String, default="enterprise", nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    members = relationship("WorkspaceMember", back_populates="organization", cascade="all, delete-orphan")
+    shared_charts = relationship("SharedReport", back_populates="organization", cascade="all, delete-orphan")
+
+class WorkspaceMember(Base):
+    """
+    Role-Based Access Control (RBAC):
+    - 'admin': Full access, billing, and connector management.
+    - 'analyst': Upload datasets, execute queries, and generate charts.
+    - 'viewer': Read-only access to shared dashboards and alerts.
+    """
+    __tablename__ = "workspace_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role = Column(String, default="analyst", nullable=False) # 'admin', 'analyst', 'viewer'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    organization = relationship("Organization", back_populates="members")
+    user = relationship("User")
+
+class SharedReport(Base):
+    """
+    Shareable public links and automated reporting snapshots.
+    """
+    __tablename__ = "shared_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    share_token = Column(String, unique=True, index=True, nullable=False)
+    title = Column(String, default="Executive E-Commerce Report")
+    summary_markdown = Column(Text, nullable=False)
+    chart_json = Column(Text, nullable=True)
+    password_hash = Column(String, nullable=True) # Optional password protection
+    is_public = Column(Boolean, default=True)
+    views_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    organization = relationship("Organization", back_populates="shared_charts")
+    creator = relationship("User")
 
 class User(Base):
-    """
-    This is the database table for a User.
-    It tells the database to create columns for:
-    - id: A unique number for each user (Primary Key)
-    - email: The user's email (must be unique)
-    - full_name: The user's full name (CAN be empty) <-- THIS IS THE FIX
-    - hashed_password: The user's scrambled password
-    """
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    full_name = Column(String, index=True, nullable=True) # <-- THIS LINE WAS ADDED
+    full_name = Column(String, index=True, nullable=True)
     hashed_password = Column(String, nullable=False)
-    tier = Column(String, default="free", nullable=False) # 'free', 'pro', 'enterprise'
+    tier = Column(String, default="free", nullable=False)
     message_count = Column(Integer, default=0, nullable=False)
     last_message_date = Column(Date, nullable=True)
     is_active = Column(Integer, default=1)
 
-    # This creates a "link" to the ChatHistory
-    # It tells SQL: "If you get a User, you can also get all
-    # their chat messages. If you delete a user, delete all
-    # their messages too."
     chat_history = relationship("ChatHistory", back_populates="owner", cascade="all, delete-orphan")
 
 class ChatHistory(Base):
-    """
-    This is the database table for a single chat message.
-    It tells the database to create columns for:
-    - id: A unique number for each message
-    - user_id: The ID of the user who this message belongs to (Foreign Key)
-    - role: Who sent the message ("user" or "model")
-    - content: The actual text of the message
-    - timestamp: The time the message was created (set automatically)
-    """
     __tablename__ = "chat_history"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     session_id = Column(String, index=True, nullable=False, default="default")
-    role = Column(String, nullable=False)  # "user" or "model"
+    role = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
-    # This creates the other side of the "link" back to the User
     owner = relationship("User", back_populates="chat_history")
 
 class PasswordReset(Base):
@@ -61,14 +92,13 @@ class PasswordReset(Base):
     otp = Column(String, nullable=False)
     expires_at = Column(DateTime, nullable=False)
 
-
 class SavedChart(Base):
     __tablename__ = "saved_charts"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     title = Column(String, default="Untitled Chart")
-    plotly_json = Column(String)  # We'll store the raw JSON string
+    plotly_json = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User")
