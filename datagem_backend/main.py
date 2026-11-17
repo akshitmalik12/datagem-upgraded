@@ -19,6 +19,7 @@ from routers import dashboard
 from routers import billing
 from routers import ecommerce
 from routers import enterprise
+from routers import profit_engine
 import data_import
 
 # Setup logging
@@ -123,6 +124,7 @@ app.include_router(data_import.router, prefix="/import", tags=["Data Import"])
 app.include_router(ecommerce.router, prefix="/ecommerce", tags=["E-Commerce Marketplaces"])
 app.include_router(ecommerce_connectors.router)
 app.include_router(enterprise.router)
+app.include_router(profit_engine.router)
 app.include_router(watchdog.router)
 app.include_router(setup_admin.router)
 
