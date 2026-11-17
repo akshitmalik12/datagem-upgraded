@@ -5,7 +5,7 @@ from email.mime.multipart import MIMEMultipart
 import random
 import string
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
@@ -20,7 +20,11 @@ from database.models import User
 router = APIRouter()
 
 @router.post("/signup", response_model=auth_models.UserInDB)
-def create_new_user(user: auth_models.UserCreate, db: Session = Depends(database.get_db)):
+def create_new_user(
+    user: auth_models.UserCreate, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(database.get_db)
+):
     """Create a new user account."""
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
@@ -29,7 +33,6 @@ def create_new_user(user: auth_models.UserCreate, db: Session = Depends(database
             detail="Email already registered",
         )
     
-    # --- THIS IS THE FIX ---
     # We scramble the password here, *before* sending it to crud.py
     hashed_password = security.get_password_hash(user.password)
     # Assign tier: promote primary owner/admins to enterprise tier automatically
@@ -41,16 +44,19 @@ def create_new_user(user: auth_models.UserCreate, db: Session = Depends(database
         full_name=user.full_name,
         tier=initial_tier
     )
-    # --- END FIX ---
     
     created_user = crud.create_user(db=db, user=db_user)
     
-    # Send a beautiful Welcome Email via the Dual-Engine (Resend / SMTP)
+    # Send non-blocking Welcome Email in background task (API returns in <50ms)
     try:
         from utils.email_utils import send_welcome_email
-        send_welcome_email(user_email=created_user.email, user_name=created_user.full_name or "Operator")
+        background_tasks.add_task(
+            send_welcome_email, 
+            user_email=created_user.email, 
+            user_name=created_user.full_name or "Operator"
+        )
     except Exception as e:
-        print(f"⚠️ Error triggering welcome email: {e}")
+        print(f"⚠️ Error scheduling background welcome email: {e}")
     
     return created_user
 
