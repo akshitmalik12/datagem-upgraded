@@ -136,6 +136,8 @@ async def chat_endpoint(
         # ✅ Return streaming response
         return StreamingResponse(event_stream(), media_type="text/plain")
 
+    except HTTPException:
+        raise
     except Exception as e:
         print("❌ Error in /chat endpoint:")
         traceback.print_exc()
