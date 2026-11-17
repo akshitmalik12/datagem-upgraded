@@ -669,8 +669,25 @@ IMPORTANT:
                                             logger.warning("Skipping duplicate tool call from event.candidates")
 
         except Exception as e:
+            error_str = str(e)
+            logger.error(f"Error calling LLM: {error_str}")
+            
+            # If Google API key is invalid/missing or quota exceeded, fall back seamlessly to local DuckDB execution
+            if "API key not valid" in error_str or "API_KEY_INVALID" in error_str or "quota" in error_str.lower() or not GEMINI_API_KEY or GEMINI_API_KEY == "demo_key":
+                if self.dataset and len(self.dataset) > 0:
+                    try:
+                        logger.info("Falling back to NativeAnalyticsEngine DuckDB execution due to API key error...")
+                        native_engine = NativeAnalyticsEngine(dataset=self.dataset)
+                        handled, response_md, _ = native_engine.execute_query(prompt)
+                        if handled and response_md:
+                            yield "\n[⚡ Seamlessly resolved via In-Memory DuckDB Engine (Offline Resilient Mode)]\n\n"
+                            yield response_md
+                            ai_response_content = response_md
+                            return
+                    except Exception as fallback_err:
+                        logger.warning(f"Fallback native execution error: {fallback_err}")
+
             error_msg = f"❌ Error generating response: {e}"
-            logger.error(error_msg)
             traceback.print_exc()
             yield f"\n{error_msg}\n"
             ai_response_content += error_msg

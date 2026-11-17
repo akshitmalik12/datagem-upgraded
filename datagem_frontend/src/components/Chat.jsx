@@ -79,8 +79,18 @@ export default function Chat() {
   const handleStop = () => { setLoading(false); /* Stop & Steer */ };
   const [persona, setPersona] = useState('enterprise');
   const [currentResponse, setCurrentResponse] = useState('');
-  const [dataset, setDataset] = useState(chatMemoryCache?.dataset || null);
-  const [datasetProfile, setDatasetProfile] = useState(chatMemoryCache?.datasetProfile || null);
+  const [dataset, setDataset] = useState(chatMemoryCache?.dataset || DOMAIN_PRESETS.ecom.data);
+  const [datasetProfile, setDatasetProfile] = useState(chatMemoryCache?.datasetProfile || {
+    filename: DOMAIN_PRESETS.ecom.datasetName,
+    totalRows: DOMAIN_PRESETS.ecom.data.length,
+    columns: Object.keys(DOMAIN_PRESETS.ecom.data[0] || {}),
+    columnTypes: Object.keys(DOMAIN_PRESETS.ecom.data[0] || {}).reduce((acc, col) => {
+      acc[col] = typeof DOMAIN_PRESETS.ecom.data[0][col] === 'number' ? 'numeric' : 'categorical';
+      return acc;
+    }, {}),
+    fileSize: "64 KB",
+    processedAt: new Date().toISOString()
+  });
   const [executiveBriefing, setExecutiveBriefing] = useState(null);
   const [activeDomainHub, setActiveDomainHub] = useState('ecom'); // 'ecom' | 'saas' | 'studio'
   const [showDomainSwitcher, setShowDomainSwitcher] = useState(false);

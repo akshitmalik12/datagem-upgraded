@@ -118,7 +118,8 @@ class NativeAnalyticsEngine:
             "return rate", "returns", "sku", "product", "trend", "chart", "plot", "histogram",
             "bar chart", "scatter", "overview", "kpi", "metrics", "describe", "head",
             "churn", "churned", "standard deviation", "std", "variance", "outlier", "anomal",
-            "margin", "cm3", "cm2", "cogs", "contribution", "filter", "where"
+            "margin", "cm3", "cm2", "cogs", "contribution", "filter", "where",
+            "weight", "overcharge", "reclaim", "dispute", "audit"
         ]
         
         return any(k in q for k in keywords)
@@ -153,8 +154,13 @@ class NativeAnalyticsEngine:
                 res = self._analyze_churn(q)
                 if res[0]: return res
 
-            # 5. E-Commerce Fee & Contribution Margin (CM3) Audit
-            if any(w in q for w in ["leakage", "fee", "fba", "commission", "payout", "settlement", "cm3", "contribution"]):
+            # 5. Weight Handling Overcharge & Reclaim Audit (Amazon / Flipkart / Logistics)
+            if any(w in q for w in ["weight", "overcharge", "reclaim", "dispute"]):
+                res = self._audit_weight_overcharges()
+                if res[0]: return res
+
+            # 5b. E-Commerce Fee & Contribution Margin (CM3) Audit
+            if any(w in q for w in ["leakage", "fee", "fba", "commission", "payout", "settlement", "cm3", "contribution", "audit"]):
                 res = self._audit_ecommerce_fees()
                 if res[0]: return res
 
@@ -489,6 +495,67 @@ class NativeAnalyticsEngine:
             md += f"> 🚨 **High Churn Alert:** Churn rate ({churn_rate:.2f}%) exceeds the 5-7% SaaS/Subscription benchmark. Review customer feedback and onboarding drop-offs.\n"
         else:
             md += f"> ✅ Churn rate ({churn_rate:.2f}%) is within healthy operational limits.\n"
+
+        return True, md, None
+
+    def _audit_weight_overcharges(self) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+        """Audits Amazon / Flipkart weight discrepancy overcharges and calculates reclaimable cash."""
+        billed_col = self._find_column(["billed_weight", "billed_weight_kg", "charged_weight", "portal_weight"])
+        actual_col = self._find_column(["actual_weight", "actual_weight_kg", "catalog_weight", "physical_weight"])
+        sku_col = self.semantic_map.get("product") or self._find_column(["sku", "product_name", "item", "title"])
+        order_col = self._find_column(["order_id", "order", "tracking", "id"])
+
+        if not billed_col or not actual_col:
+            # Fallback to general fee audit if weight columns not present
+            return self._audit_ecommerce_fees()
+
+        # Calculate weight delta in DuckDB
+        sql = f"""
+            SELECT 
+                COUNT(*) as total_orders,
+                SUM(CASE WHEN "{billed_col}" > "{actual_col}" THEN 1 ELSE 0 END) as overcharged_orders,
+                SUM(CASE WHEN "{billed_col}" > "{actual_col}" THEN ("{billed_col}" - "{actual_col}") ELSE 0 END) as total_weight_discrepancy_kg,
+                -- Industry standard weight slab overcharge: ~₹110 per excess 500g slab or proportional
+                SUM(CASE WHEN "{billed_col}" > "{actual_col}" 
+                         THEN ROUND(CEIL(("{billed_col}" - "{actual_col}") / 0.5) * 110.0, 2)
+                         ELSE 0.0 END) as reclaimable_cash
+            FROM df
+        """
+        stats = self.con.execute(sql).df().iloc[0]
+        total_orders = int(stats['total_orders'])
+        overcharged_orders = int(stats['overcharged_orders'])
+        excess_kg = float(stats['total_weight_discrepancy_kg'])
+        reclaimable_cash = float(stats['reclaimable_cash'])
+
+        # Detailed breakdown of overcharged SKUs
+        breakdown_sql = f"""
+            SELECT 
+                CAST("{order_col}" AS VARCHAR) as order_id,
+                CAST("{sku_col}" AS VARCHAR) as sku,
+                "{billed_col}" as billed_kg,
+                "{actual_col}" as actual_kg,
+                ROUND("{billed_col}" - "{actual_col}", 2) as excess_kg,
+                ROUND(CEIL(("{billed_col}" - "{actual_col}") / 0.5) * 110.0, 2) as reclaim_inr
+            FROM df
+            WHERE "{billed_col}" > "{actual_col}"
+            ORDER BY excess_kg DESC
+            LIMIT 5
+        """
+        breakdown_df = self.con.execute(breakdown_sql).df()
+
+        md = f"### ⚖️ Logistics & Marketplace Weight Overcharge Audit\n\n"
+        md += f"| Audit KPI | Value | Status |\n"
+        md += f"| :--- | :--- | :--- |\n"
+        md += f"| **Total Shipments Evaluated** | `{total_orders:,}` orders | Complete |\n"
+        md += f"| **Overcharged Shipments** | **`{overcharged_orders}` orders** | 🚨 Leakage Detected |\n"
+        md += f"| **Total Phantom Weight Billed** | **`{excess_kg:.2f} kg`** | Above Physical Catalog |\n"
+        md += f"| **Total Reclaimable Cash** | **₹{reclaimable_cash:,.2f}** | Ready for Dispute Ticket |\n\n"
+
+        if not breakdown_df.empty:
+            md += "#### Top Disputed Shipments (Overbilled Weight Bands):\n\n"
+            md += breakdown_df.to_markdown(index=False) + "\n\n"
+
+        md += f"> 💡 **Automated Dispute Action:** Click **'Draft Ticket'** or **'Claim'** next to any of these records in the CRM table to instantly generate an official Amazon / Flipkart dispute PDF docket with proof of dimensions.\n"
 
         return True, md, None
 
