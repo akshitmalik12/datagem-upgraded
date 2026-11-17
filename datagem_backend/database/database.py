@@ -1,22 +1,35 @@
 import os
+import logging
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-# 1. Look for a DATABASE_URL in environment variables (Supabase)
-# 2. If not found, fall back to the local SQLite database
+logger = logging.getLogger(__name__)
+
+# 1. Environment Database URL with Auto-Switching
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./datagem.db")
 
-# SQLAlchemy needs postgresql:// instead of postgres://
+# SQLAlchemy requires postgresql:// instead of postgres://
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Connect arguments: SQLite needs check_same_thread=False, Postgres doesn't
-connect_args = {"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {}
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args=connect_args
-)
+# 2. Connection Pooling & Configuration based on Engine Type
+if "postgresql" in SQLALCHEMY_DATABASE_URL or "postgres" in SQLALCHEMY_DATABASE_URL:
+    logger.info("Initializing PostgreSQL Connection Pool (Production Mode)")
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        pool_size=20,
+        max_overflow=10,
+        pool_timeout=30,
+        pool_recycle=1800,
+        pool_pre_ping=True
+    )
+else:
+    # Local SQLite Fallback with thread safety enabled
+    logger.info("Initializing SQLite Local Connection (Development Mode)")
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
