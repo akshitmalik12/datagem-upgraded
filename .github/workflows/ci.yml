@@ -44,13 +44,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: ./datagem_frontend/package-lock.json
 
       - name: Install Frontend Dependencies
         working-directory: ./datagem_frontend
         run: |
-          npm ci --legacy-peer-deps
+          npm install --legacy-peer-deps
 
       - name: Build Vite Production Bundle
         working-directory: ./datagem_frontend

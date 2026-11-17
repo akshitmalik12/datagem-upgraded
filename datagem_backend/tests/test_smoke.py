@@ -8,11 +8,29 @@ sys.path.insert(0, str(backend_root))
 
 from fastapi.testclient import TestClient
 from main import app
+from database.database import Base, engine, SessionLocal
+from database import models as db_models
 from auth import security
 
 class BackendSmokeTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        # Explicitly initialize database schema for tests
+        Base.metadata.create_all(bind=engine)
+        
+        # Provision test user in SQLite
+        with SessionLocal() as db:
+            existing = db.query(db_models.User).filter(db_models.User.email == "founder@company.com").first()
+            if not existing:
+                test_user = db_models.User(
+                    email="founder@company.com",
+                    hashed_password=security.get_password_hash("Password123!"),
+                    full_name="Founder",
+                    tier="enterprise"
+                )
+                db.add(test_user)
+                db.commit()
+
         cls.client = TestClient(app)
         # Generate valid mock JWT for auth-protected routes
         cls.token = security.create_access_token(data={"sub": "founder@company.com"})
