@@ -102,10 +102,10 @@ async def chat_endpoint(
             user.last_message_date = today
             db.commit()
             
-        # Check tier limits
-        tier_limits = {"free": 10, "pro": 100, "enterprise": 999999}
-        user_tier = getattr(user, 'tier', 'free').lower()
-        max_messages = tier_limits.get(user_tier, 10)
+        # Check tier limits (4-tier standard: starter, pro, operator, enterprise)
+        tier_limits = {"free": 15, "starter": 15, "pro": 150, "operator": 999999, "enterprise": 999999}
+        user_tier = getattr(user, 'tier', 'starter').lower()
+        max_messages = tier_limits.get(user_tier, 15)
         
         if user.message_count >= max_messages:
             raise HTTPException(status_code=429, detail=f"Daily message limit ({max_messages}) reached for {user_tier} tier. Please upgrade to continue.")

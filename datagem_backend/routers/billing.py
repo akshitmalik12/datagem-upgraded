@@ -27,24 +27,66 @@ def get_plans():
                 "name": "Starter Analyst",
                 "price_usd": 0,
                 "price_inr": 0,
-                "features": ["15 queries/day", "CSV / Excel / Sheets Connectors", "Standard Sandbox", "Community Support"],
-                "limits": {"daily_queries": 15}
+                "description": "For individual founders and solo operators exploring datasets.",
+                "features": [
+                    "15 Natural Language queries / day",
+                    "CSV & Excel upload support (up to 10MB)",
+                    "Instant Plotly interactive charts",
+                    "Standard execution sandbox",
+                    "Community support"
+                ],
+                "limits": {"daily_queries": 15, "max_file_size_mb": 10}
             },
             {
                 "id": "pro",
-                "name": "Pro Intelligence",
-                "price_usd": 15,
-                "price_inr": 1299,
-                "features": ["Unlimited DuckDB queries", "Amazon, Shopify, Flipkart, WooCommerce", "Autonomous Anomaly Watchdog", "Weekly Monday Briefing", "Audit Trail"],
-                "limits": {"daily_queries": 999999}
+                "name": "Pro Growth",
+                "price_usd": 29,
+                "price_inr": 2499,
+                "description": "For high-volume merchants needing unlimited queries and dispute filing.",
+                "features": [
+                    "Unlimited DuckDB OLAP queries",
+                    "100MB dataset file uploads",
+                    "Google Sheets & CSV live synchronization",
+                    "3 1-Click Amazon/Flipkart Dispute Filings / month",
+                    "Full Dynamic CM3 & Hidden Bleeder Ledger",
+                    "Email support (24h response)"
+                ],
+                "limits": {"daily_queries": 150, "max_file_size_mb": 100}
+            },
+            {
+                "id": "operator",
+                "name": "Autonomous Operator with Continuous Intelligence",
+                "price_usd": 99,
+                "price_inr": 7999,
+                "badge": "Flagship",
+                "description": "Hands-free continuous intelligence, scheduled briefings, and unlimited dispute recovery.",
+                "features": [
+                    "Everything in Pro Growth",
+                    "Unlimited 1-Click Amazon/Flipkart Dispute Claims & PDF export",
+                    "Automated Monday 8:00 AM CEO Watchdog Briefing",
+                    "Shopify, Amazon SP-API & Flipkart connectors",
+                    "Price Elasticity & Cash Contribution Simulator",
+                    "500MB dataset vault storage with Snappy Parquet",
+                    "Priority WhatsApp & Founder Support (3 Team Seats)"
+                ],
+                "limits": {"daily_queries": 999999, "max_file_size_mb": 500}
             },
             {
                 "id": "enterprise",
-                "name": "Enterprise Suite",
-                "price_usd": 49,
-                "price_inr": 3999,
-                "features": ["Multi-user Workspaces & RBAC", "Custom Cluster Compute", "Dedicated Solutions Engineer", "Shareable Public Links", "SLA Guarantee"],
-                "limits": {"daily_queries": 999999}
+                "name": "Enterprise Scale",
+                "price_usd": 299,
+                "price_inr": 24999,
+                "description": "For multi-brand aggregators and large data engineering teams.",
+                "features": [
+                    "Everything in Autonomous Operator",
+                    "5GB+ out-of-core Parquet & DuckDB processing",
+                    "Postgres, Snowflake, BigQuery & Supabase direct sync",
+                    "Custom Dedicated Sandbox Cluster compute",
+                    "Multi-user Workspaces & Role-Based Access Control (RBAC)",
+                    "Audit Trail Compliance Logging & SLA Guarantee",
+                    "Dedicated Solutions Engineer & Custom Normalizer"
+                ],
+                "limits": {"daily_queries": 999999, "max_file_size_mb": 5000}
             }
         ]
     }
@@ -186,21 +228,25 @@ def get_subscription_status(
 ):
     """Returns current user tier, capabilities, and quota limits."""
     tier = getattr(current_user, "tier", None) or getattr(current_user, "plan_tier", "starter")
-    is_pro_or_enterprise = tier.lower() in ["pro", "enterprise"]
+    tier_lower = tier.lower()
+    is_pro = tier_lower in ["pro", "operator", "enterprise"]
+    is_operator_or_higher = tier_lower in ["operator", "enterprise"]
     
     return {
         "user_email": current_user.email,
-        "tier": tier.lower(),
-        "is_pro": is_pro_or_enterprise,
+        "tier": tier_lower,
+        "is_pro": is_pro,
         "features": {
-            "clawback_auto_dispute": is_pro_or_enterprise,
-            "monday_watchdog_automation": is_pro_or_enterprise,
-            "unlimited_duckdb_queries": is_pro_or_enterprise,
-            "parquet_vault_export": tier.lower() == "enterprise",
-            "dedicated_audit_trail": tier.lower() == "enterprise"
+            "clawback_auto_dispute": is_pro,
+            "unlimited_disputes": is_operator_or_higher,
+            "monday_watchdog_automation": is_operator_or_higher,
+            "unlimited_duckdb_queries": is_pro,
+            "price_simulator": is_operator_or_higher,
+            "parquet_vault_export": tier_lower == "enterprise",
+            "dedicated_audit_trail": tier_lower == "enterprise"
         },
         "limits": {
-            "daily_queries": 999999 if is_pro_or_enterprise else 15,
-            "max_file_size_mb": 500 if tier.lower() == "enterprise" else (100 if is_pro_or_enterprise else 10)
+            "daily_queries": 999999 if is_operator_or_higher else (150 if is_pro else 15),
+            "max_file_size_mb": 5000 if tier_lower == "enterprise" else (500 if is_operator_or_higher else (100 if is_pro else 10))
         }
     }
