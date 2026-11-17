@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from typing import Optional, List, Dict, Any
 
 # =====================
 # This file defines the PYDANTIC models (data shapes) for the API
@@ -45,6 +46,8 @@ class UserInDB(UserBase):
     """
     id: int
     tier: str
+    is_admin: Optional[bool] = False
+    role: Optional[str] = "user"
     message_count: int = 0
 
     class Config:
