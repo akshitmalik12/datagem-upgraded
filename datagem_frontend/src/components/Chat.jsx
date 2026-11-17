@@ -42,6 +42,7 @@ import { Attachment01Icon, Globe02Icon, Message01Icon } from '@hugeicons/core-fr
 import { getProjects, saveProjects } from '../utils/chatHistory';
 import { DOMAIN_PRESETS } from '../utils/sampleData';
 import CRMStatsLedger from './CRMStatsLedger';
+import GuidedTourModal from './GuidedTourModal';
 
 // Global memory cache to persist chat state across page navigations
 let chatMemoryCache = null;
@@ -81,6 +82,8 @@ export default function Chat() {
   const [activeDomainHub, setActiveDomainHub] = useState('ecom'); // 'ecom' | 'saas' | 'studio'
   const [showDomainSwitcher, setShowDomainSwitcher] = useState(false);
   const [workspaceViewMode, setWorkspaceViewMode] = useState('split'); // 'split' | 'crm' | 'chat'
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [activeTourStep, setActiveTourStep] = useState(1);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState(null);
@@ -1303,6 +1306,17 @@ export default function Chat() {
                 <span>📄</span> Board Deck &amp; PDF
               </button>
               
+              <button
+                onClick={() => {
+                  setWorkspaceViewMode('split');
+                  setIsTourOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sky-400 hover:text-white bg-sky-950/60 hover:bg-sky-900/60 border border-sky-800 hover:border-sky-700 transition-colors whitespace-nowrap font-medium"
+                title="Interactive 3-Step Product Tour"
+              >
+                <span>⚡</span> Guided Tour
+              </button>
+              
               {/* View Layout Mode Switcher (Split CRM / Stats Ledger / Full Chat) */}
               <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-0.5 rounded-lg font-sans">
                 <button
@@ -1401,6 +1415,7 @@ export default function Chat() {
               <CRMStatsLedger
                 dataset={dataset}
                 activeDomain={activeDomainHub}
+                activeTourStep={isTourOpen ? activeTourStep : null}
                 onAskAI={(promptText) => {
                   setInput(promptText);
                   handleSendMessage(promptText);
@@ -2397,9 +2412,10 @@ export default function Chat() {
             <div ref={messagesEndRef} />
           </div>
         </div>
+        )}
 
         {/* Input Area - Fixed at Bottom */}
-        {/* Kinetic Floating Dock Input (Option 1) */}
+        {workspaceViewMode === 'chat' && (
         <div className="flex-shrink-0 bg-transparent py-4 px-6 z-30 relative">
           <div className="max-w-4xl mx-auto flex flex-col items-center">
             <PromptBar
@@ -2493,6 +2509,7 @@ export default function Chat() {
             )}
           </div>
         </div>
+        )}
       </div>
 
     </div>
@@ -2515,6 +2532,11 @@ export default function Chat() {
         onClose={() => setIsDeckModalOpen(false)} 
         dataset={dataset} 
         datasetProfile={datasetProfile} 
+      />
+      <GuidedTourModal
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onStepChange={(stepNumber) => setActiveTourStep(stepNumber)}
       />
     </>
   );

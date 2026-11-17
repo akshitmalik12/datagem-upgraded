@@ -20,6 +20,7 @@ export default function CRMStatsLedger({
   dataset, 
   onAskAI, 
   activeDomain = 'ecom', 
+  activeTourStep = null,
   onSimulatePrice, 
   onViewDispute 
 }) {
@@ -81,7 +82,9 @@ export default function CRMStatsLedger({
         </div>
 
         {/* 4 HIGH-IMPACT KPI STAT CARDS */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div id="tour-kpi-bar" className={`grid grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-300 ${
+          activeTourStep === 1 ? 'ring-2 ring-sky-400 p-2 rounded-2xl bg-sky-950/20 shadow-[0_0_25px_rgba(56,189,248,0.25)]' : ''
+        }`}>
           <div className="p-4 rounded-xl bg-[#05070A] border border-slate-800 hover:border-slate-700 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Sales (GMV)</span>
@@ -184,7 +187,9 @@ export default function CRMStatsLedger({
 
       {/* CRM DATA TABLE */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="bg-[#090D14] border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <div id="tour-crm-table" className={`bg-[#090D14] border rounded-xl overflow-hidden shadow-sm transition-all duration-300 ${
+          activeTourStep === 2 ? 'border-sky-400 ring-2 ring-sky-400 shadow-[0_0_25px_rgba(56,189,248,0.25)]' : 'border-slate-800'
+        }`}>
           <table className="w-full text-left text-xs border-collapse font-sans">
             <thead>
               <tr className="bg-slate-900/60 border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
@@ -260,15 +265,20 @@ export default function CRMStatsLedger({
                       <td className="px-5 py-3.5 text-right space-x-2">
                         <button
                           onClick={() => onAskAI(`Analyze profit contribution, commission leakage, and return rate for ${skuCode}`)}
-                          className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 text-sky-400 hover:text-white text-xs font-medium transition-all"
+                          className={`px-2.5 py-1 rounded border text-xs font-medium transition-all ${
+                            activeTourStep === 2 ? 'bg-sky-500 text-white border-sky-400 animate-pulse' : 'bg-slate-900 hover:bg-slate-800 border-slate-700 hover:border-sky-500 text-sky-400 hover:text-white'
+                          }`}
                         >
                           Ask AI Drilldown
                         </button>
 
                         {row.billed_weight_kg > row.actual_weight_kg && (
                           <button
+                            id="tour-dispute-action"
                             onClick={() => onAskAI(`Draft an Amazon Seller Support dispute ticket for SKU ${skuCode} with billed weight ${row.billed_weight_kg}kg vs actual weight ${row.actual_weight_kg}kg`)}
-                            className="px-2 py-1 rounded bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-400 text-xs font-semibold transition-colors"
+                            className={`px-2 py-1 rounded text-xs font-semibold transition-all ${
+                              activeTourStep === 3 ? 'bg-emerald-500 text-black border border-emerald-300 ring-2 ring-emerald-400 animate-pulse' : 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-400'
+                            }`}
                           >
                             Draft Ticket
                           </button>
