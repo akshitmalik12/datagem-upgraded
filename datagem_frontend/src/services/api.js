@@ -3,7 +3,7 @@ import axios from 'axios';
 // Dynamically resolve API URL with fallback
 const API_BASE_URL = import.meta.env.VITE_API_URL || (
   typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? 'https://datagem-back.onrender.com'
+    ? 'https://api-production-cf34820e.up.railway.app'
     : 'http://127.0.0.1:8001'
 );
 
