@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import GhostFibers from './GhostFibers';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -58,14 +59,14 @@ export default function Landing() {
       description: "Computes Gross Sales − COGS − Commissions − Returns − Gateway Fees = Net Cash. Identifies top sellers that are bleeding money."
     },
     {
-      icon: <Sliders className="w-5 h-5 text-purple-400" />,
-      accent: "from-purple-500/20 to-purple-500/0 border-purple-500/30",
+      icon: <Sliders className="w-5 h-5 text-sky-400" />,
+      accent: "from-sky-500/20 to-sky-500/0 border-sky-500/30",
       title: "Price Elasticity Simulator",
       description: "Interactive slider projecting how a +5% or -10% price change shifts customer demand and expands your net bankable profit."
     },
     {
-      icon: <Zap className="w-5 h-5 text-sky-400" />,
-      accent: "from-sky-500/20 to-sky-500/0 border-sky-500/30",
+      icon: <Zap className="w-5 h-5 text-emerald-400" />,
+      accent: "from-emerald-500/20 to-emerald-500/0 border-emerald-500/30",
       title: "In-Memory DuckDB Engine",
       description: "Processes hundreds of thousands of transactions in 42ms locally without hallucinating math or burning costly LLM tokens."
     }
@@ -83,22 +84,20 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-[#05070A] text-slate-100 font-sans tracking-tight selection:bg-emerald-500 selection:text-black relative overflow-hidden">
       
-      {/* Tri-Tone Ambient Glow: Purple, Deep Cyan-Blue & Emerald */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <motion.div 
-          animate={{ scale: [1, 1.2, 1], rotate: [0, 45, 0] }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-[15%] -left-[10%] w-[55vw] h-[55vw] rounded-full bg-purple-600/15 blur-[160px]" 
-        />
-        <motion.div 
-          animate={{ scale: [1, 1.15, 1], rotate: [0, -30, 0] }}
-          transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-          className="absolute top-[20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-sky-600/15 blur-[160px]" 
-        />
-        <motion.div 
-          animate={{ scale: [1, 1.25, 1], rotate: [0, -45, 0] }}
-          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-15%] left-[20%] w-[60vw] h-[60vw] rounded-full bg-emerald-600/12 blur-[170px]" 
+      {/* GhostFibers WebGL Interactive Background (Sky Blue + Emerald) */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-75">
+        <GhostFibers
+          glowColor="#0284c7"
+          lineColor="#34d399"
+          secondaryColor="#059669"
+          layers={3}
+          twist={1.2}
+          threads={72}
+          fiberStyle="dots"
+          depthOfField={0.85}
+          hoverEffect="focus"
+          intro={true}
+          mouseInteraction={true}
         />
       </div>
 
@@ -106,12 +105,12 @@ export default function Landing() {
       <nav className="relative z-50 border-b border-slate-800/80 bg-[#090D14]/80 backdrop-blur-xl px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 via-sky-500 to-emerald-400 p-[1px] shadow-lg shadow-purple-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 via-cyan-500 to-emerald-400 p-[1px] shadow-lg shadow-sky-500/20">
               <div className="w-full h-full bg-[#090D14] rounded-xl flex items-center justify-center text-white font-bold text-lg">
                 💎
               </div>
             </div>
-            <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-sky-300 to-emerald-400">
+            <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-400">
               DataGem
             </span>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-400 font-semibold ml-1">
@@ -120,7 +119,7 @@ export default function Landing() {
           </div>
 
           <div className="flex items-center gap-6">
-            <Link to="/about" className="text-sm font-medium text-slate-300 hover:text-purple-300 transition-colors">
+            <Link to="/about" className="text-sm font-medium text-slate-300 hover:text-sky-300 transition-colors">
               About &amp; Tech
             </Link>
             <Link to="/pricing" className="text-sm font-medium text-slate-300 hover:text-sky-300 transition-colors">
@@ -131,7 +130,7 @@ export default function Landing() {
             </Link>
             <Link 
               to="/signup" 
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 via-sky-600 to-emerald-600 hover:opacity-95 text-white text-xs font-semibold rounded-xl shadow-md shadow-sky-500/20 transition-all"
+              className="px-4 py-2 bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-600 hover:opacity-95 text-white text-xs font-semibold rounded-xl shadow-md shadow-sky-500/20 transition-all"
             >
               Start Free Audit →
             </Link>
@@ -157,7 +156,7 @@ export default function Landing() {
           className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white mb-6 leading-tight"
         >
           Recover lost margins. <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-sky-400 to-emerald-400">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-cyan-400 to-emerald-400">
             Uncover your true bankable cash.
           </span>
         </motion.h1>
@@ -174,7 +173,7 @@ export default function Landing() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
           <Link
             to="/signup"
-            className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-purple-600 via-sky-600 to-emerald-600 hover:opacity-95 text-white text-sm font-bold rounded-xl shadow-lg shadow-sky-600/25 transition-all flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-600 hover:opacity-95 text-white text-sm font-bold rounded-xl shadow-lg shadow-sky-600/25 transition-all flex items-center justify-center gap-2"
           >
             Start Analyzing Free <ArrowRight className="w-4 h-4" />
           </Link>
@@ -189,7 +188,7 @@ export default function Landing() {
         {/* Top Metric Tiles */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16 text-left">
           {sampleMetrics.map((m, i) => (
-            <div key={i} className="p-4 rounded-2xl bg-[#090D14] border border-slate-800/80 hover:border-sky-500/30 transition-colors">
+            <div key={i} className="p-4 rounded-2xl bg-[#090D14]/90 backdrop-blur-md border border-slate-800/80 hover:border-sky-500/30 transition-colors">
               <div className="text-[11px] font-mono text-slate-400">{m.label}</div>
               <div className="text-xl font-extrabold text-white mt-1">{m.value}</div>
               <div className="flex items-center justify-between mt-1.5">
@@ -205,13 +204,13 @@ export default function Landing() {
       <section id="interactive-demo" className="relative z-10 py-16 px-6 max-w-6xl mx-auto space-y-12">
         
         {/* INTERACTIVE PRICE ELASTICITY SIMULATOR */}
-        <div className="p-8 rounded-3xl bg-[#090D14] border border-purple-500/30 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 via-sky-500 to-emerald-400" />
+        <div className="p-8 rounded-3xl bg-[#090D14]/90 backdrop-blur-md border border-sky-500/30 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-400" />
           
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8 pb-6 border-b border-slate-800">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-950/80 border border-purple-800 text-purple-300 text-xs font-mono mb-2">
-                <Sliders className="w-3.5 h-3.5 text-purple-400" /> Interactive Feature #1
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-950/80 border border-sky-800 text-sky-300 text-xs font-mono mb-2">
+                <Sliders className="w-3.5 h-3.5 text-sky-400" /> Interactive Feature #1
               </div>
               <h2 className="text-2xl font-bold text-white">Live Price Elasticity &amp; Profit Simulator</h2>
               <p className="text-xs text-slate-400 mt-1">Adjust the price on SKU-A to see how demand changes and what hits your net bankable cash.</p>
@@ -240,7 +239,7 @@ export default function Landing() {
                   step="1"
                   value={sliderPercent} 
                   onChange={(e) => setSliderPercent(Number(e.target.value))}
-                  className="w-full accent-purple-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
+                  className="w-full accent-sky-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
                 />
                 <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
                   <span>-20% Discount</span>
@@ -266,9 +265,9 @@ export default function Landing() {
             </div>
 
             {/* Projected Impact Card */}
-            <div className="lg:col-span-7 p-6 rounded-2xl bg-gradient-to-br from-purple-950/40 via-slate-900 to-[#05070A] border border-purple-500/40">
+            <div className="lg:col-span-7 p-6 rounded-2xl bg-gradient-to-br from-sky-950/40 via-slate-900 to-[#05070A] border border-sky-500/40">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono uppercase tracking-wider text-purple-300 font-bold">DuckDB Projected Impact</span>
+                <span className="text-xs font-mono uppercase tracking-wider text-sky-300 font-bold">DuckDB Projected Impact</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
                   Sub-50ms Vectorized
                 </span>
@@ -283,7 +282,7 @@ export default function Landing() {
                 </div>
                 <div>
                   <span className="text-[11px] font-mono text-slate-400">Annualized Bankable Cash</span>
-                  <div className={`text-2xl font-extrabold mt-1 font-mono ${profitDelta >= 0 ? 'text-purple-300' : 'text-slate-400'}`}>
+                  <div className={`text-2xl font-extrabold mt-1 font-mono ${profitDelta >= 0 ? 'text-sky-300' : 'text-slate-400'}`}>
                     {profitDelta >= 0 ? '+' : ''}₹{Math.round(profitDelta * 12).toLocaleString()}
                   </div>
                 </div>
@@ -305,7 +304,7 @@ export default function Landing() {
         </div>
 
         {/* FEATURE 2: TRUE CONTRIBUTION MARGIN (CM3) & HIDDEN BLEEDERS */}
-        <div className="p-8 rounded-3xl bg-[#090D14] border border-rose-500/30 shadow-2xl relative overflow-hidden">
+        <div className="p-8 rounded-3xl bg-[#090D14]/90 backdrop-blur-md border border-rose-500/30 shadow-2xl relative overflow-hidden">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-950/80 border border-rose-800 text-rose-300 text-xs font-mono mb-2">
@@ -366,7 +365,7 @@ export default function Landing() {
         </div>
 
         {/* FEATURE 3: AUTONOMOUS CLAWBACK DISPUTE ENGINE */}
-        <div className="p-8 rounded-3xl bg-[#090D14] border border-emerald-500/30 shadow-2xl relative overflow-hidden">
+        <div className="p-8 rounded-3xl bg-[#090D14]/90 backdrop-blur-md border border-emerald-500/30 shadow-2xl relative overflow-hidden">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-xs font-mono mb-2">
@@ -421,7 +420,7 @@ export default function Landing() {
           <p className="text-sm text-slate-400 mt-2">Tools that literally pay for themselves on Day 1.</p>
         </div>
 
-        <div className="bg-[#090D14] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="bg-[#090D14]/90 backdrop-blur-md border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -449,15 +448,15 @@ export default function Landing() {
 
       {/* Conversion Banner */}
       <section className="relative z-10 py-16 px-6 max-w-4xl mx-auto text-center">
-        <div className="p-10 rounded-3xl bg-gradient-to-br from-purple-950/40 via-sky-950/30 to-emerald-950/20 border border-slate-800 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 via-sky-500 to-emerald-400" />
+        <div className="p-10 rounded-3xl bg-gradient-to-br from-sky-950/40 via-slate-900 to-emerald-950/20 border border-slate-800 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-400" />
           <h2 className="text-3xl font-bold text-white mb-4">Start Auditing Your E-Commerce Data Today</h2>
           <p className="text-sm text-slate-300 max-w-lg mx-auto mb-8">
             Deploy DataGem in under 60 seconds. Unlock clear insights into true product margins and fee leakages.
           </p>
           <Link
             to="/signup"
-            className="px-8 py-3.5 bg-gradient-to-r from-purple-600 via-sky-600 to-emerald-600 hover:opacity-95 text-white text-sm font-bold rounded-xl shadow-lg shadow-sky-600/30 transition-all inline-block"
+            className="px-8 py-3.5 bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-600 hover:opacity-95 text-white text-sm font-bold rounded-xl shadow-lg shadow-sky-600/30 transition-all inline-block"
           >
             Create Free Account →
           </Link>
