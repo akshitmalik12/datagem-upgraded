@@ -925,6 +925,49 @@ export default function Chat() {
     }
   };
 
+  const handleSendMessage = async (text) => {
+    if (!text || !text.trim() || loading) return;
+    const userMessage = { role: 'user', content: text };
+    setMessages((prev) => [...prev, userMessage]);
+    setLoading(true);
+    setCurrentResponse('');
+    setExecutionStep(1);
+
+    try {
+      const streamDataset = dataset;
+      const activeSession = sessions.find(s => s.id === currentSessionId);
+      const streamDatasetPath = activeSession ? activeSession.datasetPath : null;
+
+      const reader = await chatAPI.streamChat(text, null, streamDataset, streamDatasetPath, isConnected ? connectionString : null, currentSessionId || "default");
+      if (!reader) throw new Error('Failed to get response stream');
+      const decoder = new TextDecoder();
+      const streamReader = typeof reader.getReader === 'function' ? reader.getReader() : reader;
+      let accumulated = '';
+      while (true) {
+        const { done, value } = await streamReader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        accumulated += chunk;
+        setCurrentResponse(accumulated);
+      }
+      const parsed = parseResponse(accumulated);
+      setMessages((prev) => [...prev, { 
+        role: 'assistant', 
+        content: parsed.text,
+        plots: parsed.plots,
+        code: parsed.code,
+        outputs: parsed.outputs
+      }]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      setMessages((prev) => [...prev, { role: 'assistant', content: `⚠️ Error executing query: ${err.message || 'Stream error'}` }]);
+    } finally {
+      setCurrentResponse('');
+      setLoading(false);
+      setExecutionStep(null);
+    }
+  };
+
   return (
     <>
     <AnimatePresence>
