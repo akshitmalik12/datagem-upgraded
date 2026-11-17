@@ -31,6 +31,32 @@ async def lifespan(app: FastAPI):
         logger.info("Initializing database schema...")
         db_models.Base.metadata.create_all(bind=engine)
         logger.info("Database schema initialized successfully.")
+
+        # Ensure primary admin accounts are provisioned and set to enterprise tier
+        with database.SessionLocal() as db:
+            from auth import security
+            admins = [
+                ("aakshitmalik@gmail.com", "fashion1@CARE", "Akshit Malik"),
+                ("founder@company.com", "Password123!", "Founder")
+            ]
+            for email, raw_pass, name in admins:
+                existing = db.query(db_models.User).filter(db_models.User.email == email).first()
+                if not existing:
+                    hashed = security.get_password_hash(raw_pass)
+                    new_admin = db_models.User(
+                        email=email,
+                        hashed_password=hashed,
+                        full_name=name,
+                        tier="enterprise"
+                    )
+                    db.add(new_admin)
+                    db.commit()
+                    logger.info(f"Provisioned new admin account: {email} (enterprise)")
+                else:
+                    if existing.tier.lower() != "enterprise":
+                        existing.tier = "enterprise"
+                        db.commit()
+                        logger.info(f"Updated {email} tier to enterprise")
     except Exception as e:
         logger.error(f"Non-fatal database connection warning during startup: {e}. Running in resilient mode.")
     yield
