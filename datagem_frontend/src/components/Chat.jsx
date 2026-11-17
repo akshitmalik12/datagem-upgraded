@@ -41,6 +41,7 @@ import BranchedMenu from './BranchedMenu';
 import { Attachment01Icon, Globe02Icon, Message01Icon } from '@hugeicons/core-free-icons';
 import { getProjects, saveProjects } from '../utils/chatHistory';
 import { DOMAIN_PRESETS } from '../utils/sampleData';
+import CRMStatsLedger from './CRMStatsLedger';
 
 // Global memory cache to persist chat state across page navigations
 let chatMemoryCache = null;
@@ -79,6 +80,7 @@ export default function Chat() {
   const [executiveBriefing, setExecutiveBriefing] = useState(null);
   const [activeDomainHub, setActiveDomainHub] = useState('ecom'); // 'ecom' | 'saas' | 'studio'
   const [showDomainSwitcher, setShowDomainSwitcher] = useState(false);
+  const [workspaceViewMode, setWorkspaceViewMode] = useState('split'); // 'split' | 'crm' | 'chat'
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState(null);
@@ -1301,6 +1303,37 @@ export default function Chat() {
                 <span>📄</span> Board Deck &amp; PDF
               </button>
               
+              {/* View Layout Mode Switcher (Split CRM / Stats Ledger / Full Chat) */}
+              <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-0.5 rounded-lg font-sans">
+                <button
+                  onClick={() => setWorkspaceViewMode('split')}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                    workspaceViewMode === 'split' ? 'bg-sky-500/20 text-sky-400 font-bold border border-sky-500/30' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="CRM Stats & AI Co-Pilot Split View"
+                >
+                  ⚡ CRM + AI Split
+                </button>
+                <button
+                  onClick={() => setWorkspaceViewMode('crm')}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                    workspaceViewMode === 'crm' ? 'bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="Full-Screen CRM Ledger"
+                >
+                  📊 Full CRM Ledger
+                </button>
+                <button
+                  onClick={() => setWorkspaceViewMode('chat')}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                    workspaceViewMode === 'chat' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="Full-Screen AI Chat"
+                >
+                  💬 Full Chat
+                </button>
+              </div>
+
               {(user?.tier?.toLowerCase() === 'enterprise' || 
                 user?.email?.toLowerCase() === 'aakshitmalik@gmail.com' ||
                 user?.email?.toLowerCase() === 'founder@company.com') && (
@@ -1349,7 +1382,116 @@ export default function Chat() {
           </div>
         </motion.header>
 
-        {/* Messages Area - Scrollable */}
+        {/* WORKSPACE CONTENT AREA (SPLIT CRM OR FULL VIEW) */}
+        {workspaceViewMode === 'crm' ? (
+          <CRMStatsLedger
+            dataset={dataset}
+            activeDomain={activeDomainHub}
+            onAskAI={(promptText) => {
+              setWorkspaceViewMode('split');
+              setInput(promptText);
+              // Submit prompt
+              handleSendMessage(promptText);
+            }}
+          />
+        ) : workspaceViewMode === 'split' ? (
+          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 font-sans">
+            {/* Left 60%: High Density CRM Ledger & Stats */}
+            <div className="flex-1 lg:w-[60%] flex flex-col border-r border-slate-800/80 overflow-hidden">
+              <CRMStatsLedger
+                dataset={dataset}
+                activeDomain={activeDomainHub}
+                onAskAI={(promptText) => {
+                  setInput(promptText);
+                  handleSendMessage(promptText);
+                }}
+              />
+            </div>
+
+            {/* Right 40%: Persistent AI Co-Pilot Chat Rail */}
+            <div className="lg:w-[40%] flex flex-col bg-[#070A10] overflow-hidden min-h-0 relative">
+              <div className="p-3 border-b border-slate-800/80 bg-[#090D14] flex items-center justify-between text-xs font-sans">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="font-semibold text-white">DataGem Co-Pilot Rail</span>
+                  <span className="text-[10px] text-slate-400 font-mono">0 Tokens / DuckDB</span>
+                </div>
+                <button
+                  onClick={() => setWorkspaceViewMode('chat')}
+                  className="text-slate-400 hover:text-white text-[11px] font-sans"
+                  title="Expand to Full Screen"
+                >
+                  Expand ↗
+                </button>
+              </div>
+
+              {/* Chat Messages inside Split Rail */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ scrollBehavior: 'smooth' }}>
+                {messages.length === 0 ? (
+                  <div className="py-12 text-center text-slate-500 text-xs font-sans space-y-3">
+                    <div className="text-3xl">💎</div>
+                    <p className="text-slate-400 font-medium">Click any row in the CRM table to run an instant AI audit.</p>
+                    <div className="flex flex-col gap-1.5 max-w-xs mx-auto">
+                      <button
+                        onClick={() => handleSendMessage("Audit all weight handling overcharges and calculate reclaimable cash")}
+                        className="p-2 text-left bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-[11px] text-slate-300 transition-colors"
+                      >
+                        ⚡ "Find weight overcharges on Amazon"
+                      </button>
+                      <button
+                        onClick={() => handleSendMessage("Which SKUs are bleeding net cash after accounting for returns and commissions?")}
+                        className="p-2 text-left bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-[11px] text-slate-300 transition-colors"
+                      >
+                        📉 "Identify my top 3 Hidden Bleeders"
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  messages.map((message, index) => (
+                    <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} text-xs font-sans`}>
+                      <div className={`max-w-[85%] rounded-xl p-3.5 ${
+                        message.role === 'user' ? 'bg-[#0B1524] text-sky-100 border border-sky-500/40' : 'bg-[#090D14] text-slate-200 border border-slate-800'
+                      }`}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Bottom Prompt Bar inside Rail */}
+              <div className="p-3 border-t border-slate-800/80 bg-[#090D14]">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!input.trim() || loading) return;
+                    handleSendMessage(input);
+                    setInput('');
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    placeholder="Ask co-pilot about any row, SKU, or metric..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    className="flex-1 px-3 py-2 text-xs bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 font-sans"
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || !input.trim()}
+                    className="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold font-sans disabled:opacity-50 transition-colors"
+                  >
+                    Send
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        ) : (
+        /* Full-screen Chat Mode */
         <div className="flex-1 overflow-y-auto px-8 py-12 transition-colors min-h-0" style={{ scrollBehavior: 'smooth' }}>
           <div className="max-w-7xl mx-auto pb-8">
             {copiedMessageIndex !== null && (
