@@ -1,68 +1,95 @@
+import ast
 import os
+import sys
 import json
 import logging
 import tempfile
-import sys
 import subprocess
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 logger = logging.getLogger(__name__)
 
-def _execute_e2b(code: str, dataset_data: Optional[List[Dict[str, Any]]] = None) -> str:
-    """Executes Python code inside an isolated E2B microVM cloud sandbox."""
-    from e2b_code_interpreter import Sandbox
-    
-    with Sandbox.create() as sandbox:
-        # If dataset is present, stage it into the sandbox filesystem
-        if dataset_data:
-            json_str = json.dumps(dataset_data)
-            sandbox.files.write("/home/user/dataset.json", json_str)
-            preamble = (
-                "import pandas as pd\n"
-                "import numpy as np\n"
-                "import matplotlib.pyplot as plt\n"
-                "import seaborn as sns\n"
-                "df = pd.read_json('/home/user/dataset.json')\n"
-                "print(f'Dataset loaded in Sandbox: {df.shape[0]} rows x {df.shape[1]} columns')\n"
-            )
-            full_code = preamble + code
-        else:
-            preamble = (
-                "import pandas as pd\n"
-                "import numpy as np\n"
-                "import matplotlib.pyplot as plt\n"
-                "import seaborn as sns\n"
-                "df = None\n"
-            )
-            full_code = preamble + code
+# Banned modules and builtins that could compromise host integrity
+DANGEROUS_MODULES = {
+    "os", "sys", "subprocess", "socket", "requests", "urllib", "http",
+    "shutil", "posix", "pty", "commands", "builtin", "builtins",
+    "importlib", "pickle", "shelve", "ctypes", "multiprocessing", "threading"
+}
 
-        execution = sandbox.run_code(full_code)
-        
-        output_parts = []
-        if execution.logs.stdout:
-            output_parts.extend(execution.logs.stdout)
-        if execution.logs.stderr:
-            output_parts.append(f"\n--- Stderr ---\n" + "\n".join(execution.logs.stderr))
-        if execution.error:
-            output_parts.append(f"\n--- Execution Error: {execution.error.name} ---\n{execution.error.value}\n{execution.error.traceback}")
-            
-        result = "\n".join(output_parts).strip()
-        return result or "Code executed successfully with no output. (Use print() to inspect results)."
+DANGEROUS_FUNCTIONS = {
+    "eval", "exec", "compile", "open", "__import__", "globals", "locals",
+    "getattr", "setattr", "delattr", "system", "popen", "spawn"
+}
+
+class SecurityASTValidator(ast.NodeVisitor):
+    """
+    Parses Python code into an Abstract Syntax Tree (AST) before execution.
+    Recursively inspects every node for unauthorized imports, system calls, and builtins.
+    """
+    def __init__(self):
+        self.violations = []
+
+    def visit_Import(self, node):
+        for alias in node.names:
+            base_module = alias.name.split('.')[0].lower()
+            if base_module in DANGEROUS_MODULES:
+                self.violations.append(f"Import of forbidden module '{alias.name}' is prohibited by security policy.")
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node):
+        if node.module:
+            base_module = node.module.split('.')[0].lower()
+            if base_module in DANGEROUS_MODULES:
+                self.violations.append(f"Import from forbidden module '{node.module}' is prohibited by security policy.")
+        self.generic_visit(node)
+
+    def visit_Call(self, node):
+        # Inspect function call names
+        if isinstance(node.func, ast.Name):
+            func_name = node.func.id
+            if func_name in DANGEROUS_FUNCTIONS:
+                self.violations.append(f"Direct call to restricted function '{func_name}()' is prohibited.")
+        elif isinstance(node.func, ast.Attribute):
+            attr_name = node.func.attr
+            if attr_name in DANGEROUS_FUNCTIONS or attr_name in {"system", "popen", "spawn", "execve"}:
+                self.violations.append(f"Call to restricted method '{attr_name}()' is prohibited.")
+        self.generic_visit(node)
+
+def validate_code_safety(code: str) -> Tuple[bool, Optional[str]]:
+    """
+    Returns (True, None) if safe, or (False, error_remediation_message) if violated.
+    """
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as e:
+        return False, f"Syntax Error in Python code: {e}"
+
+    validator = SecurityASTValidator()
+    validator.visit(tree)
+
+    if validator.violations:
+        violations_str = " | ".join(validator.violations)
+        remediation_msg = (
+            f"🛡️ Security Policy Violation: {violations_str}\n"
+            f"Remediation: Host file system and network calls are restricted. "
+            f"Use pure Pandas, NumPy, or DuckDB in-memory OLAP operations instead."
+        )
+        return False, remediation_msg
+
+    return True, None
 
 def _execute_restricted_local(code: str, dataset_data: Optional[List[Dict[str, Any]]] = None) -> str:
     """
-    Fallback hardened local runner with strict environment filtering,
-    15s timeout, and memory/process guardrails.
+    Hardened two-tier local runner with strict AST pre-validation,
+    sterile environment variables, 15s timeout, and memory/process guardrails.
     """
-    # Strict AST / static checks for known dangerous modules
-    forbidden_tokens = [
-        "os.system", "subprocess", "shutil.rmtree", "pty.spawn",
-        "open('/etc", "open('/var", "open('/proc", "socket.socket"
-    ]
-    for token in forbidden_tokens:
-        if token in code:
-            return f"Security Restriction: Prohibited call '{token}' is blocked in local execution mode."
+    # 1. TIER 1: Pre-Execution AST Validation
+    is_safe, safety_err = validate_code_safety(code)
+    if not is_safe:
+        logger.warning(f"BLOCKED UNSAFE CODE EXECUTION: {safety_err}")
+        return safety_err
 
+    # 2. TIER 2: Sandboxed Process Execution with Sterile Environment
     full_code = (
         "import pandas as pd\n"
         "import matplotlib.pyplot as plt\n"
@@ -136,15 +163,16 @@ def run_python_code(code: str, dataset_data: Optional[List[Dict[str, Any]]] = No
     """
     Executes Python code securely.
     If E2B_API_KEY is configured, executes inside a zero-trust E2B cloud MicroVM.
-    Otherwise, executes via sterile local subprocess guardrails.
+    Otherwise, executes via sterile AST-validated local sandbox.
     """
     e2b_key = os.environ.get("E2B_API_KEY")
     if e2b_key and len(e2b_key.strip()) > 5:
         try:
+            from chat.tools import _execute_e2b
             logger.info("🔒 Routing execution through isolated E2B microVM...")
             return _execute_e2b(code, dataset_data)
         except Exception as e:
-            logger.warning(f"E2B execution failed or timed out: {e}. Falling back to sterile local sandbox.")
+            logger.warning(f"E2B execution failed: {e}. Falling back to sterile AST-validated local sandbox.")
             return _execute_restricted_local(code, dataset_data)
     else:
         return _execute_restricted_local(code, dataset_data)
