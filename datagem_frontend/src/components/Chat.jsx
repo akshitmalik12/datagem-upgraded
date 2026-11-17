@@ -43,6 +43,7 @@ import { getProjects, saveProjects } from '../utils/chatHistory';
 import { DOMAIN_PRESETS } from '../utils/sampleData';
 import CRMStatsLedger from './CRMStatsLedger';
 import GuidedTourModal from './GuidedTourModal';
+import DisputeTicketModal from './DisputeTicketModal';
 
 // Global memory cache to persist chat state across page navigations
 let chatMemoryCache = null;
@@ -69,6 +70,8 @@ export default function Chat() {
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [isConnectorsModalOpen, setIsConnectorsModalOpen] = useState(false);
   const [isWatchdogModalOpen, setIsWatchdogModalOpen] = useState(false);
+  const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
+  const [disputeModalData, setDisputeModalData] = useState(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [thoughtsOpen, setThoughtsOpen] = useState(false);
@@ -1401,6 +1404,14 @@ export default function Chat() {
           <CRMStatsLedger
             dataset={dataset}
             activeDomain={activeDomainHub}
+            onIngestFile={(newRows, filename) => {
+              setDataset(newRows);
+              setDatasetFilename(filename);
+            }}
+            onViewDispute={(row) => {
+              setDisputeModalData(row);
+              setIsDisputeModalOpen(true);
+            }}
             onAskAI={(promptText) => {
               setWorkspaceViewMode('split');
               setInput(promptText);
@@ -1416,6 +1427,14 @@ export default function Chat() {
                 dataset={dataset}
                 activeDomain={activeDomainHub}
                 activeTourStep={isTourOpen ? activeTourStep : null}
+                onIngestFile={(newRows, filename) => {
+                  setDataset(newRows);
+                  setDatasetFilename(filename);
+                }}
+                onViewDispute={(row) => {
+                  setDisputeModalData(row);
+                  setIsDisputeModalOpen(true);
+                }}
                 onAskAI={(promptText) => {
                   setInput(promptText);
                   handleSendMessage(promptText);
@@ -2537,6 +2556,11 @@ export default function Chat() {
         isOpen={isTourOpen}
         onClose={() => setIsTourOpen(false)}
         onStepChange={(stepNumber) => setActiveTourStep(stepNumber)}
+      />
+      <DisputeTicketModal
+        isOpen={isDisputeModalOpen}
+        onClose={() => setIsDisputeModalOpen(false)}
+        disputeData={disputeModalData}
       />
     </>
   );
