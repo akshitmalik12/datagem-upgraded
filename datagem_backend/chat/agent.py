@@ -479,12 +479,39 @@ Be helpful, thorough, and always provide value with comprehensive summaries incl
     query_cache = {} # Static class-level cache
 
     async def stream_response(self, prompt: str, image: Image | None = None, max_iterations: int = 10):
-        # --- CACHING LOGIC ---
+        # 1. Primary Strategy: Autonomous Zero-Cost Native Engine (DuckDB + Pandas + Plotly)
+        # Evaluated BEFORE any LLM call or cache to guarantee instant, token-free, deterministic execution
+        if self.dataset and len(self.dataset) > 0:
+            try:
+                native_engine = NativeAnalyticsEngine(dataset=self.dataset)
+                if native_engine.is_analytical_query(prompt):
+                    handled, response_md, chart = native_engine.execute_query(prompt)
+                    if handled and response_md:
+                        logger.info(f"Query answered 100% locally by NativeAnalyticsEngine without LLM: {prompt[:50]}")
+                        yield "[⚡ Executed via DuckDB In-Memory OLAP Sandbox (0 API tokens consumed)]\n\n"
+                        yield response_md
+                        
+                        crud.save_chat_message(
+                            db=self.db,
+                            user_id=self.user.id,
+                            session_id=self.session_id,
+                            role="assistant",
+                            content=response_md
+                        )
+                        return
+            except Exception as ne_err:
+                logger.warning(f"NativeAnalyticsEngine error, falling back to agent: {ne_err}")
+
+        # --- CACHING LOGIC (only cache successful valid responses) ---
         cache_key = prompt.lower().strip()
         if cache_key in self.query_cache and not image:
-            yield "\n[⚡ Returning instantaneous cached response to save API tokens...]\n"
-            yield self.query_cache[cache_key]
-            return
+            cached_val = self.query_cache[cache_key]
+            if "Error generating response" not in cached_val and "API key not valid" not in cached_val:
+                yield "\n[⚡ Returning instantaneous cached response to save API tokens...]\n"
+                yield cached_val
+                return
+            else:
+                del self.query_cache[cache_key]
         # ---------------------
         self._tool_called_this_turn = False
         """Streams Gemini's response, handles tool calls, and saves messages to DB."""
@@ -499,28 +526,6 @@ Be helpful, thorough, and always provide value with comprehensive summaries incl
             content=prompt
         )
 
-        # Strategy 1: High-Performance Zero-Cost Native Engine (DuckDB + Pandas + Plotly)
-        if self.dataset and len(self.dataset) > 0:
-            try:
-                native_engine = NativeAnalyticsEngine(dataset=self.dataset)
-                if native_engine.is_analytical_query(prompt):
-                    handled, response_md, chart = native_engine.execute_query(prompt)
-                    if handled and response_md:
-                        logger.info(f"Query answered 100% locally by NativeAnalyticsEngine without LLM: {prompt[:50]}")
-                        yield "[⚡ Executed via DuckDB In-Memory OLAP Sandbox (0 API tokens consumed)]\n\n"
-
-                        yield response_md
-                        
-                        crud.save_chat_message(
-                            db=self.db,
-                            user_id=self.user.id,
-                            session_id=self.session_id,
-                            role="assistant",
-                            content=response_md
-                        )
-                        return
-            except Exception as ne_err:
-                logger.warning(f"NativeAnalyticsEngine error, falling back to agent: {ne_err}")
         is_conversational = self._is_conversational(prompt)
         
         # --- MULTI-AGENT PLANNER ---

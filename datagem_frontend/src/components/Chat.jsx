@@ -2181,7 +2181,14 @@ export default function Chat() {
                       accumulated += chunk;
                       setCurrentResponse(accumulated);
                     }
-                    setMessages((prev) => [...prev, { role: 'assistant', content: accumulated }]);
+                    const parsed = parseResponse(accumulated);
+                    setMessages((prev) => [...prev, { 
+                      role: 'assistant', 
+                      content: parsed.text,
+                      plots: parsed.plots,
+                      code: parsed.code,
+                      outputs: parsed.outputs
+                    }]);
                     setCurrentResponse('');
                     setLoading(false);
                   })
