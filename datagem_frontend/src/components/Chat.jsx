@@ -1191,65 +1191,65 @@ export default function Chat() {
             </div>
           </div>
 
-          {/* Sub Row: Tools & Navigation */}
-          <div className="px-6 py-2 border-t border-slate-800/80 bg-slate-950/60 flex items-center justify-between overflow-x-auto gap-3 custom-scrollbar text-xs font-sans">
+          {/* Sub Row: Tools & Navigation (Uniform Slate Theme) */}
+          <div className="px-6 py-2 border-t border-slate-800/80 bg-slate-950/80 flex items-center justify-between overflow-x-auto gap-2.5 custom-scrollbar text-xs font-sans">
             <div className="flex items-center gap-2">
               <Link
                 to="/dashboard"
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-sky-500/50 transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-colors whitespace-nowrap font-medium"
               >
-                Dashboard
+                <span>📊</span> Dashboard
               </Link>
               <Link
                 to="/about"
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-colors whitespace-nowrap font-medium"
               >
                 About
               </Link>
               <Link
                 to="/pricing"
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-emerald-300 bg-emerald-950/40 border border-emerald-800/60 hover:bg-emerald-900/60 transition-colors whitespace-nowrap font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-colors whitespace-nowrap font-medium"
               >
-                Pricing & Watchdog
+                Pricing &amp; Plans
               </Link>
-              {(user?.tier?.toLowerCase() === 'enterprise' || 
-                user?.email?.toLowerCase() === 'aakshitmalik@gmail.com' ||
-                user?.email?.toLowerCase() === 'founder@company.com') && (
-                <Link
-                  to="/design-lab"
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sky-400 bg-sky-950/40 border border-sky-800/60 hover:bg-sky-900/60 transition-colors whitespace-nowrap font-medium"
-                >
-                  🛠️ Design Lab
-                </Link>
-              )}
               <button
                 onClick={() => setIsConnectorsModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-amber-300 bg-amber-950/40 border border-amber-800/80 hover:bg-amber-900/60 transition-colors whitespace-nowrap font-mono text-xs font-bold"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-colors whitespace-nowrap font-medium"
               >
-                <span>⚡ Marketplace Hub</span>
+                <span>⚡</span> Marketplace Hub
               </button>
               <button
                 onClick={() => setIsWatchdogModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-emerald-300 bg-emerald-950/40 border border-emerald-800/80 hover:bg-emerald-900/60 transition-colors whitespace-nowrap font-mono text-xs font-bold"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-colors whitespace-nowrap font-medium"
                 title="Monday 8:00 AM CEO Watchdogs"
               >
-                <span>🛡️ Watchdogs</span>
+                <span>🛡️</span> Watchdogs
               </button>
               <button
                 onClick={() => setIsDeckModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-black bg-gradient-to-r from-sky-400 to-emerald-400 hover:opacity-90 transition-opacity whitespace-nowrap font-mono text-xs font-bold shadow-md shadow-sky-500/20"
-                title="Generate C-suite Deck & PDF"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-colors whitespace-nowrap font-medium"
+                title="Generate C-suite Deck &amp; PDF"
               >
-                <span>📄 Board Deck & PDF</span>
+                <span>📄</span> Board Deck &amp; PDF
               </button>
               
-              {(user?.tier?.toLowerCase() === 'enterprise' || user?.email === 'aakshitmalik@gmail.com') && (
-                <Link
-                  to="/admin"
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 hover:bg-emerald-900/50 transition-colors whitespace-nowrap font-mono"
-                >
-                  Admin Portal
-                </Link>
+              {(user?.tier?.toLowerCase() === 'enterprise' || 
+                user?.email?.toLowerCase() === 'aakshitmalik@gmail.com' ||
+                user?.email?.toLowerCase() === 'founder@company.com') && (
+                <>
+                  <Link
+                    to="/admin"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-200 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/50 transition-colors whitespace-nowrap font-medium"
+                  >
+                    <span>⚙️</span> Admin Portal
+                  </Link>
+                  <Link
+                    to="/design-lab"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-slate-400 hover:text-white bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors whitespace-nowrap font-medium"
+                  >
+                    <span>🛠️</span> Design Lab
+                  </Link>
+                </>
               )}
             </div>
 
@@ -1261,18 +1261,16 @@ export default function Chat() {
                   exit={{ opacity: 0, x: 10 }}
                   className="flex items-center gap-2"
                 >
-
-
                   <button
                     onClick={exportChat}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-300 bg-slate-900 border border-slate-800 hover:text-white rounded-lg transition-colors whitespace-nowrap"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-300 bg-slate-900 border border-slate-800 hover:text-white hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap font-medium"
                     title="Export chat history"
                   >
                     Export
                   </button>
                   <button
                     onClick={clearChat}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-400 bg-red-950/30 border border-red-900/40 hover:bg-red-900/40 rounded-lg transition-colors whitespace-nowrap"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-rose-400 bg-rose-950/30 border border-rose-900/40 hover:bg-rose-900/40 rounded-lg transition-colors whitespace-nowrap font-medium"
                     title="Clear chat history"
                   >
                     Clear

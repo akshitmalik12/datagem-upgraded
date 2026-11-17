@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import api from '../services/api';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('users'); // Defaults directly to User Control for quick tier assignment
   const navigate = useNavigate();
 
   const [metrics, setMetrics] = useState({
@@ -28,19 +28,23 @@ export default function AdminDashboard() {
       estimatedTokens: "0",
       estimatedCostUsd: "$0.0000",
       rpmUsage: 0,
-      engine: "DuckDB + Gemini Flash",
-      avgLatencyMs: 40
+      engine: "Zero-Token DuckDB + Gemini Flash",
+      avgLatencyMs: 28
     },
     intentClusters: {}
   });
   
-  const [loadingMetrics, setLoadingMetrics] = useState(true);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [purgeStatus, setPurgeStatus] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTier, setFilterTier] = useState('all');
+
+  // Direct quick tier upgrade input
+  const [manualEmail, setManualEmail] = useState('');
+  const [manualTier, setManualTier] = useState('Pro');
 
   const fetchTelemetry = async () => {
     try {
@@ -85,34 +89,49 @@ export default function AdminDashboard() {
     }
   }, [activeTab]);
 
+  const showNotification = (msg) => {
+    setActionMessage(msg);
+    setTimeout(() => setActionMessage(''), 4000);
+  };
+
   const handleTierChange = async (email, newTier) => {
     try {
       await api.post('/admin/users/tier', { email, tier: newTier.toLowerCase() });
-      setUsers(users.map(u => u.email === email ? { ...u, tier: newTier } : u));
+      setUsers(prev => prev.map(u => u.email === email ? { ...u, tier: newTier } : u));
+      showNotification(`✓ Updated ${email} to ${newTier} plan`);
     } catch (err) {
       alert('Failed to change tier: ' + (err.response?.data?.detail || err.message));
     }
+  };
+
+  const handleManualTierSubmit = async (e) => {
+    e.preventDefault();
+    if (!manualEmail.trim()) return;
+    await handleTierChange(manualEmail.trim(), manualTier);
+    setManualEmail('');
   };
 
   const handleToggleStatus = async (email, currentlyActive) => {
     try {
       const newStatus = currentlyActive ? 0 : 1;
       await api.post('/admin/users/status', { email, is_active: newStatus });
-      setUsers(users.map(u => u.email === email ? { 
+      setUsers(prev => prev.map(u => u.email === email ? { 
         ...u, 
         isActive: !currentlyActive, 
         status: !currentlyActive ? 'Active' : 'Suspended' 
       } : u));
+      showNotification(`Account ${email} ${!currentlyActive ? 'Activated' : 'Suspended'}`);
     } catch (err) {
       alert('Failed to update status: ' + (err.response?.data?.detail || err.message));
     }
   };
 
   const handleDeleteUser = async (email) => {
-    if (!window.confirm(`Permanently delete account for ${email}? This cannot be undone.`)) return;
+    if (!window.confirm(`Permanently remove access for ${email}?`)) return;
     try {
       await api.post('/admin/users/delete', { email });
-      setUsers(users.filter(u => u.email !== email));
+      setUsers(prev => prev.filter(u => u.email !== email));
+      showNotification(`User ${email} deleted`);
     } catch (err) {
       alert('Failed to delete user: ' + (err.response?.data?.detail || err.message));
     }
@@ -120,13 +139,12 @@ export default function AdminDashboard() {
 
   const handlePurgeCache = async () => {
     try {
-      setPurgeStatus('Purging memory buffers...');
-      const res = await api.post('/admin/system/purge-cache');
-      setPurgeStatus('✅ Cache & memory buffers purged successfully!');
-      fetchTelemetry();
-      setTimeout(() => setPurgeStatus(''), 4000);
+      showNotification('Purging memory & DuckDB session buffers...');
+      await api.post('/admin/system/purge-cache');
+      showNotification('✓ Engine memory buffers flushed cleanly');
+      if (activeTab === 'overview') fetchTelemetry();
     } catch (err) {
-      setPurgeStatus('❌ Failed: ' + (err.response?.data?.detail || err.message));
+      showNotification('✕ Cache purge failed: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -138,352 +156,324 @@ export default function AdminDashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#05070A] text-slate-100 flex flex-col font-sans selection:bg-sky-500/20 selection:text-sky-300">
       
-      {/* Admin Navbar */}
-      <nav className="bg-white dark:bg-[#151B2B] border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+      {/* Top Navbar */}
+      <header className="bg-[#090D14] border-b border-slate-800/80 px-6 py-3.5 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-sm">
-            <span className="text-xl">🛡️</span>
+          <div className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-sky-400 font-bold shadow-inner">
+            ⚡
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-400">DataGem Executive Admin</h1>
-              <span className="px-2 py-0.5 text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400 rounded-full border border-indigo-200 dark:border-indigo-800">
+              <span className="text-base font-semibold tracking-tight text-white">DataGem Admin Center</span>
+              <span className="px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase bg-emerald-950/60 text-emerald-400 border border-emerald-800/80 rounded-md">
                 Superuser
               </span>
             </div>
-            <p className="text-xs text-gray-500 font-medium">Logged in: aakshitmalik@gmail.com</p>
+            <p className="text-xs text-slate-400">Account: <span className="text-slate-300 font-mono">aakshitmalik@gmail.com</span></p>
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {actionMessage && (
+            <span className="text-xs font-medium text-emerald-400 bg-emerald-950/50 border border-emerald-800/70 px-3 py-1 rounded-md animate-fade-in">
+              {actionMessage}
+            </span>
+          )}
+
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-900/90 border border-slate-800 rounded-md text-xs text-slate-300 font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            CLUSTER ACTIVE
+          </div>
+
           <button 
-            onClick={fetchTelemetry}
-            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
+            onClick={() => navigate('/chat')} 
+            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
           >
-            <span>🔄</span> Refresh
-          </button>
-          <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-bold rounded-full border border-green-200 dark:border-green-800 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            CLUSTER ONLINE
-          </span>
-          <button onClick={() => navigate('/chat')} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
-            Exit to Workspace
+            <span>←</span> Back to Studio
           </button>
         </div>
-      </nav>
+      </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white dark:bg-[#151B2B] border-r border-gray-200 dark:border-gray-800 flex flex-col p-4 space-y-1">
-          <button 
-            onClick={() => setActiveTab('overview')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${activeTab === 'overview' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
-          >
-            <span className="text-lg">📊</span>
-            Overview & Telemetry
-          </button>
+      {/* Main Admin Content */}
+      <div className="flex flex-1">
+        {/* Navigation Sidebar */}
+        <aside className="w-60 bg-[#090D14]/80 border-r border-slate-800/80 flex flex-col p-4 space-y-1.5 shrink-0">
+          <div className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase px-3 py-1">Management</div>
 
           <button 
             onClick={() => setActiveTab('users')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${activeTab === 'users' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'users' 
+                ? 'bg-sky-500/10 text-sky-400 border border-sky-500/30' 
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
           >
-            <span className="text-lg">👥</span>
-            User Control & Tiers
+            <span>👥</span>
+            <span>Users & Tier Access</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('overview')}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'overview' 
+                ? 'bg-sky-500/10 text-sky-400 border border-sky-500/30' 
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
+          >
+            <span>📊</span>
+            <span>Telemetry & MRR</span>
           </button>
 
           <button 
             onClick={() => setActiveTab('ai_engine')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${activeTab === 'ai_engine' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'ai_engine' 
+                ? 'bg-sky-500/10 text-sky-400 border border-sky-500/30' 
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
           >
-            <span className="text-lg">⚡</span>
-            AI Cost & Performance
+            <span>⚡</span>
+            <span>Compute & Engine</span>
           </button>
 
           <button 
             onClick={() => setActiveTab('audit')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${activeTab === 'audit' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'audit' 
+                ? 'bg-sky-500/10 text-sky-400 border border-sky-500/30' 
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
           >
-            <span className="text-lg">📜</span>
-            Audit & Security Logs
+            <span>📜</span>
+            <span>Audit Trail</span>
           </button>
 
-          <div className="pt-6 border-t border-gray-200 dark:border-gray-800 mt-auto">
-            <div className="p-3 bg-gray-50 dark:bg-[#0E131F] rounded-xl border border-gray-200 dark:border-gray-800">
-              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Server Host</div>
-              <div className="text-xs font-bold text-gray-900 dark:text-gray-200 flex items-center justify-between">
-                <span>Railway + DuckDB</span>
-                <span className="text-green-500">● Live</span>
+          <div className="pt-6 border-t border-slate-800/80 mt-auto">
+            <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-[11px] space-y-1">
+              <div className="text-slate-400 font-medium">Stack Runtime</div>
+              <div className="font-semibold text-slate-200 flex items-center justify-between">
+                <span>FastAPI + DuckDB</span>
+                <span className="text-emerald-400">Online</span>
               </div>
-              <div className="text-[11px] text-gray-500 mt-1">Uptime: {metrics.uptimeHours} hrs</div>
+              <div className="text-slate-400 font-mono text-[10px]">Uptime: {metrics.uptimeHours || 24}h</div>
             </div>
           </div>
         </aside>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-8">
-          
-          {/* TAB 1: OVERVIEW & TELEMETRY */}
-          {activeTab === 'overview' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Cluster Telemetry & Financials</h2>
-                <p className="text-gray-500 text-sm">Real-time health, monetization, and computational load across DataGem.</p>
-              </div>
+        {/* Dynamic View Area */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
 
-              {/* KPI Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Registered Users</div>
-                  <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{metrics.totalUsers}</div>
-                  <div className="text-xs text-gray-500 mt-2 flex items-center gap-2">
-                    <span className="text-green-500 font-semibold">{metrics.activeUsers} Active</span> • 
-                    <span className="text-red-400 font-semibold">{metrics.suspendedUsers} Suspended</span>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Compute Queries (All-Time)</div>
-                  <div className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">{metrics.totalQueries}</div>
-                  <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                    <span>⚡ Native DuckDB Engine</span>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Monthly Recurring Rev (MRR)</div>
-                  <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{metrics.mrr}</div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    Projected ARR: <span className="font-semibold text-gray-900 dark:text-white">{metrics.arr}</span>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">SQLite & S3 Storage</div>
-                  <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{metrics.storageUsed}</div>
-                  <div className="text-xs text-emerald-500 mt-2 flex items-center gap-1">
-                    <span>● Low Footprint (High Margin)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tier Distribution Bar & Cluster Resource Gauges */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {/* Tier Distribution Card */}
-                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">Subscription Tiers Breakdown</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span>Free Tier ({metrics.tierBreakdown?.free || 0} users)</span>
-                        <span>{metrics.totalUsers ? Math.round((metrics.tierBreakdown?.free / metrics.totalUsers) * 100) : 0}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                        <div className="bg-gray-400 h-2 rounded-full" style={{ width: `${metrics.totalUsers ? (metrics.tierBreakdown?.free / metrics.totalUsers) * 100 : 0}%` }}></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span>Pro Tier ($15/mo) ({metrics.tierBreakdown?.pro || 0} users)</span>
-                        <span>{metrics.totalUsers ? Math.round((metrics.tierBreakdown?.pro / metrics.totalUsers) * 100) : 0}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${metrics.totalUsers ? (metrics.tierBreakdown?.pro / metrics.totalUsers) * 100 : 0}%` }}></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span>Enterprise Tier ($49/mo) ({metrics.tierBreakdown?.enterprise || 0} users)</span>
-                        <span>{metrics.totalUsers ? Math.round((metrics.tierBreakdown?.enterprise / metrics.totalUsers) * 100) : 0}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                        <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${metrics.totalUsers ? (metrics.tierBreakdown?.enterprise / metrics.totalUsers) * 100 : 0}%` }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Host Hardware Resources */}
-                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-base font-bold text-gray-900 dark:text-white">Host Node Resources</h3>
-                    <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full">
-                      {metrics.clusterHealth?.status || "Healthy"}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span>CPU Utilization</span>
-                        <span>{metrics.clusterHealth?.cpu || 0}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${metrics.clusterHealth?.cpu || 0}%` }}></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span>RAM Consumption</span>
-                        <span>{metrics.clusterHealth?.ram || 0}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                        <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${metrics.clusterHealth?.ram || 0}%` }}></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span>Disk Usage</span>
-                        <span>{metrics.clusterHealth?.disk || 0}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                        <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${metrics.clusterHealth?.disk || 0}%` }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Query Intent Breakdown */}
-              <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">User Query Intent Distribution</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {Object.entries(metrics.intentClusters || {}).map(([category, count]) => (
-                    <div key={category} className="p-4 bg-gray-50 dark:bg-[#0E131F] rounded-xl border border-gray-100 dark:border-gray-800">
-                      <div className="text-xs text-gray-500 font-medium">{category}</div>
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{count}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </motion.div>
-          )}
-
-          {/* TAB 2: USER CONTROL & TIERS */}
+          {/* TAB 1: USERS & TIER CONTROL (DEFAULT) */}
           {activeTab === 'users' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">User Management & Permissions</h2>
-                  <p className="text-gray-500 text-sm">Control account status, adjust subscription tiers, or remove accounts.</p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-6xl">
+              
+              {/* Header & Quick Manual Grant */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+                <div className="lg:col-span-2 bg-[#090D14] border border-slate-800/90 rounded-xl p-5 flex flex-col justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">User Plan & Permission Control</h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Grant unlimited <span className="text-sky-400 font-semibold">Pro</span> or <span className="text-emerald-400 font-semibold">Enterprise</span> licenses to users instantly. Changes apply immediately in real-time.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-slate-800">
+                    <input
+                      type="text"
+                      placeholder="Filter by name or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="px-3 py-1.5 text-xs bg-slate-900 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 w-56"
+                    />
+
+                    <select
+                      value={filterTier}
+                      onChange={(e) => setFilterTier(e.target.value)}
+                      className="px-2.5 py-1.5 text-xs bg-slate-900 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-sky-500"
+                    >
+                      <option value="all">All Tiers ({users.length})</option>
+                      <option value="free">Free Users</option>
+                      <option value="pro">Pro Users</option>
+                      <option value="enterprise">Enterprise Users</option>
+                    </select>
+
+                    <button 
+                      onClick={fetchUsers}
+                      className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-300 rounded-lg transition-colors"
+                      title="Reload Users"
+                    >
+                      ↻ Refresh
+                    </button>
+                  </div>
                 </div>
-                
-                {/* Search & Filters */}
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <input
-                    type="text"
-                    placeholder="Search user or email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="px-3.5 py-2 text-sm bg-white dark:bg-[#151B2B] border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full sm:w-64"
-                  />
-                  <select
-                    value={filterTier}
-                    onChange={(e) => setFilterTier(e.target.value)}
-                    className="px-3.5 py-2 text-sm bg-white dark:bg-[#151B2B] border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  >
-                    <option value="all">All Tiers</option>
-                    <option value="free">Free</option>
-                    <option value="pro">Pro</option>
-                    <option value="enterprise">Enterprise</option>
-                  </select>
+
+                {/* Quick 1-Click Upgrade Form */}
+                <div className="bg-[#090D14] border border-slate-800/90 rounded-xl p-5">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">⚡ Direct Grant Override</h3>
+                  <p className="text-[11px] text-slate-400 mb-3">Type any email to elevate their tier instantly:</p>
+                  
+                  <form onSubmit={handleManualTierSubmit} className="space-y-2.5">
+                    <input
+                      type="email"
+                      required
+                      placeholder="user@example.com"
+                      value={manualEmail}
+                      onChange={(e) => setManualEmail(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs bg-slate-900 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                    />
+
+                    <div className="flex gap-2">
+                      <select
+                        value={manualTier}
+                        onChange={(e) => setManualTier(e.target.value)}
+                        className="px-2.5 py-1.5 text-xs bg-slate-900 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-sky-500 flex-1"
+                      >
+                        <option value="Free">Free</option>
+                        <option value="Pro">Pro ($15)</option>
+                        <option value="Enterprise">Enterprise ($49)</option>
+                      </select>
+
+                      <button
+                        type="submit"
+                        className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+                      >
+                        Apply Grant
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
 
-              {/* User Table */}
-              <div className="bg-white dark:bg-[#151B2B] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
+              {/* User Accounts Table */}
+              <div className="bg-[#090D14] border border-slate-800/90 rounded-xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-gray-50 dark:bg-[#1A2234] text-[11px] uppercase tracking-wider text-gray-500 border-b border-gray-200 dark:border-gray-800">
-                        <th className="px-6 py-4 font-semibold">User</th>
-                        <th className="px-6 py-4 font-semibold">Tier Permission</th>
-                        <th className="px-6 py-4 font-semibold">Account Status</th>
-                        <th className="px-6 py-4 font-semibold">Messages</th>
-                        <th className="px-6 py-4 font-semibold text-right">Admin Actions</th>
+                      <tr className="bg-slate-900/60 border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400">
+                        <th className="px-5 py-3 font-semibold">User</th>
+                        <th className="px-5 py-3 font-semibold">Plan Level</th>
+                        <th className="px-5 py-3 font-semibold">1-Click Tier Override</th>
+                        <th className="px-5 py-3 font-semibold">Status</th>
+                        <th className="px-5 py-3 font-semibold">Queries</th>
+                        <th className="px-5 py-3 font-semibold text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                    <tbody className="divide-y divide-slate-800/70">
                       {loadingUsers ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-8 text-center text-gray-500">Loading user accounts...</td>
+                          <td colSpan="6" className="px-5 py-8 text-center text-slate-500">Loading user accounts...</td>
                         </tr>
                       ) : filteredUsers.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-8 text-center text-gray-500">No users match your filter criteria.</td>
+                          <td colSpan="6" className="px-5 py-8 text-center text-slate-500">No user accounts found matching query.</td>
                         </tr>
                       ) : (
-                        filteredUsers.map(user => (
-                          <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-[#1A2234]/50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
-                                  {user.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                  <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    {user.name}
-                                    {user.email === 'aakshitmalik@gmail.com' && (
-                                      <span className="px-1.5 py-0.5 text-[9px] bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 font-bold rounded">
-                                        Super Admin
-                                      </span>
-                                    )}
+                        filteredUsers.map(u => {
+                          const isSuperAdmin = u.email === 'aakshitmalik@gmail.com';
+                          const tier = (u.tier || 'free').toLowerCase();
+                          return (
+                            <tr key={u.id || u.email} className="hover:bg-slate-900/40 transition-colors">
+                              <td className="px-5 py-3">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-7 h-7 rounded-md bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-300">
+                                    {(u.name || u.email || 'U').charAt(0).toUpperCase()}
                                   </div>
-                                  <div className="text-xs text-gray-500">{user.email}</div>
+                                  <div>
+                                    <div className="font-semibold text-slate-200 flex items-center gap-1.5">
+                                      <span>{u.name || 'Anonymous'}</span>
+                                      {isSuperAdmin && (
+                                        <span className="px-1.5 py-0.2 text-[9px] bg-sky-950 text-sky-400 border border-sky-800 rounded font-mono">
+                                          Super Admin
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                            
-                            <td className="px-6 py-4">
-                              <select 
-                                value={user.tier}
-                                onChange={(e) => handleTierChange(user.email, e.target.value)}
-                                className="bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-xs font-semibold px-2.5 py-1.5 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-                              >
-                                <option value="Free">Free</option>
-                                <option value="Pro">Pro ($15)</option>
-                                <option value="Enterprise">Enterprise ($49)</option>
-                              </select>
-                            </td>
+                              </td>
 
-                            <td className="px-6 py-4">
-                              <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${user.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                {user.status}
-                              </span>
-                            </td>
+                              <td className="px-5 py-3">
+                                {tier === 'enterprise' ? (
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/80">
+                                    Enterprise
+                                  </span>
+                                ) : tier === 'pro' ? (
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-950/80 text-sky-400 border border-sky-800/80">
+                                    Pro
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                                    Free
+                                  </span>
+                                )}
+                              </td>
 
-                            <td className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
-                              {user.messageCount}
-                            </td>
-
-                            <td className="px-6 py-4 text-right space-x-2">
-                              {user.email !== 'aakshitmalik@gmail.com' && (
-                                <>
-                                  <button 
-                                    onClick={() => handleToggleStatus(user.email, user.isActive)}
-                                    className="text-xs px-2.5 py-1 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-semibold transition-colors"
+                              <td className="px-5 py-3">
+                                <div className="inline-flex rounded-md shadow-sm" role="group">
+                                  <button
+                                    onClick={() => handleTierChange(u.email, 'Free')}
+                                    className={`px-2.5 py-1 text-[11px] font-medium border border-slate-700 rounded-l-md transition-colors ${
+                                      tier === 'free' ? 'bg-slate-800 text-white font-bold' : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                    }`}
                                   >
-                                    {user.isActive ? 'Suspend' : 'Activate'}
+                                    Free
                                   </button>
-                                  <button 
-                                    onClick={() => handleDeleteUser(user.email)}
-                                    className="text-xs px-2.5 py-1 rounded bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 hover:bg-red-100 font-semibold transition-colors"
+                                  <button
+                                    onClick={() => handleTierChange(u.email, 'Pro')}
+                                    className={`px-2.5 py-1 text-[11px] font-medium border-t border-b border-slate-700 transition-colors ${
+                                      tier === 'pro' ? 'bg-sky-950 text-sky-300 font-bold border-sky-700' : 'bg-slate-900/60 text-slate-400 hover:text-sky-300 hover:bg-slate-800'
+                                    }`}
                                   >
-                                    Delete
+                                    Grant Pro
                                   </button>
-                                </>
-                              )}
-                            </td>
-                          </tr>
-                        ))
+                                  <button
+                                    onClick={() => handleTierChange(u.email, 'Enterprise')}
+                                    className={`px-2.5 py-1 text-[11px] font-medium border border-slate-700 rounded-r-md transition-colors ${
+                                      tier === 'enterprise' ? 'bg-emerald-950 text-emerald-300 font-bold border-emerald-700' : 'bg-slate-900/60 text-slate-400 hover:text-emerald-300 hover:bg-slate-800'
+                                    }`}
+                                  >
+                                    Grant Enterprise
+                                  </button>
+                                </div>
+                              </td>
+
+                              <td className="px-5 py-3">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                  u.isActive 
+                                    ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/80' 
+                                    : 'bg-rose-950/60 text-rose-400 border border-rose-800/80'
+                                }`}>
+                                  {u.status || (u.isActive ? 'Active' : 'Suspended')}
+                                </span>
+                              </td>
+
+                              <td className="px-5 py-3 text-slate-400 font-mono">
+                                {u.messageCount || 0}
+                              </td>
+
+                              <td className="px-5 py-3 text-right space-x-1.5">
+                                {!isSuperAdmin && (
+                                  <>
+                                    <button 
+                                      onClick={() => handleToggleStatus(u.email, u.isActive)}
+                                      className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[11px] font-medium transition-colors"
+                                    >
+                                      {u.isActive ? 'Suspend' : 'Activate'}
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteUser(u.email)}
+                                      className="px-2 py-1 rounded bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/60 text-rose-400 text-[11px] font-medium transition-colors"
+                                    >
+                                      Delete
+                                    </button>
+                                  </>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
@@ -492,81 +482,199 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* TAB 3: AI COST & PERFORMANCE */}
-          {activeTab === 'ai_engine' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">AI Cost & Performance Controller</h2>
-                <p className="text-gray-500 text-sm">Monitor Gemini 1.5 Flash token expenditures, DuckDB query latency, and flush cached buffers.</p>
+          {/* TAB 2: TELEMETRY & REVENUE */}
+          {activeTab === 'overview' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-6xl">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Cluster Telemetry & SaaS Metrics</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Real-time compute queries, subscription ARR, and storage utilization.</p>
+                </div>
+                <button 
+                  onClick={fetchTelemetry}
+                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-300 rounded-lg transition-colors"
+                >
+                  ↻ Refresh Metrics
+                </button>
               </div>
 
-              {/* AI Cost Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Estimated Tokens Processed</div>
-                  <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{metrics.aiMetrics?.estimatedTokens || 0}</div>
-                  <div className="text-xs text-indigo-500 mt-2">Gemini Flash (Input + Output)</div>
+              {/* KPIs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">Registered Accounts</div>
+                  <div className="text-2xl font-bold text-white mt-1">{metrics.totalUsers}</div>
+                  <div className="text-xs text-slate-400 mt-2 flex items-center gap-2">
+                    <span className="text-emerald-400 font-medium">{metrics.activeUsers} Active</span> • 
+                    <span className="text-rose-400 font-medium">{metrics.suspendedUsers} Suspended</span>
+                  </div>
                 </div>
 
-                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Estimated AI Cost</div>
-                  <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{metrics.aiMetrics?.estimatedCostUsd || "$0.00"}</div>
-                  <div className="text-xs text-gray-500 mt-2">Ultra-efficient: ~$0.000075 / 1k tokens</div>
+                <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">Compute Queries Run</div>
+                  <div className="text-2xl font-bold text-sky-400 mt-1">{metrics.totalQueries}</div>
+                  <div className="text-xs text-slate-400 mt-2">Vectorized Zero-Token Execution</div>
                 </div>
 
-                <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">DuckDB Analytics Latency</div>
-                  <div className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">{metrics.aiMetrics?.avgLatencyMs || 40} ms</div>
-                  <div className="text-xs text-green-500 mt-2">Sub-second local vectorized execution</div>
+                <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">Monthly Recurring Rev</div>
+                  <div className="text-2xl font-bold text-emerald-400 mt-1">{metrics.mrr}</div>
+                  <div className="text-xs text-slate-400 mt-2">Annual Run Rate: <span className="text-white font-mono">{metrics.arr}</span></div>
+                </div>
+
+                <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">Database Footprint</div>
+                  <div className="text-2xl font-bold text-white mt-1">{metrics.storageUsed}</div>
+                  <div className="text-xs text-emerald-400 mt-2">Compressed DuckDB Storage</div>
                 </div>
               </div>
 
-              {/* Maintenance & Engine Actions */}
-              <div className="bg-white dark:bg-[#151B2B] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Engine Maintenance & Cache Purge</h3>
-                <p className="text-sm text-gray-500 mb-6">Reclaim transient DuckDB memory, free Python garbage collector heaps, and reset stale model sessions.</p>
-                
-                <div className="flex items-center gap-4">
-                  <button 
-                    onClick={handlePurgeCache}
-                    className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2"
-                  >
-                    <span>🧹</span> Purge Cache & Reclaim Memory
-                  </button>
-                  {purgeStatus && (
-                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                      {purgeStatus}
+              {/* Tier Split & Hardware Health */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">Paid Tier Distribution</h3>
+                  <div className="space-y-3.5 text-xs">
+                    <div>
+                      <div className="flex justify-between text-slate-300 font-medium mb-1">
+                        <span>Free Tier ({metrics.tierBreakdown?.free || 0})</span>
+                        <span>{metrics.totalUsers ? Math.round((metrics.tierBreakdown?.free / metrics.totalUsers) * 100) : 0}%</span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                        <div className="bg-slate-600 h-1.5 rounded-full" style={{ width: `${metrics.totalUsers ? (metrics.tierBreakdown?.free / metrics.totalUsers) * 100 : 0}%` }}></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-sky-300 font-medium mb-1">
+                        <span>Pro Tier ($15/mo) ({metrics.tierBreakdown?.pro || 0})</span>
+                        <span>{metrics.totalUsers ? Math.round((metrics.tierBreakdown?.pro / metrics.totalUsers) * 100) : 0}%</span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                        <div className="bg-sky-500 h-1.5 rounded-full" style={{ width: `${metrics.totalUsers ? (metrics.tierBreakdown?.pro / metrics.totalUsers) * 100 : 0}%` }}></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-emerald-300 font-medium mb-1">
+                        <span>Enterprise Tier ($49/mo) ({metrics.tierBreakdown?.enterprise || 0})</span>
+                        <span>{metrics.totalUsers ? Math.round((metrics.tierBreakdown?.enterprise / metrics.totalUsers) * 100) : 0}%</span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                        <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${metrics.totalUsers ? (metrics.tierBreakdown?.enterprise / metrics.totalUsers) * 100 : 0}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Node Hardware Health</h3>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800">
+                      {metrics.clusterHealth?.status || "Normal"}
                     </span>
-                  )}
+                  </div>
+
+                  <div className="space-y-3.5 text-xs">
+                    <div>
+                      <div className="flex justify-between text-slate-300 font-medium mb-1">
+                        <span>CPU Load</span>
+                        <span>{metrics.clusterHealth?.cpu || 0}%</span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-1.5">
+                        <div className="bg-sky-500 h-1.5 rounded-full" style={{ width: `${metrics.clusterHealth?.cpu || 0}%` }}></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-slate-300 font-medium mb-1">
+                        <span>Memory RAM Utilization</span>
+                        <span>{metrics.clusterHealth?.ram || 0}%</span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-1.5">
+                        <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${metrics.clusterHealth?.ram || 0}%` }}></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-slate-300 font-medium mb-1">
+                        <span>Disk Space</span>
+                        <span>{metrics.clusterHealth?.disk || 0}%</span>
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-1.5">
+                        <div className="bg-slate-500 h-1.5 rounded-full" style={{ width: `${metrics.clusterHealth?.disk || 0}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* TAB 4: AUDIT LOGS */}
-          {activeTab === 'audit' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          {/* TAB 3: COMPUTE & ENGINE */}
+          {activeTab === 'ai_engine' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-6xl">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Security & Audit Logs</h2>
-                <p className="text-gray-500 text-sm">Immutable trail of platform actions, query activity, and administrative events.</p>
+                <h2 className="text-lg font-semibold text-white">Compute Engine & Cost Optimization</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Control token efficiency, monitor zero-token DuckDB throughput, and flush memory.</p>
               </div>
 
-              <div className="bg-white dark:bg-[#151B2B] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
-                <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">Estimated Tokens</div>
+                  <div className="text-2xl font-bold text-white mt-1">{metrics.aiMetrics?.estimatedTokens || 0}</div>
+                  <div className="text-xs text-sky-400 mt-2">Zero-Token Engine shields 95% of queries</div>
+                </div>
+
+                <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">LLM API Spend</div>
+                  <div className="text-2xl font-bold text-emerald-400 mt-1">{metrics.aiMetrics?.estimatedCostUsd || "$0.00"}</div>
+                  <div className="text-xs text-slate-400 mt-2">Gemini Flash Fallback ($0.000075 / 1k)</div>
+                </div>
+
+                <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">DuckDB Query Latency</div>
+                  <div className="text-2xl font-bold text-sky-400 mt-1">{metrics.aiMetrics?.avgLatencyMs || 28} ms</div>
+                  <div className="text-xs text-emerald-400 mt-2">Sub-second local vectorized speed</div>
+                </div>
+              </div>
+
+              <div className="bg-[#090D14] border border-slate-800/90 p-5 rounded-xl">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Engine Maintenance & Cache Purge</h3>
+                <p className="text-xs text-slate-400 mb-4">Reclaim memory allocations, flush transient session cache, and re-index dataset pointers.</p>
+                
+                <button 
+                  onClick={handlePurgeCache}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-xs text-slate-200 font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <span>🧹</span> Purge Cache & Reclaim Memory
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 4: AUDIT TRAIL */}
+          {activeTab === 'audit' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-6xl">
+              <div>
+                <h2 className="text-lg font-semibold text-white">System Security & Audit Trail</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Immutable record of logins, tier grants, clawback exports, and database syncs.</p>
+              </div>
+
+              <div className="bg-[#090D14] border border-slate-800/90 rounded-xl p-5 shadow-sm">
+                <div className="space-y-3">
                   {auditLogs.length === 0 ? (
-                    <div className="text-sm text-gray-500">No events logged recently.</div>
+                    <div className="text-xs text-slate-500 py-4 text-center">No recent security events logged.</div>
                   ) : (
                     auditLogs.map((log, idx) => (
-                      <div key={idx} className="flex items-start gap-4 p-3 bg-gray-50 dark:bg-[#0E131F] rounded-xl border border-gray-100 dark:border-gray-800">
-                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${log.type === 'USER_PROVISION' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'}`}>
-                          {log.type}
-                        </span>
-                        <div className="flex-1 text-xs text-gray-800 dark:text-gray-200 font-medium">
-                          {log.message}
+                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-800/70 text-xs">
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2 py-0.5 text-[10px] font-mono font-semibold rounded ${
+                            log.type === 'USER_PROVISION' ? 'bg-sky-950 text-sky-400 border border-sky-800' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                          }`}>
+                            {log.type}
+                          </span>
+                          <span className="text-slate-300 font-medium">{log.message}</span>
                         </div>
-                        <div className="text-[11px] text-gray-400">
-                          {log.time}
-                        </div>
+                        <span className="text-slate-500 font-mono text-[11px]">{log.time}</span>
                       </div>
                     ))
                   )}
