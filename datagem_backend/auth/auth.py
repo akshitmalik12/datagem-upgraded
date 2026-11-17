@@ -32,10 +32,14 @@ def create_new_user(user: auth_models.UserCreate, db: Session = Depends(database
     # --- THIS IS THE FIX ---
     # We scramble the password here, *before* sending it to crud.py
     hashed_password = security.get_password_hash(user.password)
+    # Assign tier: promote primary owner/admins to enterprise tier automatically
+    initial_tier = "enterprise" if user.email.lower() in ["aakshitmalik@gmail.com", "founder@company.com"] else "free"
+
     db_user = db_models.User(
         email=user.email,
         hashed_password=hashed_password,
-        full_name=user.full_name  # This uses the 'full_name' field
+        full_name=user.full_name,
+        tier=initial_tier
     )
     # --- END FIX ---
     
@@ -119,6 +123,11 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Ensure primary admin accounts are always enterprise tier upon successful login
+    if user.email.lower() in ["aakshitmalik@gmail.com", "founder@company.com"] and user.tier != "enterprise":
+        user.tier = "enterprise"
+        db.commit()
+
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
@@ -140,6 +149,11 @@ async def login_json(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Ensure primary admin accounts are always enterprise tier upon successful login
+    if user.email.lower() in ["aakshitmalik@gmail.com", "founder@company.com"] and user.tier != "enterprise":
+        user.tier = "enterprise"
+        db.commit()
+
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
