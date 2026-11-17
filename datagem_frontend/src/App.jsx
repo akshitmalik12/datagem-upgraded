@@ -15,6 +15,7 @@ import Dashboard from './components/Dashboard';
 import Pricing from './components/Pricing';
 import SplashScreen from './components/SplashScreen';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import DataHealth from './components/DataHealth';
 import NotFound from './components/NotFound';
 import './App.css';
@@ -38,17 +39,17 @@ const AnimatedRoutes = () => {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/design-lab" element={<DesignShowcase />} />
+        <Route path="/design-lab" element={<AdminRoute><DesignShowcase /></AdminRoute>} />
         <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
         <Route path="/signup" element={<PageWrapper><Signup /></PageWrapper>} />
         <Route path="/forgot-password" element={<PageWrapper><ForgotPassword /></PageWrapper>} />
-        <Route path="/admin" element={<PageWrapper><AdminDashboard /></PageWrapper>} />
+        <Route path="/admin" element={<AdminRoute><PageWrapper><AdminDashboard /></PageWrapper></AdminRoute>} />
         <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
         <Route path="/pricing" element={<PageWrapper><Pricing /></PageWrapper>} />
         <Route path="/dashboard" element={<ProtectedRoute><PageWrapper><Dashboard /></PageWrapper></ProtectedRoute>} />
         <Route path="/data-health" element={<ProtectedRoute><PageWrapper><DataHealth /></PageWrapper></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><PageWrapper><Chat /></PageWrapper></ProtectedRoute>} />
-        <Route path="/" element={<Navigate to="/design-lab" replace />} />
+        <Route path="/" element={<Navigate to="/chat" replace />} />
         <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
       </Routes>
     </AnimatePresence>

@@ -1212,12 +1212,16 @@ export default function Chat() {
               >
                 Pricing & Watchdog
               </Link>
-              <Link
-                to="/design-lab"
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sky-400 bg-sky-950/40 border border-sky-800/60 hover:bg-sky-900/60 transition-colors whitespace-nowrap font-medium"
-              >
-                Design Lab
-              </Link>
+              {(user?.tier?.toLowerCase() === 'enterprise' || 
+                user?.email?.toLowerCase() === 'aakshitmalik@gmail.com' ||
+                user?.email?.toLowerCase() === 'founder@company.com') && (
+                <Link
+                  to="/design-lab"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sky-400 bg-sky-950/40 border border-sky-800/60 hover:bg-sky-900/60 transition-colors whitespace-nowrap font-medium"
+                >
+                  🛠️ Design Lab
+                </Link>
+              )}
               <button
                 onClick={() => setIsConnectorsModalOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-amber-300 bg-amber-950/40 border border-amber-800/80 hover:bg-amber-900/60 transition-colors whitespace-nowrap font-mono text-xs font-bold"

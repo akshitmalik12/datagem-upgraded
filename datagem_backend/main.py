@@ -1,5 +1,6 @@
 from services import watchdog
 from routers import ecommerce_connectors
+from routers import setup_admin
 from dotenv import load_dotenv
 load_dotenv(override=True)
 import logging
@@ -94,6 +95,7 @@ app.include_router(data_import.router, prefix="/import", tags=["Data Import"])
 app.include_router(ecommerce.router, prefix="/ecommerce", tags=["E-Commerce Marketplaces"])
 app.include_router(ecommerce_connectors.router)
 app.include_router(watchdog.router)
+app.include_router(setup_admin.router)
 
 
 
