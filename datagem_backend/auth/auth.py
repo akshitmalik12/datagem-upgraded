@@ -45,66 +45,12 @@ def create_new_user(user: auth_models.UserCreate, db: Session = Depends(database
     
     created_user = crud.create_user(db=db, user=db_user)
     
-    # Send a beautiful Welcome Email via SMTP
-    sender_email = os.getenv("SMTP_EMAIL")
-    sender_password = os.getenv("SMTP_PASSWORD")
-    
-    if sender_email and sender_password:
-        try:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"Welcome to DataGem, {user.full_name or 'Data Explorer'}! 💎"
-            msg["From"] = sender_email
-            msg["To"] = created_user.email
-            
-            html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0B0F19; padding: 40px 20px; margin: 0; -webkit-font-smoothing: antialiased;">
-                <div style="max-width: 550px; margin: 0 auto; background: #151B2B; border: 1px solid #1F2937; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);">
-                    <div style="padding: 40px; text-align: center; border-bottom: 1px solid #1F2937;">
-                        <h1 style="color: #ffffff; font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px;">DataGem <span style="color: #6366F1;">💎</span></h1>
-                    </div>
-                    <div style="padding: 40px;">
-                        <h2 style="color: #ffffff; font-size: 20px; font-weight: 600; margin-top: 0;">Welcome aboard, {user.full_name or 'Explorer'}!</h2>
-                        <p style="color: #9CA3AF; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-                            Your AI-powered data analyst is ready. Say goodbye to complex SQL and hello to instantaneous insights, interactive charts, and intelligent reporting.
-                        </p>
-                        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
-                            <h3 style="color: #E5E7EB; font-size: 16px; font-weight: 600; margin-top: 0; margin-bottom: 12px;">Unlock the Full Power of DataGem</h3>
-                            <p style="color: #9CA3AF; font-size: 15px; margin: 0 0 15px 0; line-height: 1.6;">
-                                You are currently on the Free tier. Want to handle massive datasets and unlock unlimited AI chats?
-                            </p>
-                            <div style="text-align: center;">
-                                <a href="https://datagem.app/pricing" style="display: inline-block; background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); color: #ffffff; font-weight: 600; font-size: 14px; text-decoration: none; padding: 10px 20px; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4); margin-right: 10px;">🚀 Upgrade to Pro</a>
-                                <a href="https://datagem.app/pricing" style="display: inline-block; background: transparent; border: 1px solid #4F46E5; color: #6366F1; font-weight: 600; font-size: 14px; text-decoration: none; padding: 10px 20px; border-radius: 6px;">💼 View Enterprise</a>
-                            </div>
-                        </div>
-                        <div style="text-align: center;">
-                            <a href="https://datagem.app/chat" style="display: inline-block; background: #111827; color: #ffffff; font-weight: 600; font-size: 16px; text-decoration: none; padding: 14px 32px; border-radius: 8px; border: 1px solid #374151;">Open Workspace</a>
-                        </div>
-                    </div>
-                    <div style="padding: 24px 40px; background: #0F131F; text-align: center;">
-                        <p style="color: #6B7280; font-size: 12px; margin: 0;">&copy; 2026 DataGem. All rights reserved.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """
-            
-            part2 = MIMEText(html_content, "html")
-            msg.attach(part2)
-            
-            server = smtplib.SMTP("smtp.gmail.com", 587)
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, created_user.email, msg.as_string())
-            server.quit()
-            print(f"✅ Successfully sent welcome email to {created_user.email}")
-        except Exception as e:
-            print(f"❌ Failed to send welcome email: {e}")
-    else:
-        print("⚠️ SMTP credentials missing. Welcome email printed to console instead.")
-        print(f"🚀 SENDING WELCOME EMAIL TO: {created_user.email}")
+    # Send a beautiful Welcome Email via the Dual-Engine (Resend / SMTP)
+    try:
+        from utils.email_utils import send_welcome_email
+        send_welcome_email(user_email=created_user.email, user_name=created_user.full_name or "Operator")
+    except Exception as e:
+        print(f"⚠️ Error triggering welcome email: {e}")
     
     return created_user
 
