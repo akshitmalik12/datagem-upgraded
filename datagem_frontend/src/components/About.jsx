@@ -56,9 +56,9 @@ export default function About() {
         
         {/* Navigation */}
         <div className="flex justify-between items-center mb-16 pb-6 border-b border-slate-800">
-          <Link to="/" className="flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white transition-colors">
+          <Link to="/chat" className="flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-white transition-colors">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>← Back to Start</span>
+            <span>← Back to CRM Chat</span>
           </Link>
           <div className="flex items-center gap-4 text-xs font-mono">
             <Link to="/pricing" className="text-slate-400 hover:text-sky-300">Pricing</Link>

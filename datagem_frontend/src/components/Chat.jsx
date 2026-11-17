@@ -47,6 +47,11 @@ import DisputeTicketModal from './DisputeTicketModal';
 
 // Global memory cache to persist chat state across page navigations
 let chatMemoryCache = null;
+if (typeof window !== 'undefined') {
+  window.__DATAGEM_CLEAR_CHAT_CACHE__ = () => {
+    chatMemoryCache = null;
+  };
+}
 
 export default function Chat() {
 
@@ -141,14 +146,15 @@ export default function Chat() {
   const [expandedCodeBlocks, setExpandedCodeBlocks] = useState({});
   const [expandedOutputs, setExpandedOutputs] = useState({});
   const [executionStep, setExecutionStep] = useState(null);
-    const [sessions, setSessions] = useState(() => JSON.parse(localStorage.getItem('datagem_sessions')) || []);
+  const userStorageKey = user?.id ? `datagem_sessions_user_${user.id}` : 'datagem_sessions_guest';
+  const [sessions, setSessions] = useState(() => JSON.parse(localStorage.getItem(user?.id ? `datagem_sessions_user_${user.id}` : 'datagem_sessions_guest')) || []);
   const [currentSessionId, setCurrentSessionId] = useState(chatMemoryCache?.currentSessionId || null);
   const fileInputRef = useRef(null);
 
-  // Sync sessions to localStorage
+  // Sync sessions to user-isolated localStorage key
   useEffect(() => {
-    localStorage.setItem('datagem_sessions', JSON.stringify(sessions));
-  }, [sessions]);
+    localStorage.setItem(userStorageKey, JSON.stringify(sessions));
+  }, [sessions, userStorageKey]);
 
   const [connectionString, setConnectionString] = useState(chatMemoryCache?.connectionString || '');
   const [isConnected, setIsConnected] = useState(chatMemoryCache?.isConnected || false);

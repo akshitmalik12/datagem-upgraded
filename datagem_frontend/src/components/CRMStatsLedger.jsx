@@ -332,7 +332,7 @@ export default function CRMStatsLedger({
                 <th className="px-4 py-3">Gross Sales</th>
                 <th className="px-4 py-3">Contribution Margin</th>
                 <th className="px-4 py-3">Financial Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3 text-center">Autonomous AI Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
@@ -395,53 +395,57 @@ export default function CRMStatsLedger({
                         )}
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         {isBleeder ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900 whitespace-nowrap leading-none">
                             Hidden Bleeder
                           </span>
                         ) : isStar ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 whitespace-nowrap leading-none">
                             Star Performer
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-900">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-900 whitespace-nowrap leading-none">
                             Healthy
                           </span>
                         )}
                       </td>
 
-                      <td className="px-4 py-3 text-right space-x-1.5">
-                        <button
-                          onClick={() => onAskAI(`Analyze profit contribution, commission leakage, and return rate for ${skuCode}`)}
-                          className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-all"
-                        >
-                          Ask AI
-                        </button>
-
-                        {row.billed_weight_kg > row.actual_weight_kg && (
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                        <div className="inline-flex items-center justify-center gap-1.5">
                           <button
-                            id="tour-dispute-action"
-                            onClick={() => {
-                              if (onViewDispute) {
-                                onViewDispute({
-                                  sku: skuCode,
-                                  product_name: row.product_name,
-                                  billed_weight_kg: row.billed_weight_kg,
-                                  actual_weight_kg: row.actual_weight_kg,
-                                  affected_orders_count: 24,
-                                  overcharge_per_unit: 61.0,
-                                  total_reclaimable_cash: 24 * 61.0
-                                });
-                              } else {
-                                onAskAI(`Draft an Amazon Seller Support dispute ticket for SKU ${skuCode} with billed weight ${row.billed_weight_kg}kg vs actual weight ${row.actual_weight_kg}kg`);
-                              }
-                            }}
-                            className="px-2.5 py-1 rounded bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-xs font-medium transition-all"
+                            onClick={() => onAskAI(`Analyze profit contribution, commission leakage, and return rate for ${skuCode}`)}
+                            className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-all"
+                            title="Ask AI Drilldown"
                           >
-                            Claim
+                            Ask AI
                           </button>
-                        )}
+
+                          {row.billed_weight_kg > row.actual_weight_kg && (
+                            <button
+                              id="tour-dispute-action"
+                              onClick={() => {
+                                if (onViewDispute) {
+                                  onViewDispute({
+                                    sku: skuCode,
+                                    product_name: row.product_name,
+                                    billed_weight_kg: row.billed_weight_kg,
+                                    actual_weight_kg: row.actual_weight_kg,
+                                    affected_orders_count: 24,
+                                    overcharge_per_unit: 61.0,
+                                    total_reclaimable_cash: 24 * 61.0
+                                  });
+                                } else {
+                                  onAskAI(`Draft an Amazon Seller Support dispute ticket for SKU ${skuCode} with billed weight ${row.billed_weight_kg}kg vs actual weight ${row.actual_weight_kg}kg`);
+                                }
+                              }}
+                              className="px-2.5 py-1 rounded bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-xs font-medium transition-all"
+                              title="Draft Dispute Ticket"
+                            >
+                              Claim
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

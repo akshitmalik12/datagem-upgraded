@@ -97,6 +97,16 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('datagem_sessions');
+    localStorage.removeItem('datagem_chat_sessions');
+    localStorage.removeItem('datagem_current_project_id');
+    localStorage.removeItem('datagem_current_dataset_id');
+    // Clear in-memory cross-page chat cache
+    try {
+      if (typeof window !== 'undefined' && window.__DATAGEM_CLEAR_CHAT_CACHE__) {
+        window.__DATAGEM_CLEAR_CHAT_CACHE__();
+      }
+    } catch (e) {}
     setToken(null);
     setUser(null);
   };
