@@ -145,80 +145,13 @@ def forgot_password(request: auth_models.ForgotPasswordRequest, db: Session = De
     db.add(db_reset)
     db.commit()
     
-    # Send OTP via SMTP if configured
-    sender_email = os.getenv("SMTP_EMAIL")
-    sender_password = os.getenv("SMTP_PASSWORD")
-    
-    if sender_email and sender_password:
-        try:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = "Your DataGem Password Reset OTP 🔐"
-            msg["From"] = sender_email
-            msg["To"] = request.email
-            
-            html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <meta name="color-scheme" content="light dark">
-            <meta name="supported-color-schemes" content="light dark">
-            <style>
-              :root {{ color-scheme: light dark; supported-color-schemes: light dark; }}
-            </style>
-            </head>
-            <body style="margin: 0; padding: 0; background-color: #0B0F19;">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0B0F19" style="background-color: #0B0F19; min-width: 100%; width: 100%;">
-                    <tr>
-                        <td align="center" style="padding: 40px 20px; background-color: #0B0F19;">
-                            <table width="100%" max-width="550" cellpadding="0" cellspacing="0" border="0" style="max-width: 550px; background-color: #151B2B; border: 1px solid #1F2937; border-radius: 16px; overflow: hidden; margin: 0 auto;">
-                                <tr>
-                                    <td align="center" style="padding: 40px; border-bottom: 1px solid #1F2937;">
-                                        <h1 style="color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">DataGem <span style="color: #6366F1;">Security</span></h1>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 40px; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
-                                        <h2 style="color: #ffffff; font-size: 20px; font-weight: 600; margin-top: 0;">Password Reset Request</h2>
-                                        <p style="color: #9CA3AF; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-                                            We received a request to reset your password. Use the secure authorization code below to complete the process.
-                                        </p>
-                                        
-                                        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #0F131F; border: 1px solid #1F2937; border-radius: 12px; margin-bottom: 30px;">
-                                            <tr>
-                                                <td align="center" style="padding: 30px;">
-                                                    <p style="color: #6B7280; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-top: 0; margin-bottom: 12px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;">Your Authorization Code</p>
-                                                    <div style="color: #ffffff; font-size: 36px; font-weight: 800; letter-spacing: 8px; font-family: monospace;">{otp}</div>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <p style="color: #6B7280; font-size: 14px; line-height: 1.6; margin-bottom: 0;">
-                                            This code is valid for <strong>15 minutes</strong>. If you did not request a password reset, please ignore this email or contact support if you have concerns.
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-            </body>
-            </html>
-            """
-            msg.attach(MIMEText(html_content, "html"))
-            
-            server = smtplib.SMTP("smtp.gmail.com", 587)
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, request.email, msg.as_string())
-            server.quit()
-            print(f"✅ Successfully sent OTP email to {request.email}")
-        except Exception as e:
-            print(f"❌ Failed to send OTP email: {e}")
-    else:
-        print(f"\n============================")
-        print(f"🔐 PASSWORD RESET OTP: {otp}")
-        print(f"📧 FOR EMAIL: {request.email}")
-        print(f"============================\n")
+    # Send OTP using our verified transactional email engine (Resend API)
+    try:
+        from utils.email_utils import send_password_reset_email
+        send_password_reset_email(request.email, otp)
+        print(f"✅ Successfully dispatched OTP verification email to {request.email}")
+    except Exception as e:
+        print(f"⚠️ Failed to send OTP email: {e}")
     
     return {"message": "If that email exists, an OTP has been sent."}
 

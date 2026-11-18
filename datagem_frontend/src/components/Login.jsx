@@ -154,9 +154,12 @@ export default function Login() {
             <motion.div 
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 rounded-lg bg-rose-950/40 border border-rose-800 text-rose-300 text-xs font-sans"
+              className="mb-4 p-3 rounded-lg bg-rose-950/40 border border-rose-800 text-rose-300 text-xs font-sans flex flex-col gap-1"
             >
-              {error}
+              <div>{error}</div>
+              <Link to="/forgot-password" className="text-sky-400 hover:text-sky-300 font-semibold underline text-[11px] inline-flex items-center gap-1">
+                <span>Reset your password with OTP →</span>
+              </Link>
             </motion.div>
           )}
 
