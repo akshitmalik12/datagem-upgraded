@@ -73,7 +73,7 @@ export default function CheckoutModal({ isOpen, onClose, selectedPlan, onUpgrade
               <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40">
                 <Check className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold text-white">Subscription Activated! 💎</h3>
+              <h3 className="text-xl font-bold text-white">Subscription Activated!</h3>
               <p className="text-sm text-slate-400 max-w-sm mx-auto">
                 Welcome to DataGem <span className="text-emerald-400 font-semibold">{selectedPlan.name}</span>. Your workspace capabilities have been upgraded immediately.
               </p>

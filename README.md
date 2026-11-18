@@ -1,4 +1,4 @@
-# 💎 DataGem – AI Conversational Data Analyst
+# DataGem – AI Conversational Data Analyst
 
 > “Talk to your data like never before.”  
 > DataGem is an **AI-powered conversational data analyst** that allows users to explore, visualize, and gain insights from datasets through natural language.  

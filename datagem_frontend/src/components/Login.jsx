@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Terminal, Lock, Sparkles, ArrowRight, ShieldCheck, Database, Activity } from 'lucide-react';
 import TechText from './TechText';
 import Lightfall from './Lightfall';
+import DataGemLogo from './DataGemLogo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -144,9 +145,7 @@ export default function Login() {
           className="p-8 rounded-3xl bg-[#090D14]/90 border border-sky-500/30 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.85)] relative overflow-hidden font-sans"
         >
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-xs font-sans font-bold text-sky-300">
-              💎
-            </div>
+            <DataGemLogo size="sm" glow={true} />
             <span className="font-bold text-lg tracking-tight font-sans">Sign In to DataGem</span>
           </div>
 

@@ -25,8 +25,8 @@ export default function ExecutiveBriefingCard({ briefing, onSelectPrompt }) {
       {/* Top Banner Tag */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-sm font-bold text-sky-300">
-            💎
+          <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-xs font-bold text-sky-300 font-mono">
+            DG
           </div>
           <div>
             <div className="flex items-center gap-2">

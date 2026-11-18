@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GhostFibers from './GhostFibers';
+import DataGemLogo from './DataGemLogo';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -116,14 +117,7 @@ export default function Landing() {
       <nav className="relative z-50 border-b border-slate-800/80 bg-[#090D14]/80 backdrop-blur-xl px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 via-cyan-500 to-emerald-400 p-[1px] shadow-lg shadow-sky-500/20">
-              <div className="w-full h-full bg-[#090D14] rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                💎
-              </div>
-            </div>
-            <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-400">
-              DataGem
-            </span>
+            <DataGemLogo size="md" showWordmark={true} glow={true} />
             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-400 font-semibold ml-1">
               Domain-Aware Decision OS
             </span>
@@ -512,8 +506,8 @@ export default function Landing() {
       <footer className="relative z-10 border-t border-slate-800/80 py-12 px-6 max-w-6xl mx-auto font-sans">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800/60 text-xs">
           <div>
-            <div className="flex items-center gap-2 text-white font-bold text-sm mb-3">
-              <span className="text-emerald-400">💎</span> DataGem
+            <div className="flex items-center gap-2 mb-3">
+              <DataGemLogo size="sm" showWordmark={true} />
             </div>
             <p className="text-slate-400 leading-relaxed">
               Autonomous fee reconciliation, volumetric weight delta detection, and price elasticity modeling for e-commerce operators.

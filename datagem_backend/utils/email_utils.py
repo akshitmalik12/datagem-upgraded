@@ -100,7 +100,7 @@ def send_transactional_email(to_email: str, subject: str, html_content: str, tex
 def send_welcome_email(user_email: str, user_name: str = ""):
     """Non-blocking welcome email using Jinja2 welcome.html template."""
     name = user_name or "Operator"
-    subject = "Welcome to DataGem! 💎 Audit your marketplace store in 60s"
+    subject = "Welcome to DataGem | Complete store audit in 60s"
     context = {
         "user_name": name,
         "workspace_url": "https://www.datagem.app/chat"

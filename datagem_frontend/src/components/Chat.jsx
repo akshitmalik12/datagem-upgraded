@@ -51,9 +51,11 @@ import ShareReportModal from './ShareReportModal';
 import DisputePacketModal from './DisputePacketModal';
 import BuyBoxWarRoomModal from './BuyBoxWarRoomModal';
 import ProfitSimulatorCockpit from './ProfitSimulatorCockpit';
+import DeadInventoryModal from './DeadInventoryModal';
 import { LogOut, User as UserIcon, Settings, Sparkles, Share2 } from 'lucide-react';
 import TechText from './TechText';
 import Lightfall from './Lightfall';
+import DataGemLogo from './DataGemLogo';
 
 // Global memory cache to persist chat state across page navigations
 let chatMemoryCache = null;
@@ -123,10 +125,13 @@ export default function Chat() {
   const [isResizingSplit, setIsResizingSplit] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editSessionTitle, setEditSessionTitle] = useState("");
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isDeadInventoryOpen, setIsDeadInventoryOpen] = useState(false);
   const [searchParams] = useSearchParams();
 
   const domainSwitcherRef = useRef(null);
   const toolsMenuRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   // Click outside listener for header popovers
   useEffect(() => {
@@ -136,6 +141,9 @@ export default function Chat() {
       }
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target)) {
         setShowMoreTools(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setShowUserMenu(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -1373,386 +1381,368 @@ export default function Chat() {
 
       {/* Main Content */}
       <div className="relative flex flex-col flex-1 overflow-hidden min-h-0 z-10">
-        {/* Header - Split into Top Bar and Sub Menu Bar */}
+        {/* UNIFIED STREAMLINED TOP NAVIGATION BAR */}
         <motion.header
-          initial={{ y: -20, opacity: 0 }}
+          initial={{ y: -15, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex-shrink-0 backdrop-blur-xl bg-white/90 dark:bg-[#090D14]/90 border-b border-slate-200 dark:border-slate-800/80 transition-colors z-20 relative flex flex-col"
+          transition={{ duration: 0.25 }}
+          className="flex-shrink-0 backdrop-blur-xl bg-white/90 dark:bg-[#090D14]/90 border-b border-slate-200 dark:border-slate-800/80 transition-colors z-30 relative px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 font-sans"
         >
-          {/* Top Row: Brand & Theme Toggle */}
-          <div className="px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <motion.button
-                onClick={() => setShowSidebar(!showSidebar)}
-                className="flex items-center justify-center w-8 h-8 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-white rounded-lg transition-all"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
-              </motion.button>
-              
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-sky-600 dark:bg-sky-500 flex items-center justify-center text-white font-bold text-xs shadow-sm">
-                  DG
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white font-sans">DataGem<span className="text-sky-600 dark:text-sky-400">.ai</span></h1>
-                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-mono rounded font-medium">
-                      v2.0
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 1-Click Domain Hub Switcher Pill */}
-              <div ref={domainSwitcherRef} className="relative hidden md:block">
-                <button
-                  onClick={() => setShowDomainSwitcher(!showDomainSwitcher)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-xs font-medium transition-all text-slate-700 dark:text-slate-200"
-                >
-                  <span className="text-xs">{DOMAIN_PRESETS[activeDomainHub]?.icon}</span>
-                  <span className="font-medium text-slate-900 dark:text-white">{DOMAIN_PRESETS[activeDomainHub]?.name}</span>
-                  <span className="text-[10px] text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/70 border border-sky-200 dark:border-sky-800/80 px-1 py-0.2 rounded">
-                    {DOMAIN_PRESETS[activeDomainHub]?.badge}
-                  </span>
-                  <span className="text-slate-400 text-[10px]">▼</span>
-                </button>
-
-                {showDomainSwitcher && (
-                  <div className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-[#090D14] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-2 z-50 space-y-1">
-                    <div className="text-[10px] uppercase font-mono tracking-wider text-slate-400 px-2 py-1">Active Domain Workspace</div>
-                    {Object.entries(DOMAIN_PRESETS).map(([key, domain]) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          setActiveDomainHub(key);
-                          setShowDomainSwitcher(false);
-                          const demoRows = domain.data;
-                          setDataset(demoRows);
-                          setDatasetFilename(domain.datasetName);
-                          const profile = {
-                            filename: domain.datasetName,
-                            totalRows: demoRows.length,
-                            columns: Object.keys(demoRows[0] || {}),
-                            columnTypes: Object.keys(demoRows[0] || {}).reduce((acc, col) => {
-                              acc[col] = typeof demoRows[0][col] === 'number' ? 'numeric' : 'categorical';
-                              return acc;
-                            }, {}),
-                            fileSize: "64 KB",
-                            processedAt: new Date().toISOString()
-                          };
-                          setDatasetProfile(profile);
-                          try {
-                            const briefing = analyzeDatasetIntelligence(demoRows, profile.columns);
-                            setExecutiveBriefing(briefing);
-                          } catch (err) {
-                            console.error("Briefing error:", err);
-                          }
-                        }}
-                        className={`w-full text-left p-2 rounded-lg flex items-center justify-between text-xs transition-colors ${
-                          activeDomainHub === key 
-                            ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 font-medium' 
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/80'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span>{domain.icon}</span>
-                          <div>
-                            <div className="font-medium text-slate-900 dark:text-white">{domain.name}</div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{domain.datasetName}</div>
-                          </div>
-                        </div>
-                        {activeDomainHub === key && <span className="text-sky-600 dark:text-sky-400 text-xs font-semibold">✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+          {/* Left: Brand & Domain Hub */}
+          <div className="flex items-center gap-3">
+            <motion.button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="flex items-center justify-center w-8 h-8 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-white rounded-lg transition-all"
+              title="Toggle Intelligence Sidebar"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </motion.button>
+            
+            <div className="flex items-center gap-2">
+              <DataGemLogo size="sm" showWordmark={true} glow={true} />
+              <span className="hidden xl:inline-block px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-mono rounded font-medium">
+                v2.0
+              </span>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <span className="text-[11px] font-sans text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 hidden sm:flex">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                DuckDB Active
-              </span>
+            {/* 1-Click Domain Hub Switcher Pill */}
+            <div ref={domainSwitcherRef} className="relative hidden md:block">
+              <button
+                onClick={() => setShowDomainSwitcher(!showDomainSwitcher)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-xs font-medium transition-all text-slate-700 dark:text-slate-200"
+              >
+                <span className="text-xs">{DOMAIN_PRESETS[activeDomainHub]?.icon}</span>
+                <span className="font-medium text-slate-900 dark:text-white">{DOMAIN_PRESETS[activeDomainHub]?.name}</span>
+                <span className="text-[10px] text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/70 border border-sky-200 dark:border-sky-800/80 px-1 py-0.2 rounded hidden lg:inline">
+                  {DOMAIN_PRESETS[activeDomainHub]?.badge}
+                </span>
+                <span className="text-slate-400 text-[10px]">▼</span>
+              </button>
 
-              {/* User Profile Pill */}
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-700 dark:text-slate-300">
-                <div className="w-4 h-4 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-[10px] font-bold">
-                  {user?.email ? user.email[0].toUpperCase() : 'U'}
+              {showDomainSwitcher && (
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-[#090D14] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-2 z-50 space-y-1">
+                  <div className="text-[10px] uppercase font-mono tracking-wider text-slate-400 px-2 py-1">Active Domain Workspace</div>
+                  {Object.entries(DOMAIN_PRESETS).map(([key, domain]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setActiveDomainHub(key);
+                        setShowDomainSwitcher(false);
+                        const demoRows = domain.data;
+                        setDataset(demoRows);
+                        setDatasetFilename(domain.datasetName);
+                        const profile = {
+                          filename: domain.datasetName,
+                          totalRows: demoRows.length,
+                          columns: Object.keys(demoRows[0] || {}),
+                          columnTypes: Object.keys(demoRows[0] || {}).reduce((acc, col) => {
+                            acc[col] = typeof demoRows[0][col] === 'number' ? 'numeric' : 'categorical';
+                            return acc;
+                          }, {}),
+                          fileSize: "64 KB",
+                          processedAt: new Date().toISOString()
+                        };
+                        setDatasetProfile(profile);
+                        try {
+                          const briefing = analyzeDatasetIntelligence(demoRows, profile.columns);
+                          setExecutiveBriefing(briefing);
+                        } catch (err) {
+                          console.error("Briefing error:", err);
+                        }
+                      }}
+                      className={`w-full text-left p-2 rounded-lg flex items-center justify-between text-xs transition-colors ${
+                        activeDomainHub === key 
+                          ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 font-medium' 
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{domain.icon}</span>
+                        <div>
+                          <div className="font-medium text-slate-900 dark:text-white">{domain.name}</div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{domain.datasetName}</div>
+                        </div>
+                      </div>
+                      {activeDomainHub === key && <span className="text-sky-600 dark:text-sky-400 text-xs font-semibold">✓</span>}
+                    </button>
+                  ))}
                 </div>
-                <span className="max-w-[140px] truncate">{user?.email || 'Authenticated'}</span>
-              </div>
-
-              {/* Upgrade CTA if not Enterprise */}
-              {user?.tier?.toLowerCase() !== 'enterprise' && (
-                <button
-                  onClick={() => {
-                    setSelectedPlanForCheckout({
-                      id: 'pro',
-                      name: 'Pro Growth',
-                      price_monthly_inr: '₹2,499',
-                      price_monthly_usd: '$29',
-                      description: 'For growing merchants needing unlimited queries and dispute recovery.',
-                      features: [
-                        'Unlimited DuckDB OLAP queries',
-                        '100MB dataset file uploads',
-                        '3 1-Click Amazon/Flipkart Dispute Filings / mo',
-                        'Full Dynamic CM3 & Hidden Bleeder Ledger'
-                      ]
-                    });
-                    setIsCheckoutOpen(true);
-                  }}
-                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-sans font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 hover:opacity-95 shadow-sm transition-all"
-                  title="Upgrade your DataGem subscription"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Upgrade</span>
-                </button>
               )}
-
-              {/* Theme Toggle Button */}
-              <button
-                onClick={toggleTheme}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
-                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? (
-                  <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                )}
-              </button>
-
-              {/* Share Audit Report Button */}
-              <button
-                onClick={() => setIsShareModalOpen(true)}
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-sans font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition-colors shadow-sm"
-                title="Share this verified audit via read-only link"
-              >
-                <Share2 className="w-3.5 h-3.5 text-sky-500" />
-                <span>Share Audit</span>
-              </button>
-
-              {/* Settings & API Keys Button */}
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
-                title="Settings & Free AI Keys"
-                aria-label="Settings"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-
-              {/* Explicit Logout Button */}
-              <button
-                onClick={() => {
-                  logout();
-                  navigate('/login');
-                }}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-sans font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/40 transition-colors shadow-sm"
-                title="Log out of your account"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
             </div>
           </div>
 
-          {/* Sub Row: Clean View Switcher & Consolidated Tools Menu */}
-          <div className="px-6 py-2 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/80 flex items-center justify-between gap-3 text-xs font-sans">
-            <div className="flex items-center gap-2">
-              {/* 3-Pillar Executive Segmented Switch */}
-              <div className="flex items-center bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-0.5 rounded-lg shadow-sm">
-                <button
-                  onClick={() => setWorkspaceViewMode('crm')}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    workspaceViewMode === 'crm' 
-                      ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                  title="Audit Ledger: High-density transactions, fee leakages, and clawbacks"
-                >
-                  <span>📊</span>
-                  <span>Audit Ledger</span>
-                </button>
-                <button
-                  onClick={() => setWorkspaceViewMode('simulator')}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    workspaceViewMode === 'simulator' 
-                      ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                  title="Profit Simulator: Dynamic price elasticity and forward what-if modeling"
-                >
-                  <span>🧪</span>
-                  <span>Profit Simulator</span>
-                </button>
-                <button
-                  onClick={() => setWorkspaceViewMode('chat')}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    workspaceViewMode === 'chat' 
-                      ? 'bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                  title="Autonomous AI Co-Pilot: Zero-token in-memory DuckDB analytical queries"
-                >
-                  <span>💬</span>
-                  <span>Co-Pilot</span>
-                </button>
-                <button
-                  onClick={() => setWorkspaceViewMode('split')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
-                    workspaceViewMode === 'split' 
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                  title="Split View: Ledger and Co-Pilot side-by-side"
-                >
-                  <span>⚡</span>
-                  <span>Split</span>
-                </button>
-              </div>
+          {/* Center: Sleek 3-Pillar Segmented Switcher */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 rounded-lg shadow-sm text-xs font-sans">
+            <button
+              onClick={() => setWorkspaceViewMode('crm')}
+              className={`px-3 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                workspaceViewMode === 'crm' 
+                  ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm' 
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Audit Ledger: High-density transactions, fee leakages, and clawbacks"
+            >
+              <span>📊</span>
+              <span>Ledger</span>
+            </button>
+            <button
+              onClick={() => setWorkspaceViewMode('simulator')}
+              className={`px-3 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                workspaceViewMode === 'simulator' 
+                  ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' 
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Profit Simulator: Dynamic price elasticity and forward what-if modeling"
+            >
+              <span>🧪</span>
+              <span>Simulator</span>
+            </button>
+            <button
+              onClick={() => setWorkspaceViewMode('chat')}
+              className={`px-3 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                workspaceViewMode === 'chat' 
+                  ? 'bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm' 
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Autonomous AI Co-Pilot: Zero-token in-memory DuckDB analytical queries"
+            >
+              <span>💬</span>
+              <span>Co-Pilot</span>
+            </button>
+            <button
+              onClick={() => setWorkspaceViewMode('split')}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
+                workspaceViewMode === 'split' 
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Split View: Ledger and Co-Pilot side-by-side"
+            >
+              <span>⚡</span>
+              <span className="hidden lg:inline">Split</span>
+            </button>
+          </div>
 
-              {/* Primary Fast Actions */}
+          {/* Right: Consolidated Tools & User Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsDeckModalOpen(true)}
+              className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors text-xs font-medium"
+              title="Export Executive Board Deck & Audit PDF"
+            >
+              <span>📄</span>
+              <span>Board Deck</span>
+            </button>
+
+            {/* Consolidated Tools Menu */}
+            <div ref={toolsMenuRef} className="relative">
               <button
-                onClick={() => {
-                  setWorkspaceViewMode('split');
-                  setIsTourOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors font-medium"
+                onClick={() => setShowMoreTools(!showMoreTools)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-medium transition-colors"
+                title="Access all audit tools and platform portals"
               >
-                <span>⚡</span> Guided Tour
+                <span>⋯ Tools</span>
+                <span className="text-[10px] text-slate-400">▼</span>
               </button>
 
-              <button
-                onClick={() => setIsDeckModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors font-medium"
-              >
-                <span>📄</span> Board Deck &amp; PDF
-              </button>
-
-              {/* Consolidated "More Tools & Portals" Dropdown */}
-              <div ref={toolsMenuRef} className="relative">
-                <button
-                  onClick={() => setShowMoreTools(!showMoreTools)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors font-medium"
-                >
-                  <span>⋯</span> Tools &amp; Pages <span className="text-[10px] text-slate-400">▼</span>
-                </button>
-
-                {showMoreTools && (
-                  <div className="absolute top-full left-0 mt-1 w-52 bg-white dark:bg-[#090D14] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 z-50 space-y-0.5">
-                    <button
-                      onClick={() => { setIsPriceModalOpen(true); setShowMoreTools(false); }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                    >
-                      <span>📈</span> Price Elasticity Studio
-                    </button>
-                    <button
-                      onClick={() => { setIsBuyBoxWarRoomOpen(true); setShowMoreTools(false); }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                    >
-                      <span>⚔️</span> Buy Box War-Room
-                    </button>
-                    <button
-                      onClick={() => { 
-                        setSelectedClaimForPacket({ claim_id: 'CLM-AMZ-2026-981', sku: 'ELEC-W-EARBUDS', marketplace: 'Amazon Seller Central (FBA)' });
-                        setIsDisputePacketOpen(true); 
-                        setShowMoreTools(false); 
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                    >
-                      <span>⚖️</span> Official Amazon Dispute Dockets
-                    </button>
-                    <button
-                      onClick={() => { setIsConnectorsModalOpen(true); setShowMoreTools(false); }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                    >
-                      <span>⚡</span> Marketplace Hub
-                    </button>
-                    <button
-                      onClick={() => { setIsWatchdogModalOpen(true); setShowMoreTools(false); }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                    >
-                      <span>🛡️</span> Autonomous Watchdogs
-                    </button>
-                    <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setShowMoreTools(false)}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                    >
-                      <span>📊</span> Analytics Dashboard
-                    </Link>
-                    <Link
-                      to="/pricing"
-                      onClick={() => setShowMoreTools(false)}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                    >
-                      <span>💳</span> Pricing &amp; Plans
-                    </Link>
-                    <Link
-                      to="/about"
-                      onClick={() => setShowMoreTools(false)}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                    >
-                      <span>ℹ️</span> About Platform
-                    </Link>
-                    {user?.email?.trim().toLowerCase() === 'aakshitmalik@gmail.com' && (
-                      <>
-                        <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
-                        <Link
-                          to="/admin"
-                          onClick={() => setShowMoreTools(false)}
-                          className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                        >
-                          <span>⚙️</span> Admin Portal
-                        </Link>
-                        <Link
-                          to="/design-lab"
-                          onClick={() => setShowMoreTools(false)}
-                          className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                        >
-                          <span>🛠️</span> Design Lab
-                        </Link>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              {showMoreTools && (
+                <div className="absolute top-full right-0 mt-1.5 w-60 bg-white dark:bg-[#090D14] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 z-50 space-y-0.5 text-xs">
+                  <button
+                    onClick={() => {
+                      setWorkspaceViewMode('split');
+                      setIsTourOpen(true);
+                      setShowMoreTools(false);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>⚡</span> Interactive Guided Tour
+                  </button>
+                  <button
+                    onClick={() => { setIsDeadInventoryOpen(true); setShowMoreTools(false); }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>📦</span> Dead Inventory &amp; Aged Storage
+                  </button>
+                  <button
+                    onClick={() => { setIsPriceModalOpen(true); setShowMoreTools(false); }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>📈</span> Price Elasticity Studio
+                  </button>
+                  <button
+                    onClick={() => { setIsBuyBoxWarRoomOpen(true); setShowMoreTools(false); }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>⚔️</span> Buy Box War-Room
+                  </button>
+                  <button
+                    onClick={() => { 
+                      setSelectedClaimForPacket({ claim_id: 'CLM-AMZ-2026-981', sku: 'ELEC-W-EARBUDS', marketplace: 'Amazon Seller Central (FBA)' });
+                      setIsDisputePacketOpen(true); 
+                      setShowMoreTools(false); 
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>⚖️</span> Amazon Dispute Dockets
+                  </button>
+                  <button
+                    onClick={() => { setIsConnectorsModalOpen(true); setShowMoreTools(false); }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>⚡</span> Marketplace Integrations Hub
+                  </button>
+                  <button
+                    onClick={() => { setIsWatchdogModalOpen(true); setShowMoreTools(false); }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>🛡️</span> Autonomous Watchdogs
+                  </button>
+                  <button
+                    onClick={() => { setIsShareModalOpen(true); setShowMoreTools(false); }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>🔗</span> Share Verified Audit Link
+                  </button>
+                  <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setShowMoreTools(false)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>📊</span> Analytics Dashboard
+                  </Link>
+                  <Link
+                    to="/pricing"
+                    onClick={() => setShowMoreTools(false)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>💳</span> Pricing &amp; Plans
+                  </Link>
+                  <Link
+                    to="/about"
+                    onClick={() => setShowMoreTools(false)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <span>ℹ️</span> About Platform
+                  </Link>
+                  {user?.email?.trim().toLowerCase() === 'aakshitmalik@gmail.com' && (
+                    <>
+                      <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
+                      <Link
+                        to="/admin"
+                        onClick={() => setShowMoreTools(false)}
+                        className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 font-semibold text-sky-600 dark:text-sky-400"
+                      >
+                        <span>⚙️</span> Admin Portal
+                      </Link>
+                      <Link
+                        to="/design-lab"
+                        onClick={() => setShowMoreTools(false)}
+                        className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 font-semibold text-emerald-600 dark:text-emerald-400"
+                      >
+                        <span>🛠️</span> Design Lab
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
-            <AnimatePresence>
-              {messages.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  className="flex items-center gap-2"
-                >
-                  <button
-                    onClick={exportChat}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors font-medium"
-                    title="Export chat history"
-                  >
-                    Export
-                  </button>
-                  <button
-                    onClick={clearChat}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-md transition-colors font-medium"
-                    title="Clear chat history"
-                  >
-                    Clear
-                  </button>
-                </motion.div>
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
               )}
-            </AnimatePresence>
+            </button>
+
+            {/* User Profile Popover Menu */}
+            <div ref={userMenuRef} className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
+                title="Account & Settings"
+              >
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold font-mono">
+                  {user?.email ? user.email[0].toUpperCase() : 'U'}
+                </div>
+              </button>
+
+              {showUserMenu && (
+                <div className="absolute top-full right-0 mt-1.5 w-64 bg-white dark:bg-[#090D14] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-2.5 z-50 space-y-2 text-xs font-sans">
+                  <div className="pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <div className="font-semibold text-slate-900 dark:text-white truncate">
+                      {user?.email || 'Authenticated User'}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold uppercase">
+                        {user?.tier || 'Free'} Plan
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        DuckDB Active
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => { setIsSettingsOpen(true); setShowUserMenu(false); }}
+                    className="w-full text-left px-2 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Settings &amp; Free AI Keys</span>
+                  </button>
+
+                  {user?.tier?.toLowerCase() !== 'enterprise' && (
+                    <button
+                      onClick={() => {
+                        setSelectedPlanForCheckout({
+                          id: 'pro',
+                          name: 'Pro Growth',
+                          price_monthly_inr: '₹2,499',
+                          price_monthly_usd: '$29',
+                          description: 'For growing merchants needing unlimited queries and dispute recovery.',
+                          features: [
+                            'Unlimited DuckDB OLAP queries',
+                            '100MB dataset file uploads',
+                            '3 1-Click Amazon/Flipkart Dispute Filings / mo',
+                            'Full Dynamic CM3 & Hidden Bleeder Ledger'
+                          ]
+                        });
+                        setIsCheckoutOpen(true);
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center gap-2 transition-colors font-medium"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Upgrade to Pro Growth</span>
+                    </button>
+                  )}
+
+                  <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      onClick={() => {
+                        logout();
+                        navigate('/login');
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 transition-colors"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </motion.header>
 
@@ -1790,6 +1780,7 @@ export default function Chat() {
               setWorkspaceViewMode('simulator');
             }}
             onConnectMarketplace={() => setIsConnectorsModalOpen(true)}
+            onOpenDeadInventory={() => setIsDeadInventoryOpen(true)}
             onAskAI={(promptText) => {
               setWorkspaceViewMode('split');
               setInput(promptText);
@@ -1851,6 +1842,7 @@ export default function Chat() {
                   setSelectedSkuForSimulation(sku || null);
                   setIsPriceModalOpen(true);
                 }}
+                onOpenDeadInventory={() => setIsDeadInventoryOpen(true)}
                 onAskAI={(promptText) => {
                   setInput(promptText);
                   handleSendMessage(promptText);
@@ -1891,8 +1883,8 @@ export default function Chat() {
               <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ scrollBehavior: 'smooth' }}>
                 {messages.length === 0 ? (
                   <div className="py-10 px-4 text-center font-sans space-y-4 max-w-md mx-auto">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-sky-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
-                      <span className="text-2xl">💎</span>
+                    <div className="flex items-center justify-center mx-auto mb-2">
+                      <DataGemLogo size="lg" glow={true} />
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white">Autonomous Decision Co-Pilot</h3>
@@ -3151,6 +3143,18 @@ export default function Chat() {
       <BuyBoxWarRoomModal
         isOpen={isBuyBoxWarRoomOpen}
         onClose={() => setIsBuyBoxWarRoomOpen(false)}
+      />
+      <DeadInventoryModal
+        isOpen={isDeadInventoryOpen}
+        onClose={() => setIsDeadInventoryOpen(false)}
+        dataset={dataset}
+        onSimulateMarkdown={(sku, discount) => {
+          setWorkspaceViewMode('simulator');
+        }}
+        onAskAI={(prompt) => {
+          setWorkspaceViewMode('chat');
+          handleSendMessage(prompt);
+        }}
       />
     </>
   );

@@ -73,7 +73,7 @@ export default function StudioWorkspace() {
       <header className="h-14 border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md px-4 flex items-center justify-between select-none">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-mono font-bold text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-            💎
+            DG
           </div>
           <div className="flex items-center gap-2">
             <span className="font-semibold tracking-tight text-sm text-slate-100">DataGem Studio</span>

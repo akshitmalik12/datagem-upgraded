@@ -15,7 +15,7 @@ export default function ShareReportModal({ isOpen, onClose, currentDataset, brie
     setLoading(true);
     try {
       const summaryMarkdown = briefingText || (
-        `### 💎 DataGem Executive Audit Summary\n\n` +
+        `### DataGem Executive Audit Summary\n\n` +
         `**Generated:** ${new Date().toLocaleDateString()}\n` +
         `**Status:** Verified via Zero-Token In-Memory DuckDB OLAP Engine\n\n` +
         `#### Key Unit Economics:\n` +

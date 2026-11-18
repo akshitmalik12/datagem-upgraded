@@ -43,8 +43,8 @@ export default function SharedReportView() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b border-slate-800 gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center text-black font-bold text-lg shadow-md">
-              💎
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center text-slate-950 font-extrabold text-sm shadow-md font-mono">
+              DG
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">{report.title}</h1>

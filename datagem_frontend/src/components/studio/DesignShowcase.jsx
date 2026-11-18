@@ -550,7 +550,7 @@ export default function DesignShowcase() {
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/70">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-[10px] text-sky-300 font-mono font-bold">
-                  💎
+                  DG
                 </div>
                 <span className="text-xs font-mono text-sky-400 font-semibold">DataGem Copilot (Kinetic Dock Mode)</span>
                 <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded-full">DuckDB 0.38s</span>
