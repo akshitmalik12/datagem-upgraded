@@ -1985,24 +1985,24 @@ export default function Chat() {
                   
                   {message.role === 'user' && (
                     <div className="flex-shrink-0 ml-3 mt-1 order-last">
-                      <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 shadow-md font-mono text-xs font-bold">
+                      <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 shadow-sm font-mono text-xs font-bold">
                         YOU
                       </div>
                     </div>
                   )}
 
                   <motion.div
-                    className={`max-w-3xl rounded-2xl px-6 py-4 relative shadow-lg ${
+                    className={`max-w-3xl rounded-2xl px-6 py-4 relative shadow-sm text-sm font-sans leading-relaxed ${
                       message.role === "user"
-                        ? "bg-[#0B1524] text-sky-100 rounded-tr-sm border border-sky-500/40 shadow-sky-950/30"
-                        : "bg-[#090D14]/95 text-slate-200 rounded-tl-sm border border-slate-800/90 shadow-black/50"
+                        ? "bg-sky-50 dark:bg-[#0B1524] text-slate-900 dark:text-sky-100 rounded-tr-sm border border-sky-200 dark:border-sky-500/40"
+                        : "bg-white dark:bg-[#090D14] text-slate-800 dark:text-slate-200 rounded-tl-sm border border-slate-200 dark:border-slate-800"
                     }`}
                   >
                   {message.role === 'assistant' && (
                     <motion.button
                       initial={{ opacity: 0, scale: 0.8 }}
                       onClick={() => copyToClipboard(message.content, index)}
-                      className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-800 border border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                      className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                       title="Copy message"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2267,47 +2267,43 @@ export default function Chat() {
                           </blockquote>
                         ),
                         table: ({ children }) => (
-                          <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700 ">
-                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                          <div className="overflow-x-auto my-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900/60 text-xs">
                               {children}
                             </table>
                           </div>
                         ),
                         thead: ({ children }) => (
-                          <thead className="dark:dark:to-purple-900/30">
+                          <thead className="bg-slate-50 dark:bg-slate-800/80">
                             {children}
                           </thead>
                         ),
                         tbody: ({ children }) => (
-                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                          <tbody className="bg-white dark:bg-slate-900/40 divide-y divide-slate-100 dark:divide-slate-800/60">
                             {children}
                           </tbody>
                         ),
                         tr: ({ children }) => (
-                          <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             {children}
                           </tr>
                         ),
                         th: ({ children }) => (
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                          <th className="px-3.5 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                             {children}
                           </th>
                         ),
                         td: ({ children }) => (
-                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                          <td className="px-3.5 py-2 text-xs font-mono text-slate-700 dark:text-slate-300">
                             {children}
                           </td>
                         ),
                         a: ({ href, children }) => (
-                          <a href={href} target="_blank" rel="noopener noreferrer" className={`hover:underline font-medium ${
-                            message.role === 'user' 
-                              ? 'text-gray-900 dark:text-gray-100' 
-                              : 'text-gray-900 dark:text-gray-100'
-                          }`}>
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="hover:underline font-medium text-sky-600 dark:text-sky-400">
                             {children}
                           </a>
                         ),
-                        hr: () => <hr className="my-4 border-gray-200 dark:border-gray-700" />,
+                        hr: () => <hr className="my-3 border-slate-200 dark:border-slate-800" />,
                       }}
                     >
                       {message.content.replace(/^DataGem:\s*/i, '').replace(/^\*\*Executing:\*\* `run_python_code`[\s\S]*?(?=\n\n|$)/i, '')}
@@ -2447,43 +2443,43 @@ export default function Chat() {
                           </blockquote>
                         ),
                         table: ({ children }) => (
-                          <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700 ">
-                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                          <div className="overflow-x-auto my-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900/60 text-xs">
                               {children}
                             </table>
                           </div>
                         ),
                         thead: ({ children }) => (
-                          <thead className="dark:dark:to-purple-900/30">
+                          <thead className="bg-slate-50 dark:bg-slate-800/80">
                             {children}
                           </thead>
                         ),
                         tbody: ({ children }) => (
-                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                          <tbody className="bg-white dark:bg-slate-900/40 divide-y divide-slate-100 dark:divide-slate-800/60">
                             {children}
                           </tbody>
                         ),
                         tr: ({ children }) => (
-                          <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             {children}
                           </tr>
                         ),
                         th: ({ children }) => (
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                          <th className="px-3.5 py-2 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                             {children}
                           </th>
                         ),
                         td: ({ children }) => (
-                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                          <td className="px-3.5 py-2 text-xs font-mono text-slate-700 dark:text-slate-300">
                             {children}
                           </td>
                         ),
                         a: ({ href, children }) => (
-                          <a href={href} target="_blank" rel="noopener noreferrer" className="text-gray-900 dark:text-gray-100 hover:underline font-medium">
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="hover:underline font-medium text-sky-600 dark:text-sky-400">
                             {children}
                           </a>
                         ),
-                        hr: () => <hr className="my-4 border-gray-200 dark:border-gray-700" />,
+                        hr: () => <hr className="my-3 border-slate-200 dark:border-slate-800" />,
                       }}
                     >
                       {currentResponse
@@ -2511,11 +2507,11 @@ export default function Chat() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex justify-start my-4"
               >
-                <div className="max-w-2xl bg-[#090D14]/95 border border-sky-500/40 rounded-2xl p-5 shadow-[0_10px_35px_rgba(0,0,0,0.7)] backdrop-blur-xl">
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-xs font-mono font-bold text-sky-400">DataGem Execution Engine</span>
-                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2 py-0.5 rounded-full ml-auto">
+                <div className="max-w-2xl bg-white dark:bg-[#090D14]/95 border border-slate-200 dark:border-sky-500/40 rounded-2xl p-5 shadow-sm dark:shadow-[0_10px_35px_rgba(0,0,0,0.7)] backdrop-blur-xl">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-mono font-bold text-sky-600 dark:text-sky-400">DataGem Execution Engine</span>
+                    <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.5 rounded-full ml-auto">
                       DuckDB Out-of-Core
                     </span>
                   </div>
@@ -2533,7 +2529,7 @@ export default function Chat() {
                       doneLabel="Reasoned in"
                       glyph="sparkle"
                       glyphColor="#10b981"
-                      color="#e2e8f0"
+                      color={theme === 'dark' ? '#e2e8f0' : '#1e293b'}
                       fontSize={14}
                       breathPeriod={1.5}
                       collapsible
@@ -2542,7 +2538,7 @@ export default function Chat() {
                     />
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center gap-2">
+                  <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center gap-2">
                     <CallChip
                       icon="terminal"
                       name="DuckDB Engine"
@@ -2552,7 +2548,7 @@ export default function Chat() {
                       size={30}
                       radius={8}
                       color="#38bdf8"
-                      surfaceColor="#0f172a"
+                      surfaceColor={theme === 'dark' ? '#0f172a' : '#f1f5f9'}
                       progressColor="#0284c7"
                       doneColor="#10b981"
                       showTimer

@@ -76,7 +76,7 @@ export default function GuidedTourModal({ isOpen, onClose, onStepChange }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 15, scale: 0.96 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className="relative w-full max-w-md bg-[#090D14] border border-sky-500/50 rounded-2xl p-6 shadow-2xl shadow-sky-500/10 pointer-events-auto font-sans z-50 text-slate-100 overflow-hidden"
+          className="relative w-full max-w-md bg-white dark:bg-[#090D14] border border-slate-200 dark:border-sky-500/50 rounded-2xl p-6 shadow-2xl shadow-slate-200 dark:shadow-sky-500/10 pointer-events-auto font-sans z-50 text-slate-800 dark:text-slate-100 overflow-hidden"
         >
           {/* Top Decorative Sky Gradient Accent */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-400" />
@@ -84,17 +84,17 @@ export default function GuidedTourModal({ isOpen, onClose, onStepChange }) {
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-sky-950 border border-sky-800 text-sky-400 font-bold text-xs flex items-center justify-center font-mono">
+              <span className="w-6 h-6 rounded-lg bg-sky-50 dark:bg-sky-950 border border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400 font-bold text-xs flex items-center justify-center font-mono">
                 {currentStep.step}
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">
+              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-500/20">
                 {currentStep.badge}
               </span>
             </div>
 
             <button 
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Close Tour"
             >
               <X className="w-4 h-4" />
@@ -102,23 +102,23 @@ export default function GuidedTourModal({ isOpen, onClose, onStepChange }) {
           </div>
 
           {/* Title & Body */}
-          <h3 className="text-base font-bold text-white mb-2 font-sans tracking-tight">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 font-sans tracking-tight">
             {currentStep.title}
           </h3>
-          <p className="text-xs text-slate-300 leading-relaxed mb-4">
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
             {currentStep.description}
           </p>
 
           {/* Pro Tip Box */}
-          <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] text-slate-400 font-sans mb-5 flex items-start gap-2">
-            <span className="text-emerald-400 text-sm leading-none mt-0.5">💡</span>
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 font-sans mb-5 flex items-start gap-2">
+            <span className="text-emerald-500 text-sm leading-none mt-0.5">💡</span>
             <div>
-              <strong className="text-slate-200">Pro Tip:</strong> {currentStep.tip}
+              <strong className="text-slate-800 dark:text-slate-200">Pro Tip:</strong> {currentStep.tip}
             </div>
           </div>
 
           {/* Footer Controls & Progress Dots */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+          <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
             {/* Step Indicators */}
             <div className="flex items-center gap-1.5">
               {TOUR_STEPS.map((_, idx) => (
@@ -126,8 +126,8 @@ export default function GuidedTourModal({ isOpen, onClose, onStepChange }) {
                   key={idx}
                   className={`h-1.5 rounded-full transition-all ${
                     idx === currentStepIndex 
-                      ? 'w-5 bg-sky-400' 
-                      : 'w-1.5 bg-slate-700'
+                      ? 'w-5 bg-sky-500' 
+                      : 'w-1.5 bg-slate-300 dark:bg-slate-700'
                   }`}
                 />
               ))}
@@ -138,7 +138,7 @@ export default function GuidedTourModal({ isOpen, onClose, onStepChange }) {
               {!isFirst && (
                 <button
                   onClick={handlePrev}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 font-medium transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 font-medium transition-colors flex items-center gap-1"
                 >
                   <ArrowLeft className="w-3 h-3" /> Prev
                 </button>

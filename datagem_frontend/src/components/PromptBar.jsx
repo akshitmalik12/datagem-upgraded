@@ -130,12 +130,12 @@ export default function PromptBar({
   onStop,
   onAttach,
   onDictate,
-  background = '#27272a',
-  color = '#f5f5f5',
-  menuBackground = '#323236',
-  sparkColor = '#b39dff',
+  background,
+  color,
+  menuBackground,
+  sparkColor = '#38bdf8',
   sparkBoost = 1,
-  width = 400,
+  width = 760,
   radius = 16,
   maxRows = 5,
   morphDuration = 240,
@@ -474,10 +474,10 @@ export default function PromptBar({
       data-busy={busy ? '' : undefined}
       data-max={maxed ? '' : undefined}
       style={{
-        '--pb-bg': background,
-        '--pb-ink': color,
-        '--pb-menu': menuBackground,
-        '--pb-w': `${width}px`,
+        ...(background ? { '--pb-bg': background } : {}),
+        ...(color ? { '--pb-ink': color } : {}),
+        ...(menuBackground ? { '--pb-menu': menuBackground } : {}),
+        '--pb-w': typeof width === 'number' ? `${width}px` : width,
         '--pb-radius': `${radius}px`,
         '--pb-spark': sparkColor,
         '--pb-press': pressScale
