@@ -115,6 +115,13 @@ export default function CRMStatsLedger({
     return acc;
   }, 0);
 
+  // OPTION 1: Financial Atmospheric State ('loss' | 'profit' | 'neutral')
+  const financialState = useMemo(() => {
+    if (totalOrders === 0) return 'neutral';
+    if (bleedersCount > 0 || totalClawback > 0) return 'loss';
+    return 'profit';
+  }, [totalOrders, bleedersCount, totalClawback]);
+
   // File Ingestion Handler
   const handleFileProcess = (file) => {
     if (!file) return;
@@ -263,6 +270,24 @@ export default function CRMStatsLedger({
         isDragging ? 'ring-2 ring-sky-500 ring-inset bg-sky-50 dark:bg-sky-950/20' : ''
       }`}
     >
+      {/* OPTION 1: ATMOSPHERIC AMBIENT STATE GLOW BAR */}
+      <div className={`h-1 w-full transition-all duration-700 bg-gradient-to-r flex-shrink-0 ${
+        financialState === 'loss' 
+          ? 'from-rose-600 via-red-500 to-amber-500 shadow-[0_1px_12px_rgba(244,63,94,0.35)]' 
+          : financialState === 'profit' 
+          ? 'from-emerald-500 via-teal-400 to-cyan-400 shadow-[0_1px_12px_rgba(16,185,129,0.35)]' 
+          : 'from-blue-600 via-sky-500 to-cyan-400'
+      }`} />
+
+      {/* ATMOSPHERIC RADIAL AURORA HALO */}
+      <div className={`absolute -top-16 -right-16 w-80 h-80 rounded-full blur-3xl pointer-events-none transition-all duration-700 ${
+        financialState === 'loss' 
+          ? 'bg-rose-500/10' 
+          : financialState === 'profit' 
+          ? 'bg-emerald-500/10' 
+          : 'bg-sky-500/5'
+      }`} />
+
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -312,16 +337,33 @@ export default function CRMStatsLedger({
       </AnimatePresence>
       
       {/* TOP CRM STATS BANNER */}
-      <div className="p-5 border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-[#0B0F17]/90 backdrop-blur-xl">
+      <div className="p-5 border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-[#0B0F17]/90 backdrop-blur-xl relative z-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white font-sans">
                 {activeDomain === 'ecom' ? 'E-Commerce Settlement & Profit Ledger' : activeDomain === 'saas' ? 'SaaS Retention & Churn CRM' : 'Data Operations Ledger'}
               </span>
               <span className="px-2 py-0.5 text-[10px] font-medium font-mono rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 In-Memory DuckDB
               </span>
+              
+              {/* Dynamic Financial State Badge */}
+              {financialState === 'loss' ? (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900 flex items-center gap-1 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                  FEE LEAKAGE DETECTED
+                </span>
+              ) : financialState === 'profit' ? (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 flex items-center gap-1 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  EBITDA DEFENDED
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-semibold">
+                  AUDIT QUEUE READY
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-sans mt-0.5">
               High-density transaction ledger with inline AI diagnostics and fee leakage detection.
@@ -401,14 +443,18 @@ export default function CRMStatsLedger({
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-[#07090E] border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+          <div className={`p-3.5 rounded-xl border transition-all duration-500 ${
+            bleedersCount > 0 
+              ? 'bg-rose-50/30 dark:bg-rose-950/25 border-rose-300 dark:border-rose-800/80 shadow-[0_0_15px_rgba(244,63,94,0.12)] ring-1 ring-rose-500/30' 
+              : 'bg-slate-50/50 dark:bg-[#07090E] border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700'
+          }`}>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 {isSaaS ? 'At-Risk Churn' : 'Hidden Bleeders'}
               </span>
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
+              <AlertTriangle className={`w-3.5 h-3.5 ${bleedersCount > 0 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`} />
             </div>
-            <div className="text-xl font-bold text-slate-900 dark:text-white mt-1 font-mono">
+            <div className={`text-xl font-bold mt-1 font-mono ${bleedersCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
               {totalOrders === 0 ? '—' : `${bleedersCount} SKU${bleedersCount === 1 ? '' : 's'}`}
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans">
@@ -420,12 +466,16 @@ export default function CRMStatsLedger({
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-[#07090E] border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+          <div className={`p-3.5 rounded-xl border transition-all duration-500 ${
+            totalClawback > 0 
+              ? 'bg-emerald-50/30 dark:bg-emerald-950/25 border-emerald-300 dark:border-emerald-800/80 shadow-[0_0_15px_rgba(16,185,129,0.12)] ring-1 ring-emerald-500/30' 
+              : 'bg-slate-50/50 dark:bg-[#07090E] border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700'
+          }`}>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 {isSaaS ? 'Customer Lifetime Value' : 'Recoverable Overcharges'}
               </span>
-              <Scale className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+              <Scale className={`w-3.5 h-3.5 ${totalClawback > 0 ? 'text-emerald-500' : 'text-slate-400'}`} />
             </div>
             <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
               {totalOrders === 0 ? '—' : isSaaS ? `$${Math.round(totalOrders > 0 ? totalLTV / totalOrders : 0).toLocaleString()}` : `₹${totalClawback > 0 ? totalClawback.toLocaleString() : '0'}`}

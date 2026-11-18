@@ -135,11 +135,19 @@ export default function ProfitSimulatorCockpit({
         
         {/* Cockpit Header Card */}
         <div className="p-6 rounded-2xl bg-white dark:bg-[#090D14] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-sky-500 to-cyan-400" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] transition-all duration-500 bg-gradient-to-r ${
+            profitDelta < 0 
+              ? 'from-rose-600 via-red-500 to-amber-500 shadow-[0_1px_12px_rgba(244,63,94,0.35)]' 
+              : 'from-emerald-500 via-teal-400 to-cyan-400 shadow-[0_1px_12px_rgba(16,185,129,0.35)]'
+          }`} />
           
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-3">
-              <span className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-sm">
+              <span className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-sm transition-all duration-300 ${
+                profitDelta < 0 
+                  ? 'bg-rose-50 dark:bg-rose-950/80 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400' 
+                  : 'bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
+              }`}>
                 <Sliders className="w-5 h-5" />
               </span>
               <div>
@@ -147,9 +155,17 @@ export default function ProfitSimulatorCockpit({
                   <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                     Profit &amp; Price Elasticity Simulator
                   </h2>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 font-semibold">
-                    Live What-If Sandbox
-                  </span>
+                  {profitDelta < 0 ? (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/80 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                      DEFICIT WARNING
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      EBITDA SURPLUS
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Micro-economic demand elasticity model calibrated for Amazon FBA and Flipkart Seller Hub.

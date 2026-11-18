@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('users'); // Defaults directly to User Control for quick tier assignment
   const navigate = useNavigate();
+
+  // Component-level security guard: strictly allow only the designated super-admin email
+  if (user && user.email?.trim().toLowerCase() !== 'aakshitmalik@gmail.com') {
+    return <Navigate to="/chat" replace />;
+  }
 
   const [metrics, setMetrics] = useState({
     totalUsers: 0,

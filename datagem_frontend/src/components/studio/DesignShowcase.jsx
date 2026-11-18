@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import { 
   Sparkles, 
@@ -175,6 +177,11 @@ export const COLOR_PALETTES = {
 };
 
 export default function DesignShowcase() {
+  const { user } = useAuth();
+  if (user && user.email?.trim().toLowerCase() !== 'aakshitmalik@gmail.com') {
+    return <Navigate to="/chat" replace />;
+  }
+
   const [selectedPaletteKey, setSelectedPaletteKey] = useState('option1');
   const activePalette = COLOR_PALETTES[selectedPaletteKey];
 

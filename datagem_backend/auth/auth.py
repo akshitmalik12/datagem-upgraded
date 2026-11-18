@@ -22,13 +22,7 @@ router = APIRouter()
 def is_admin_email(email: str) -> bool:
     if not email:
         return False
-    el = email.lower().strip()
-    return (
-        "akshit" in el or
-        "founder" in el or
-        "ceo" in el or
-        el in ["aakshitmalik@gmail.com", "akshitmalik1203@gmail.com", "founder@company.com"]
-    )
+    return email.lower().strip() == "aakshitmalik@gmail.com"
 
 @router.post("/signup", response_model=auth_models.UserInDB)
 def create_new_user(

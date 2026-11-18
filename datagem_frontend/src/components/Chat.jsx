@@ -1704,9 +1704,7 @@ export default function Chat() {
                     >
                       <span>ℹ️</span> About Platform
                     </Link>
-                    {(user?.tier?.toLowerCase() === 'enterprise' || 
-                      user?.email?.toLowerCase() === 'aakshitmalik@gmail.com' ||
-                      user?.email?.toLowerCase() === 'founder@company.com') && (
+                    {user?.email?.trim().toLowerCase() === 'aakshitmalik@gmail.com' && (
                       <>
                         <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
                         <Link

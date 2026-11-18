@@ -26,11 +26,13 @@ class StatusUpdateRequest(BaseModel):
 class DeleteUserRequest(BaseModel):
     email: str
 
+ADMIN_EMAIL = "aakshitmalik@gmail.com"
+
 def verify_admin(current_user: models.User):
-    if current_user.email != 'aakshitmalik@gmail.com' and current_user.tier.lower() != 'enterprise':
+    if not current_user or current_user.email.strip().lower() != ADMIN_EMAIL:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden: Admin access required"
+            detail="Forbidden: Super-admin access strictly required"
         )
 
 @router.get("/telemetry")
