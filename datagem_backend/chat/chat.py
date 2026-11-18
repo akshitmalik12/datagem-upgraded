@@ -123,15 +123,25 @@ async def chat_endpoint(
         
         agent = DataAnalystAgent(db=db, user=user, dataset=request.dataset, connection_string=request.connection_string, session_id=request.session_id)
 
-        # ✅ Define async stream generator
+        # ✅ Define async stream generator with Multi-Provider LiteLLM Gateway & DuckDB Sandbox
         async def event_stream():
             try:
-                async for token in agent.stream_response(request.message):
-                    yield token
-            except Exception as stream_err:
-                print("❌ Error while streaming response:")
-                traceback.print_exc()
-                yield f"\n[Stream Error] {str(stream_err)}"
+                from chat.ai_gateway import ai_gateway
+                async for chunk in ai_gateway.stream_query(
+                    prompt=request.message,
+                    dataset=request.dataset,
+                    dataset_path=None
+                ):
+                    yield chunk
+            except Exception as gateway_err:
+                print(f"⚠️ AIGateway notice ({gateway_err}), falling back to DataAnalystAgent:")
+                try:
+                    async for token in agent.stream_response(request.message):
+                        yield token
+                except Exception as stream_err:
+                    print("❌ Error while streaming agent response:")
+                    traceback.print_exc()
+                    yield f"\n[Stream Error] {str(stream_err)}"
 
         # ✅ Return streaming response
         return StreamingResponse(event_stream(), media_type="text/plain")
