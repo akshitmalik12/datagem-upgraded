@@ -508,9 +508,61 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-slate-800/80 py-8 px-6 text-center text-xs font-mono text-slate-500">
-        <p>© 2026 DataGem. Engineered for high-margin operators on Railway &amp; DuckDB.</p>
+      {/* Footer & SEO Sitemap Links */}
+      <footer className="relative z-10 border-t border-slate-800/80 py-12 px-6 max-w-6xl mx-auto font-sans">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800/60 text-xs">
+          <div>
+            <div className="flex items-center gap-2 text-white font-bold text-sm mb-3">
+              <span className="text-emerald-400">💎</span> DataGem
+            </div>
+            <p className="text-slate-400 leading-relaxed">
+              Autonomous fee reconciliation, volumetric weight delta detection, and price elasticity modeling for e-commerce operators.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-mono uppercase text-slate-300 font-bold text-[11px] mb-3">Marketplace Audits</h4>
+            <ul className="space-y-2 text-slate-400">
+              <li>
+                <Link to="/audit/amazon-fba-fee-leakage" className="hover:text-emerald-400 transition-colors">
+                  Amazon FBA Fee Leakage Audit
+                </Link>
+              </li>
+              <li>
+                <Link to="/audit/flipkart-return-penalty-calculator" className="hover:text-emerald-400 transition-colors">
+                  Flipkart Return Penalty Audit
+                </Link>
+              </li>
+              <li>
+                <Link to="/tools/ecommerce-price-elasticity-simulator" className="hover:text-emerald-400 transition-colors">
+                  Price Elasticity Simulator
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-mono uppercase text-slate-300 font-bold text-[11px] mb-3">Product &amp; Pricing</h4>
+            <ul className="space-y-2 text-slate-400">
+              <li><Link to="/pricing" className="hover:text-emerald-400 transition-colors">ROI Pricing Tiers</Link></li>
+              <li><Link to="/about" className="hover:text-emerald-400 transition-colors">Architecture &amp; Security</Link></li>
+              <li><Link to="/login" className="hover:text-emerald-400 transition-colors">Operator Login</Link></li>
+              <li><Link to="/signup" className="hover:text-emerald-400 transition-colors">Get Started Free</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-mono uppercase text-slate-300 font-bold text-[11px] mb-3">Compliance &amp; Security</h4>
+            <p className="text-slate-400 leading-relaxed font-mono text-[11px]">
+              Vectorized In-Memory DuckDB sandbox. Zero-retention guarantee. Built for Amazon SP-API and Flipkart Seller Hub reconciliation.
+            </p>
+          </div>
+        </div>
+        <div className="pt-6 flex flex-col sm:flex-row justify-between items-center text-xs font-mono text-slate-500 gap-2">
+          <p>© 2026 DataGem. Engineered for high-margin operators.</p>
+          <div className="flex gap-4">
+            <Link to="/pricing" className="hover:underline">Pricing</Link>
+            <Link to="/audit/amazon-fba-fee-leakage" className="hover:underline">FBA Audit</Link>
+            <Link to="/tools/ecommerce-price-elasticity-simulator" className="hover:underline">Price Simulator</Link>
+          </div>
+        </div>
       </footer>
 
     </div>

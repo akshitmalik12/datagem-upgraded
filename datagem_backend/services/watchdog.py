@@ -57,29 +57,12 @@ def render_watchdog_template(user_name: str, metric: str, value: float, threshol
     )
 
 def dispatch_watchdog_email(to_email: str, subject: str, html_content: str):
-    """Background task to dispatch live SMTP email or record simulated dispatch."""
-    smtp_host = os.environ.get("SMTP_HOST")
-    smtp_user = os.environ.get("SMTP_USER")
-    smtp_pass = os.environ.get("SMTP_PASS")
-    smtp_port = int(os.environ.get("SMTP_PORT", 587))
-
-    if smtp_host and smtp_user and smtp_pass:
-        try:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = subject
-            msg["From"] = smtp_user
-            msg["To"] = to_email
-            msg.attach(MIMEText(html_content, "html"))
-
-            with smtplib.SMTP(smtp_host, smtp_port) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(smtp_user, to_email, msg.as_string())
-            logger.info(f"Successfully dispatched live watchdog email to {to_email}")
-        except Exception as e:
-            logger.error(f"Live SMTP dispatch failed: {e}")
-    else:
-        logger.info(f"[SIMULATED WATCHDOG] Dispatched Monday 8AM brief to {to_email} (Length: {len(html_content)} bytes)")
+    """Dispatches live watchdog email via Resend or SMTP with simulated fallback."""
+    try:
+        from utils.email_utils import send_transactional_email
+        send_transactional_email(to_email=to_email, subject=subject, html_content=html_content)
+    except Exception as e:
+        logger.error(f"Watchdog dispatch error: {e}")
 
 @router.post("/send-alert-test")
 def send_test_alert(
