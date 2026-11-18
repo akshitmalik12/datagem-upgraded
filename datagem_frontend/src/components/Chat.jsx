@@ -39,7 +39,7 @@ import ThoughtLine from './ThoughtLine';
 import CallChip from './CallChip';
 import BranchedMenu from './BranchedMenu';
 import { Attachment01Icon, Globe02Icon, Message01Icon } from '@hugeicons/core-free-icons';
-import { getProjects, saveProjects } from '../utils/chatHistory';
+import { getProjects, saveProjects, createProject } from '../utils/chatHistory';
 import { DOMAIN_PRESETS } from '../utils/sampleData';
 import CRMStatsLedger from './CRMStatsLedger';
 import GuidedTourModal from './GuidedTourModal';
@@ -50,6 +50,7 @@ import CheckoutModal from './CheckoutModal';
 import ShareReportModal from './ShareReportModal';
 import DisputePacketModal from './DisputePacketModal';
 import BuyBoxWarRoomModal from './BuyBoxWarRoomModal';
+import ProfitSimulatorCockpit from './ProfitSimulatorCockpit';
 import { LogOut, User as UserIcon, Settings, Sparkles, Share2 } from 'lucide-react';
 import TechText from './TechText';
 import Lightfall from './Lightfall';
@@ -111,6 +112,7 @@ export default function Chat() {
   const [isTourOpen, setIsTourOpen] = useState(false);
   const [activeTourStep, setActiveTourStep] = useState(1);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [projectsVersion, setProjectsVersion] = useState(0);
   const [showPricing, setShowPricing] = useState(false);
   const [showMoreTools, setShowMoreTools] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem('dg_sidebar_w')) || 320);
@@ -880,34 +882,40 @@ export default function Chat() {
   };
 
   const exportChat = () => {
-    let markdown = `# DataGem Chat Export\n`;
-    markdown += `**Date:** ${new Date().toLocaleDateString()}\n\n`;
-    if (dataset && datasetProfile) {
-      markdown += `**Dataset:** ${datasetFilename || 'Unknown'} (${datasetProfile.shape.rows} rows × ${datasetProfile.shape.cols} columns)\n\n`;
-    }
-    markdown += `---\n\n`;
-    messages.forEach((m) => {
-      if (m.role === 'user') {
-        markdown += `## User\n\n${m.content}\n\n`;
-      } else {
-        markdown += `## DataGem\n\n${m.content || ''}\n\n`;
-        if (m.code && m.code.length > 0) {
-          m.code.forEach((cb) => {
-            markdown += `\`\`\`python\n${cb.code}\n\`\`\`\n\n`;
-          });
-        }
+    try {
+      let markdown = `# DataGem Executive Decision Export\n`;
+      markdown += `**Date:** ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\n\n`;
+      if (dataset || datasetProfile) {
+        const rows = datasetProfile?.shape?.rows ?? datasetProfile?.totalRows ?? datasetProfile?.rows ?? (Array.isArray(dataset) ? dataset.length : 'N/A');
+        const cols = datasetProfile?.shape?.cols ?? datasetProfile?.columns?.length ?? (Array.isArray(dataset) && dataset[0] ? Object.keys(dataset[0]).length : 'N/A');
+        markdown += `**Dataset:** ${datasetFilename || datasetProfile?.filename || 'Active Domain Ledger'} (${rows} rows × ${cols} columns)\n\n`;
       }
       markdown += `---\n\n`;
-    });
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `datagem-chat-${new Date().toISOString().split('T')[0]}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      messages.forEach((m) => {
+        if (m.role === 'user') {
+          markdown += `## Operator\n\n${m.content}\n\n`;
+        } else {
+          markdown += `## DataGem Co-Pilot\n\n${m.content || ''}\n\n`;
+          if (m.code && m.code.length > 0) {
+            m.code.forEach((cb) => {
+              markdown += `\`\`\`sql\n${cb.code || cb}\n\`\`\`\n\n`;
+            });
+          }
+        }
+        markdown += `---\n\n`;
+      });
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `datagem-executive-export-${new Date().toISOString().split('T')[0]}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -1195,8 +1203,15 @@ export default function Chat() {
                     <span>🗂️</span> Projects &amp; Chat Tree
                   </h2>
                   <button
-                    onClick={() => setShowChatHistory(true)}
+                    onClick={() => {
+                      const folderName = window.prompt("Enter new folder name (e.g. Q4 Margin Audits):");
+                      if (folderName && folderName.trim()) {
+                        createProject(folderName.trim());
+                        setProjectsVersion(v => v + 1);
+                      }
+                    }}
                     className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 hover:underline"
+                    title="Create a new project folder"
                   >
                     + New Folder
                   </button>
@@ -1204,6 +1219,7 @@ export default function Chat() {
 
                 <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar pr-0.5">
                   <BranchedMenu
+                    key={`projects-tree-${projectsVersion}`}
                     items={getProjects().map(proj => ({
                       label: proj.name,
                       children: (proj.chats || []).map(chat => ({
@@ -1309,7 +1325,7 @@ export default function Chat() {
                   <div className="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="text-slate-500">File</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">{datasetFilename || 'amazon_in_settlement'}</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">{datasetFilename || datasetProfile?.filename || DOMAIN_PRESETS[activeDomainHub]?.datasetName || 'Active Ledger'}</span>
                     </div>
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="text-slate-500">Rows / Records</span>
@@ -1330,10 +1346,11 @@ export default function Chat() {
                               key={idx}
                               draggable
                               onDragStart={(e) => e.dataTransfer.setData('text/plain', colName)}
-                              className="text-[10px] px-1.5 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded cursor-grab active:cursor-grabbing hover:border-sky-400 transition text-slate-700 dark:text-slate-300"
-                              title={colName}
+                              onClick={() => setInput(prev => prev ? `${prev} ${colName}` : colName)}
+                              className="text-[10px] px-1.5 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded cursor-pointer active:scale-95 hover:border-sky-400 hover:text-sky-500 transition text-slate-700 dark:text-slate-300 select-none"
+                              title={`Click or drag to add '${colName}' to chat`}
                             >
-                              {colName}
+                              + {colName}
                             </div>
                           );
                         })}
@@ -1412,6 +1429,7 @@ export default function Chat() {
                           setShowDomainSwitcher(false);
                           const demoRows = domain.data;
                           setDataset(demoRows);
+                          setDatasetFilename(domain.datasetName);
                           const profile = {
                             filename: domain.datasetName,
                             totalRows: demoRows.length,
@@ -1549,37 +1567,55 @@ export default function Chat() {
           {/* Sub Row: Clean View Switcher & Consolidated Tools Menu */}
           <div className="px-6 py-2 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/80 flex items-center justify-between gap-3 text-xs font-sans">
             <div className="flex items-center gap-2">
-              {/* Segmented View Mode Controller */}
-              <div className="flex items-center bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-0.5 rounded-lg">
+              {/* 3-Pillar Executive Segmented Switch */}
+              <div className="flex items-center bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-0.5 rounded-lg shadow-sm">
+                <button
+                  onClick={() => setWorkspaceViewMode('crm')}
+                  className={`px-3 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    workspaceViewMode === 'crm' 
+                      ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm' 
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Audit Ledger: High-density transactions, fee leakages, and clawbacks"
+                >
+                  <span>📊</span>
+                  <span>Audit Ledger</span>
+                </button>
+                <button
+                  onClick={() => setWorkspaceViewMode('simulator')}
+                  className={`px-3 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    workspaceViewMode === 'simulator' 
+                      ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' 
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Profit Simulator: Dynamic price elasticity and forward what-if modeling"
+                >
+                  <span>🧪</span>
+                  <span>Profit Simulator</span>
+                </button>
+                <button
+                  onClick={() => setWorkspaceViewMode('chat')}
+                  className={`px-3 py-1 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    workspaceViewMode === 'chat' 
+                      ? 'bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm' 
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Autonomous AI Co-Pilot: Zero-token in-memory DuckDB analytical queries"
+                >
+                  <span>💬</span>
+                  <span>Co-Pilot</span>
+                </button>
                 <button
                   onClick={() => setWorkspaceViewMode('split')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
                     workspaceViewMode === 'split' 
                       ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
+                  title="Split View: Ledger and Co-Pilot side-by-side"
                 >
-                  ⚡ CRM + AI Split
-                </button>
-                <button
-                  onClick={() => setWorkspaceViewMode('crm')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                    workspaceViewMode === 'crm' 
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  📊 Full CRM
-                </button>
-                <button
-                  onClick={() => setWorkspaceViewMode('chat')}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                    workspaceViewMode === 'chat' 
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  💬 Full Chat
+                  <span>⚡</span>
+                  <span>Split</span>
                 </button>
               </div>
 
@@ -1753,15 +1789,29 @@ export default function Chat() {
             }}
             onSimulatePrice={(sku) => {
               setSelectedSkuForSimulation(sku || null);
-              setIsPriceModalOpen(true);
+              setWorkspaceViewMode('simulator');
             }}
             onConnectMarketplace={() => setIsConnectorsModalOpen(true)}
             onAskAI={(promptText) => {
               setWorkspaceViewMode('split');
               setInput(promptText);
-              // Submit prompt
               handleSendMessage(promptText);
             }}
+          />
+        ) : workspaceViewMode === 'simulator' ? (
+          <ProfitSimulatorCockpit
+            dataset={dataset}
+            selectedSku={selectedSkuForSimulation}
+            onOpenDispute={(row) => {
+              setDisputeModalData(row);
+              setIsDisputeModalOpen(true);
+            }}
+            onApplyToChat={(promptText) => {
+              setWorkspaceViewMode('chat');
+              setInput(promptText);
+              handleSendMessage(promptText);
+            }}
+            onSwitchToLedger={() => setWorkspaceViewMode('crm')}
           />
         ) : workspaceViewMode === 'split' ? (
           <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 font-sans relative">
@@ -2020,7 +2070,7 @@ export default function Chat() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8 }}
-                className="relative py-8 flex flex-col xl:flex-row items-center xl:items-start justify-center gap-8 min-h-full w-full max-w-7xl mx-auto px-4"
+                className="relative py-8 flex flex-col 2xl:flex-row items-center 2xl:items-start justify-center gap-8 min-h-full w-full max-w-7xl mx-auto px-4"
               >
                 {/* Left Column: Welcome & Modern Upload Grid */}
                 <div className="flex-1 flex flex-col items-center text-center w-full">
@@ -2283,7 +2333,7 @@ export default function Chat() {
                 </div>
 
                 {/* Right Column: Prompt Suggestions */}
-                <div className="w-full xl:w-[420px] flex-shrink-0">
+                <div className="w-full 2xl:w-[420px] flex-shrink-0">
                   <div className="bg-[#090D14]/90 backdrop-blur-xl p-6 rounded-2xl border border-slate-800/80 shadow-2xl">
                     <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800/60">
                       <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-sky-400 flex items-center gap-2">

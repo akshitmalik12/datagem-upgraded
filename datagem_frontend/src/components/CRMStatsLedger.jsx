@@ -37,7 +37,18 @@ export default function CRMStatsLedger({
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isDragging, setIsDragging] = useState(false);
   const [ingestNotice, setIngestNotice] = useState(null);
+  const [sortField, setSortField] = useState(null);
+  const [sortAsc, setSortAsc] = useState(true);
   const fileInputRef = useRef(null);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortField(field);
+      setSortAsc(true);
+    }
+  };
 
   // Robust case-insensitive and alias-resilient value extractor
   const getVal = (row, ...keys) => {
@@ -80,8 +91,13 @@ export default function CRMStatsLedger({
   };
 
   // Aggregated CRM Metrics (computed in real-time)
-  const totalRevenue = rawRows.reduce((acc, r) => acc + (Number(getVal(r, 'gross_sales', 'amount', 'revenue', 'item_price') || 0)), 0);
+  const isSaaS = activeDomain === 'saas';
+  const totalRevenue = rawRows.reduce((acc, r) => acc + (Number(getVal(r, 'gross_sales', 'amount', 'revenue', 'item_price', 'mrr') || 0)), 0);
   const totalOrders = rawRows.length;
+  const totalMRR = rawRows.reduce((acc, r) => acc + (Number(getVal(r, 'mrr') || 0)), 0);
+  const totalLTV = rawRows.reduce((acc, r) => acc + (Number(getVal(r, 'ltv') || 0)), 0);
+  const activeAccounts = rawRows.filter(r => String(getVal(r, 'status') || '').toLowerCase() === 'active').length;
+  const highRiskChurn = rawRows.filter(r => String(getVal(r, 'churn_risk') || '').toLowerCase() === 'high' || String(getVal(r, 'status') || '').toLowerCase() === 'churned').length;
   const bleedersCount = rawRows.filter(r => {
     const st = getRowFinancialStatus(r);
     return st === 'BLEEDER' || st === 'RETURN_LEAK';
@@ -210,6 +226,34 @@ export default function CRMStatsLedger({
     return true;
   });
 
+  // Sort rows dynamically
+  const sortedRows = [...filteredRows].sort((a, b) => {
+    if (!sortField) return 0;
+    let valA, valB;
+    if (sortField === 'order_id') {
+      valA = String(getVal(a, 'order_id', 'customer_id') || '');
+      valB = String(getVal(b, 'order_id', 'customer_id') || '');
+    } else if (sortField === 'sku') {
+      valA = String(getVal(a, 'product_name', 'sku', 'plan') || '');
+      valB = String(getVal(b, 'product_name', 'sku', 'plan') || '');
+    } else if (sortField === 'gross_sales') {
+      valA = Number(getVal(a, 'gross_sales', 'amount', 'mrr') || 0);
+      valB = Number(getVal(b, 'gross_sales', 'amount', 'mrr') || 0);
+    } else if (sortField === 'net_profit') {
+      valA = Number(getVal(a, 'net_profit', 'ltv') || 0);
+      valB = Number(getVal(b, 'net_profit', 'ltv') || 0);
+    } else if (sortField === 'weight') {
+      valA = Number(getVal(a, 'billed_weight_kg', 'seats') || 0);
+      valB = Number(getVal(b, 'billed_weight_kg', 'seats') || 0);
+    } else {
+      valA = String(getRowFinancialStatus(a));
+      valB = String(getRowFinancialStatus(b));
+    }
+    if (valA < valB) return sortAsc ? -1 : 1;
+    if (valA > valB) return sortAsc ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div 
       onDragOver={handleDragOver}
@@ -318,11 +362,13 @@ export default function CRMStatsLedger({
         }`}>
           <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-[#07090E] border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gross Sales (GMV)</span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                {isSaaS ? 'Monthly Recurring Revenue' : 'Gross Sales (GMV)'}
+              </span>
               <DollarSign className="w-3.5 h-3.5 text-slate-400" />
             </div>
             <div className="text-xl font-bold text-slate-900 dark:text-white mt-1 font-mono">
-              ₹{Math.round(totalRevenue).toLocaleString()}
+              {isSaaS ? `$${Math.round(totalMRR).toLocaleString()}` : `₹${Math.round(totalRevenue).toLocaleString()}`}
             </div>
             <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 font-sans flex items-center gap-1">
               <ArrowUpRight className="w-3 h-3" />
@@ -332,40 +378,46 @@ export default function CRMStatsLedger({
 
           <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-[#07090E] border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Orders / Records</span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                {isSaaS ? 'Active Subscriptions' : 'Orders / Records'}
+              </span>
               <ShoppingBag className="w-3.5 h-3.5 text-slate-400" />
             </div>
             <div className="text-xl font-bold text-slate-900 dark:text-white mt-1 font-mono">
-              {totalOrders.toLocaleString()}
+              {isSaaS ? `${activeAccounts} Accounts` : totalOrders.toLocaleString()}
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans">
-              Avg Order: ₹{Math.round(avgOrderVal).toLocaleString()}
+              {isSaaS ? `Avg Seats: 14` : `Avg Order: ₹${Math.round(avgOrderVal).toLocaleString()}`}
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-[#07090E] border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hidden Bleeders</span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                {isSaaS ? 'At-Risk Churn' : 'Hidden Bleeders'}
+              </span>
               <AlertTriangle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
             </div>
             <div className="text-xl font-bold text-rose-600 dark:text-rose-400 mt-1 font-mono">
-              {bleedersCount} SKU{bleedersCount === 1 ? '' : 's'}
+              {isSaaS ? `${highRiskChurn} Accounts` : `${bleedersCount} SKU${bleedersCount === 1 ? '' : 's'}`}
             </div>
             <div className="text-[10px] text-rose-600/80 dark:text-rose-400/80 mt-1 font-sans">
-              Negative CM3 margin detected
+              {isSaaS ? 'Contract renewal or high risk' : 'Negative CM3 margin detected'}
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-slate-50/50 dark:bg-[#07090E] border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Recoverable Overcharges</span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                {isSaaS ? 'Customer Lifetime Value' : 'Recoverable Overcharges'}
+              </span>
               <Scale className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
             </div>
             <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
-              ₹{totalClawback > 0 ? totalClawback.toLocaleString() : '0'}
+              {isSaaS ? `$${Math.round(totalOrders > 0 ? totalLTV / totalOrders : 0).toLocaleString()}` : `₹${totalClawback > 0 ? totalClawback.toLocaleString() : '0'}`}
             </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans">
-              Ready for 1-click dispute ticket
+            <div className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-1 font-sans">
+              {isSaaS ? 'Net dollar expansion potential' : 'Ready for 1-click dispute ticket'}
             </div>
           </div>
         </div>
@@ -409,13 +461,45 @@ export default function CRMStatsLedger({
           <table className="w-full text-left border-collapse text-xs font-sans">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] font-mono">
-                <th className="px-4 py-3">Order ID</th>
-                <th className="px-4 py-3">Product / SKU</th>
-                <th className="px-4 py-3">Weight (Billed / Actual)</th>
-                <th className="px-4 py-3">Gross Sales</th>
-                <th className="px-4 py-3">Contribution Margin</th>
-                <th className="px-4 py-3">Financial Status</th>
-                <th className="px-4 py-3 text-center">Autonomous AI Action</th>
+                <th onClick={() => handleSort('order_id')} className="px-4 py-3 cursor-pointer hover:text-sky-500 select-none transition-colors">
+                  <div className="flex items-center gap-1">
+                    <span>{isSaaS ? 'Customer ID' : 'Order ID'}</span>
+                    <span className="text-[10px] text-sky-500">{sortField === 'order_id' ? (sortAsc ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th onClick={() => handleSort('sku')} className="px-4 py-3 cursor-pointer hover:text-sky-500 select-none transition-colors">
+                  <div className="flex items-center gap-1">
+                    <span>{isSaaS ? 'Plan / Account' : 'Product / SKU'}</span>
+                    <span className="text-[10px] text-sky-500">{sortField === 'sku' ? (sortAsc ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th onClick={() => handleSort('weight')} className="px-4 py-3 cursor-pointer hover:text-sky-500 select-none transition-colors">
+                  <div className="flex items-center gap-1">
+                    <span>{isSaaS ? 'Seats' : 'Weight (Billed / Actual)'}</span>
+                    <span className="text-[10px] text-sky-500">{sortField === 'weight' ? (sortAsc ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th onClick={() => handleSort('gross_sales')} className="px-4 py-3 cursor-pointer hover:text-sky-500 select-none transition-colors">
+                  <div className="flex items-center gap-1">
+                    <span>{isSaaS ? 'Monthly MRR' : 'Gross Sales'}</span>
+                    <span className="text-[10px] text-sky-500">{sortField === 'gross_sales' ? (sortAsc ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th onClick={() => handleSort('net_profit')} className="px-4 py-3 cursor-pointer hover:text-sky-500 select-none transition-colors">
+                  <div className="flex items-center gap-1">
+                    <span>{isSaaS ? 'Customer LTV' : 'Contribution Margin'}</span>
+                    <span className="text-[10px] text-sky-500">{sortField === 'net_profit' ? (sortAsc ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th onClick={() => handleSort('status')} className="px-4 py-3 cursor-pointer hover:text-sky-500 select-none transition-colors">
+                  <div className="flex items-center gap-1">
+                    <span>{isSaaS ? 'Status / Risk' : 'Financial Status'}</span>
+                    <span className="text-[10px] text-sky-500">{sortField === 'status' ? (sortAsc ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th className="px-4 py-3 text-center sticky right-0 bg-slate-50 dark:bg-slate-900 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]">
+                  Autonomous AI Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
@@ -461,7 +545,7 @@ export default function CRMStatsLedger({
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row, idx) => {
+                sortedRows.map((row, idx) => {
                   const finStatus = getRowFinancialStatus(row);
                   const isReturnLeak = finStatus === 'RETURN_LEAK';
                   const isBleeder = finStatus === 'BLEEDER' || isReturnLeak;
@@ -545,7 +629,7 @@ export default function CRMStatsLedger({
                         )}
                       </td>
 
-                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <td className="px-4 py-3 text-center whitespace-nowrap sticky right-0 bg-white/95 dark:bg-[#0B0F17]/95 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.06)]">
                         <div className="inline-flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => onAskAI(`Analyze profit contribution, commission leakage, and return rate for ${skuCode}`)}

@@ -3,44 +3,66 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 
 const PROMPT_CATEGORIES = {
-  contextual: {
-    name: 'Contextual',
-    icon: '⚡',
+  clawback: {
+    name: 'Cash Recovery',
+    icon: '💰',
+    badge: 'Clawbacks & SPF',
     shape: 'rounded-xl',
-    size: 'px-6 py-3',
-    prompts: [],
-  },
-  analysis: {
-    name: 'Analysis',
-    icon: '🔍',
-    shape: 'rounded-xl',
-    size: 'px-6 py-3',
+    size: 'px-4 py-2.5',
     prompts: [
-      'Generate a comprehensive data profiling report',
-      'Which SKUs are bleeding net cash after accounting for returns and commissions?',
       'Audit all weight handling overcharges and calculate reclaimable cash',
-      'Compare store performance vs industry web benchmarks',
-      'Identify top 5 products by gross sales',
-      'Summarize fee deductions and net seller payout',
+      'Identify Flipkart return freight penalties eligible for SPF reimbursement',
+      'Generate 1-click Amazon dispute docket for volumetric overbilling',
+      'Audit marketplace commission discrepancies against agreed fee schedule',
+      'Extract all RTO (Return to Origin) shipping fee deductions for clawback',
     ],
   },
-  visualization: {
-    name: 'Visualization',
-    icon: '📊',
+  bleeders: {
+    name: 'Margin Bleeders',
+    icon: '📉',
+    badge: 'CM3 Loss Prevention',
     shape: 'rounded-xl',
-    size: 'px-6 py-3',
+    size: 'px-4 py-2.5',
     prompts: [
-      'Bar graph of sales by product',
-      'Bar graph of items sold',
-      'Distribution of billed vs actual weight discrepancies',
-      'Plot net profit margin vs gross revenue',
-      'Daily GMV timeline trend',
+      'Which SKUs are bleeding net cash after accounting for returns and commissions?',
+      'Pinpoint high-volume products where return rate exceeds 20% and CM3 is negative',
+      'Calculate blended ROAS vs break-even ad cost per SKU',
+      'Summarize fee deductions and net seller payout vs gross sales',
+      'Rank top 5 products by true contribution margin (CM3)',
+    ],
+  },
+  modeling: {
+    name: 'Profit Modeling',
+    icon: '🧪',
+    badge: 'What-If Scenarios',
+    shape: 'rounded-xl',
+    size: 'px-4 py-2.5',
+    prompts: [
+      'Model demand elasticity vs margin expansion (+5% to +15% price hike)',
+      'Run Buy Box price match simulation and check net contribution margin',
+      'Simulate EBITDA impact if return rate drops by 3% across top SKUs',
+      'Forecast 12-month cash flow and runway under 15% GMV growth',
+      'Sensitivity analysis: Ad spend reduction vs order volume impact',
+    ],
+  },
+  reporting: {
+    name: 'Board Reports',
+    icon: '📊',
+    badge: 'CFO Summaries',
+    shape: 'rounded-xl',
+    size: 'px-4 py-2.5',
+    prompts: [
+      'Compile Monday 8 AM Executive P&L Briefing',
+      'Generate monthly CFO reconciliation report with Plotly visuals',
+      'Compare store performance vs industry web benchmarks',
+      'Generate a comprehensive data profiling and integrity audit',
+      'Plot daily GMV timeline trend vs net contribution margin',
     ],
   },
 };
 
 export default function PromptSuggestions({ dataset, onSelectPrompt }) {
-  const [activeCategory, setActiveCategory] = useState('contextual');
+  const [activeCategory, setActiveCategory] = useState('clawback');
   const [recentPrompts, setRecentPrompts] = useState([]);
   const [favoritePrompts, setFavoritePrompts] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
@@ -84,16 +106,9 @@ export default function PromptSuggestions({ dataset, onSelectPrompt }) {
     onSelectPrompt(prompt);
   };
 
-  const getContextualPrompts = () => {
-    if (!dataset) {
-      return [
-        'Audit all weight handling overcharges and calculate reclaimable cash',
-        'Which SKUs are bleeding net cash after accounting for returns and commissions?',
-        'Bar graph of sales by product',
-        'Generate a comprehensive data profiling report',
-        'Compare store performance vs industry web benchmarks'
-      ];
-    }
+  const getDynamicPrompts = () => {
+    const basePrompts = PROMPT_CATEGORIES[activeCategory]?.prompts || [];
+    if (!dataset) return basePrompts;
     
     // Extract columns whether dataset is an array of rows or a metadata profile
     let rawCols = [];
@@ -104,38 +119,31 @@ export default function PromptSuggestions({ dataset, onSelectPrompt }) {
     }
     
     const lowerCols = rawCols.map(c => c.toLowerCase());
-    const prompts = [];
+    const extra = [];
 
-    // Check for E-commerce & Logistics dimensions
-    if (lowerCols.some(c => c.includes('weight'))) {
-      prompts.push('Audit all weight handling overcharges and calculate reclaimable cash');
-    }
-    if (lowerCols.some(c => c.includes('sku') || c.includes('product') || c.includes('item'))) {
-      prompts.push('Which SKUs are bleeding net cash after accounting for returns and commissions?');
-      prompts.push('Bar graph of sales by product');
-      prompts.push('Bar graph of items sold');
-      prompts.push('Analyze profit contribution, commission leakage, and return rate for ELEC-W-EARBUDS');
-    }
-    if (lowerCols.some(c => c.includes('revenue') || c.includes('sales') || c.includes('gross') || c.includes('amount'))) {
-      prompts.push('Top 5 products by gross sales');
-      prompts.push('Summarize fee deductions and net seller payout');
-    }
-    if (lowerCols.some(c => c.includes('churn') || c.includes('retention') || c.includes('mrr'))) {
-      prompts.push('Calculate Monthly Recurring Revenue (MRR) and Net Dollar Retention (NDR)');
-      prompts.push('Which customer subscription tier has the highest churn rate?');
+    if (activeCategory === 'clawback') {
+      if (lowerCols.some(c => c.includes('weight'))) {
+        extra.push('Audit billed vs actual volumetric weight deltas across all order rows');
+      }
+      if (lowerCols.some(c => c.includes('fee') || c.includes('commission'))) {
+        extra.push('Calculate total marketplace fee overcharge in DuckDB (₹ and %)');
+      }
+    } else if (activeCategory === 'bleeders') {
+      if (lowerCols.some(c => c.includes('return') || c.includes('rto'))) {
+        extra.push('Which products have return rate > 18% with negative net profit?');
+      }
+    } else if (activeCategory === 'modeling') {
+      if (lowerCols.some(c => c.includes('mrr') || c.includes('churn'))) {
+        extra.push('Simulate ARR growth if net retention increases from 104% to 112%');
+      }
     }
 
-    prompts.push('Generate a comprehensive data profiling report');
-    prompts.push('Compare store performance vs industry web benchmarks');
-
-    return [...new Set(prompts)].slice(0, 6);
+    return [...new Set([...extra, ...basePrompts])].slice(0, 6);
   };
 
   const displayPrompts = showFavorites 
     ? favoritePrompts 
-    : activeCategory === 'contextual' 
-      ? (dataset ? getContextualPrompts() : [])
-      : PROMPT_CATEGORIES[activeCategory]?.prompts || [];
+    : getDynamicPrompts();
 
   return (
     <motion.div
@@ -144,8 +152,8 @@ export default function PromptSuggestions({ dataset, onSelectPrompt }) {
       className="max-w-4xl mx-auto mt-3"
     >
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-gray-700 dark:text-white/80">
-          {showFavorites ? 'Favorite Prompts' : 'Suggested Prompts'}
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
+          {showFavorites ? 'Favorite Playbooks' : '⚡ Executive Decision Playbooks'}
         </p>
         <div className="flex items-center gap-2">
           {favoritePrompts.length > 0 && (
@@ -155,8 +163,8 @@ export default function PromptSuggestions({ dataset, onSelectPrompt }) {
               onClick={() => setShowFavorites(!showFavorites)}
               className={`px-3 py-1.5 text-xs rounded-xl backdrop-blur-xl transition-all duration-300 ${
                 showFavorites
-                  ? 'bg-gray-900/10 dark:bg-white/20 text-gray-900 dark:text-white border border-gray-900/20 dark:border-white/30 shadow-none'
-                  : 'bg-gray-900/5 dark:bg-white/10 text-gray-700 dark:text-white/80 border border-gray-900/10 dark:border-white/20 hover:bg-gray-900/10 dark:bg-white/15 hover:border-gray-900/20 dark:border-white/30'
+                  ? 'bg-sky-500/20 text-sky-600 dark:text-sky-300 border border-sky-400/40 shadow-none'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-slate-400'
               }`}
             >
               Favorites ({favoritePrompts.length})
@@ -165,42 +173,29 @@ export default function PromptSuggestions({ dataset, onSelectPrompt }) {
         </div>
       </div>
 
-      {/* Category Tabs - Bigger with Different Shapes */}
+      {/* Outcome-Driven Playbook Category Tabs */}
       {!showFavorites && (
-        <div className="flex flex-wrap gap-3 mb-4">
-          {/* Contextual button - always visible */}
-            <motion.button
-            
-            whileTap={dataset ? { scale: 0.95 } : {}}
-            onClick={() => dataset && setActiveCategory('contextual')}
-            disabled={!dataset}
-            className={`px-8 py-4 text-base font-bold rounded-full backdrop-blur-xl transition-all duration-300 ${
-              !dataset
-                ? 'bg-gray-900/5 dark:bg-white/5 text-gray-500 dark:text-white/40 border-2 border-gray-900/10 dark:border-white/10 cursor-not-allowed opacity-50'
-                : activeCategory === 'contextual'
-                ? 'bg-accent-600 hover:bg-accent-700 !text-white border-accent-600 shadow-sm border-2 border-accent-600 shadow-none '
-                : 'bg-gray-900/5 dark:bg-white/10 text-gray-700 dark:text-white/80 border-2 border-gray-900/10 dark:border-white/20 hover:bg-gray-900/10 dark:bg-white/15 hover:border-gray-900/20 dark:border-white/30 shadow-none hover:shadow-none'
-              }`}
-            title={!dataset ? "Upload a dataset to enable contextual prompts" : "Contextual prompts based on your dataset"}
-          >
-            <span className="text-xl mr-2"></span>
-            Contextual
-            {!dataset && <span className="ml-2 text-xs">(requires dataset)</span>}
-            </motion.button>
+        <div className="flex flex-wrap gap-2.5 mb-4">
           {Object.entries(PROMPT_CATEGORIES).map(([key, category]) => (
             <motion.button
               key={key}
-              
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => setActiveCategory(key)}
-              className={`${category.size} text-base font-bold ${category.shape} backdrop-blur-xl transition-all duration-300 ${
+              className={`px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all duration-200 flex items-center gap-2 ${
                 activeCategory === key
-                  ? `bg-accent-600 hover:bg-accent-700 !text-white border-accent-600 shadow-sm border-2 border-accent-600 shadow-none `
-                  : 'bg-gray-900/5 dark:bg-white/10 text-gray-700 dark:text-white/80 border-2 border-gray-900/10 dark:border-white/20 hover:bg-gray-900/10 dark:bg-white/15 hover:border-gray-900/20 dark:border-white/30 shadow-none hover:shadow-none'
+                  ? 'bg-sky-600 text-white border-sky-500 shadow-sm shadow-sky-500/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               }`}
             >
-              <span className="text-xl mr-2">{category.icon}</span>
-              {category.name}
+              <span className="text-sm">{category.icon}</span>
+              <span>{category.name}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                activeCategory === key 
+                  ? 'bg-sky-700/60 text-sky-100' 
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+              }`}>
+                {category.badge}
+              </span>
             </motion.button>
           ))}
         </div>

@@ -8,38 +8,21 @@ const STORAGE_KEY_PROJECTS = 'datagem_projects';
 const STORAGE_KEY_ACTIVE_PROJECT = 'datagem_current_project_id';
 const STORAGE_KEY_ACTIVE_DATASET = 'datagem_current_dataset_id';
 
-// Default initial demo projects if empty
+// Default initial clean projects without dead mock chats
 const DEFAULT_PROJECTS = [
   {
-    id: 'proj_ecommerce',
-    name: 'E-commerce Analytics',
-    description: 'Shopify & Amazon blended metrics and ROAS attribution',
-    createdAt: Date.now() - 86400000 * 7,
-    chats: [
-      { id: 'chat_roas', title: 'Blended ROAS by SKU', lastUpdated: Date.now() - 3600000 * 2, queryCount: 14 },
-      { id: 'chat_cohorts', title: 'Repeat Purchase Cohorts', lastUpdated: Date.now() - 3600000 * 18, queryCount: 8 },
-      { id: 'chat_inventory', title: 'Dead Inventory & Working Capital', lastUpdated: Date.now() - 86400000 * 2, queryCount: 5 }
-    ]
+    id: 'proj_forensic',
+    name: 'Executive Audits',
+    description: 'Marketplace fee reconciliation, clawback tickets, and dispute dockets',
+    createdAt: Date.now(),
+    chats: []
   },
   {
-    id: 'proj_finance',
-    name: 'Financial Modeling',
-    description: 'Cash runway, gross margin per unit, and burn rate monitor',
-    createdAt: Date.now() - 86400000 * 14,
-    chats: [
-      { id: 'chat_runway', title: 'Runway Forecast (Base vs Worst)', lastUpdated: Date.now() - 3600000 * 26, queryCount: 9 },
-      { id: 'chat_cogs', title: 'COGS Variance Analysis', lastUpdated: Date.now() - 86400000 * 4, queryCount: 6 }
-    ]
-  },
-  {
-    id: 'proj_growth',
-    name: 'Growth & Acquisition',
-    description: 'Paid channels CAC, funnel conversion drops',
-    createdAt: Date.now() - 86400000 * 20,
-    chats: [
-      { id: 'chat_meta', title: 'Meta Ads Retargeting Fatigue', lastUpdated: Date.now() - 3600000 * 5, queryCount: 11 },
-      { id: 'chat_google', title: 'PMax vs Search Keyword Bids', lastUpdated: Date.now() - 86400000 * 3, queryCount: 7 }
-    ]
+    id: 'proj_modeling',
+    name: 'Profit Modeling',
+    description: 'Price elasticity simulations, Buy Box defense, and margin sensitivity',
+    createdAt: Date.now(),
+    chats: []
   }
 ];
 
@@ -50,7 +33,14 @@ export function getProjects() {
       localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(DEFAULT_PROJECTS));
       return DEFAULT_PROJECTS;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // Auto-clean legacy dead mock chats (chat_roas, chat_cohorts, chat_runway)
+    const hasLegacyMock = parsed.some(p => p.chats && p.chats.some(c => c.id === 'chat_roas' || c.id === 'chat_runway'));
+    if (hasLegacyMock) {
+      localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(DEFAULT_PROJECTS));
+      return DEFAULT_PROJECTS;
+    }
+    return parsed;
   } catch (e) {
     console.error('Error reading projects:', e);
     return DEFAULT_PROJECTS;
