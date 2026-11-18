@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { chatAPI, dashboardApi, voiceApi, API_BASE_URL } from '../services/api';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Papa from 'papaparse';
 import Canvas from './Canvas';
 import WebRTC from './WebRTC';
@@ -47,7 +47,8 @@ import DisputeTicketModal from './DisputeTicketModal';
 import PriceElasticityModal from './PriceElasticityModal';
 import SettingsModal from './SettingsModal';
 import CheckoutModal from './CheckoutModal';
-import { LogOut, User as UserIcon, Settings, Sparkles } from 'lucide-react';
+import ShareReportModal from './ShareReportModal';
+import { LogOut, User as UserIcon, Settings, Sparkles, Share2 } from 'lucide-react';
 import TechText from './TechText';
 import Lightfall from './Lightfall';
 
@@ -88,6 +89,7 @@ export default function Chat() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [thoughtsOpen, setThoughtsOpen] = useState(false);
@@ -114,6 +116,32 @@ export default function Chat() {
   const [isResizingSplit, setIsResizingSplit] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editSessionTitle, setEditSessionTitle] = useState("");
+  const [searchParams] = useSearchParams();
+
+  // Handle URL query presets (e.g. from Landing page "Open in Live Studio")
+  useEffect(() => {
+    const preset = searchParams.get('preset');
+    if (preset && DOMAIN_PRESETS[preset]) {
+      setActiveDomainHub(preset);
+      const demoRows = DOMAIN_PRESETS[preset].data;
+      setDataset(demoRows);
+      const profile = {
+        filename: DOMAIN_PRESETS[preset].datasetName,
+        totalRows: demoRows.length,
+        columns: Object.keys(demoRows[0]),
+        columnTypes: Object.keys(demoRows[0]).reduce((acc, col) => {
+          acc[col] = typeof demoRows[0][col] === 'number' ? 'numeric' : 'categorical';
+          return acc;
+        }, {}),
+        summary: `Loaded ${DOMAIN_PRESETS[preset].name} with ${demoRows.length} active benchmark records.`
+      };
+      setDatasetProfile(profile);
+      setWorkspaceViewMode('split');
+    }
+    if (searchParams.get('simulate') === 'price') {
+      setIsPriceModalOpen(true);
+    }
+  }, [searchParams]);
 
   // Persist Resizer Handlers across Drag Gestures
   useEffect(() => {
@@ -1459,6 +1487,16 @@ export default function Chat() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
                 )}
+              </button>
+
+              {/* Share Audit Report Button */}
+              <button
+                onClick={() => setIsShareModalOpen(true)}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-sans font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition-colors shadow-sm"
+                title="Share this verified audit via read-only link"
+              >
+                <Share2 className="w-3.5 h-3.5 text-sky-500" />
+                <span>Share Audit</span>
               </button>
 
               {/* Settings & API Keys Button */}
@@ -2950,6 +2988,12 @@ export default function Chat() {
           // Refresh user context or local tier
           if (user) user.tier = tier;
         }}
+      />
+      <ShareReportModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        currentDataset={dataset}
+        briefingText={executiveBriefing?.summary}
       />
     </>
   );

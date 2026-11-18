@@ -334,6 +334,20 @@ export default function Landing() {
                   </div>
                 </div>
               </div>
+
+              {/* Direct Studio Linkage CTA */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-800/80">
+                <span className="text-xs text-slate-400 font-sans">
+                  Ready to test with live Amazon/Flipkart SKU data and run real-time price modeling?
+                </span>
+                <Link
+                  to="/chat?preset=ecom&simulate=price"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:opacity-95 text-black font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all font-sans shrink-0"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Open in Live Studio →</span>
+                </Link>
+              </div>
             </div>
           )}
 
@@ -373,6 +387,20 @@ export default function Landing() {
                   <p className="text-[11px] text-slate-400 mt-1">CAC Payback: 4.8 months</p>
                 </div>
               </div>
+
+              {/* Direct Studio Linkage CTA for SaaS */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-800/80">
+                <span className="text-xs text-slate-400 font-sans">
+                  Analyze cohort churn and ARR retention telemetry inside the live DataGem studio.
+                </span>
+                <Link
+                  to="/chat?preset=saas"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-blue-500 hover:opacity-95 text-black font-bold text-xs shadow-lg shadow-sky-500/20 transition-all font-sans shrink-0"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Open SaaS Studio →</span>
+                </Link>
+              </div>
             </div>
           )}
 
@@ -406,6 +434,20 @@ export default function Landing() {
                   <div className="text-sm font-semibold text-white">🔒 Enterprise Data Privacy</div>
                   <p className="text-xs text-slate-400 leading-relaxed">Your data rows never leave the secure in-memory sandbox. Strict zero-retention guarantee.</p>
                 </div>
+              </div>
+
+              {/* Direct Studio Linkage CTA for Ad-Hoc Studio */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-800/80">
+                <span className="text-xs text-slate-400 font-sans">
+                  Query arbitrary schemas with vectorized in-memory DuckDB at zero API token cost.
+                </span>
+                <Link
+                  to="/chat?preset=studio"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-400 to-indigo-500 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-purple-500/20 transition-all font-sans shrink-0"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Open Ad-Hoc Studio →</span>
+                </Link>
               </div>
             </div>
           )}

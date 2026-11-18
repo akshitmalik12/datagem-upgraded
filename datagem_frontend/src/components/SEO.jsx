@@ -1,46 +1,59 @@
-import { Helmet } from 'react-helmet-async';
+import React, { useEffect } from 'react';
 
 export default function SEO({ title, description, path, schema }) {
-  const url = `https://datagem.app${path}`;
-  
-  // Default software schema if none provided
-  const defaultSchema = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "DataGem",
-    "operatingSystem": "Web",
-    "applicationCategory": "BusinessApplication",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
+  useEffect(() => {
+    if (title) {
+      document.title = title;
     }
-  };
 
-  const finalSchema = schema || defaultSchema;
+    const setMeta = (name, content, isProperty = false) => {
+      if (!content) return;
+      const selector = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let el = document.querySelector(selector);
+      if (!el) {
+        el = document.createElement('meta');
+        if (isProperty) el.setAttribute('property', name);
+        else el.setAttribute('name', name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
 
-  return (
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <link rel="canonical" href={url} />
-      
-      {/* Open Graph / Social Share Images */}
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:url" content={url} />
-      <meta property="og:type" content="website" />
-      <meta property="og:image" content="https://datagem.app/og-image.jpg" />
-      
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content="https://datagem.app/og-image.jpg" />
+    if (description) {
+      setMeta('description', description);
+      setMeta('og:description', description, true);
+      setMeta('twitter:description', description);
+    }
 
-      {/* Structured Data */}
-      <script type="application/ld+json">
-        {JSON.stringify(finalSchema)}
-      </script>
-    </Helmet>
-  );
+    if (title) {
+      setMeta('og:title', title, true);
+      setMeta('twitter:title', title);
+    }
+
+    if (path) {
+      const url = `https://www.datagem.app${path}`;
+      setMeta('og:url', url, true);
+      let canonical = document.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+      }
+      canonical.setAttribute('href', url);
+    }
+
+    // Structured JSON-LD Data
+    if (schema) {
+      let script = document.querySelector('script[data-schema="datagem-seo"]');
+      if (!script) {
+        script = document.createElement('script');
+        script.setAttribute('type', 'application/ld+json');
+        script.setAttribute('data-schema', 'datagem-seo');
+        document.head.appendChild(script);
+      }
+      script.textContent = JSON.stringify(schema);
+    }
+  }, [title, description, path, schema]);
+
+  return null;
 }
