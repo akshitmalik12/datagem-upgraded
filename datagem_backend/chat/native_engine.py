@@ -506,20 +506,35 @@ class NativeAnalyticsEngine:
 
     def _extract_target_sku(self, query: str) -> Optional[str]:
         """Extracts specific SKU or product identifier from query."""
-        sku_col = self.semantic_map.get("product") or self._find_column(["sku", "product_name", "item"])
-        if not sku_col or self.df is None or self.df.empty:
+        if self.df is None or self.df.empty:
             return None
         
-        # Check against unique SKUs in dataset
-        unique_skus = self.df[sku_col].dropna().unique().tolist()
-        for sku in unique_skus:
-            if str(sku).lower() in query.lower():
-                return str(sku)
+        # Check all candidate identifier columns
+        candidate_cols = [c for c in self.df.columns if any(k in c.lower() for k in ["sku", "product", "item", "title", "asin", "name", "id"])]
+        if not candidate_cols:
+            candidate_cols = list(self.df.columns)
+        
+        # 1. Match unique values from identifier columns
+        for col in candidate_cols:
+            unique_vals = self.df[col].dropna().unique().tolist()
+            for val in unique_vals:
+                val_str = str(val).strip()
+                if len(val_str) > 2 and val_str.lower() in query.lower():
+                    return val_str
+
+        # 2. Check query for SKU-like tokens against values
+        import re
+        tokens = re.findall(r'[A-Za-z0-9\-_]{4,}', query)
+        for token in tokens:
+            for col in candidate_cols:
+                matching = self.df[self.df[col].astype(str).str.lower() == token.lower()]
+                if not matching.empty:
+                    return str(matching[col].iloc[0])
+
         return None
 
     def _audit_single_sku(self, sku_target: str) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         """Deep forensic analysis for a specific SKU (Units, Margin, Returns, and Weight Overcharges)."""
-        sku_col = self.semantic_map.get("product") or self._find_column(["sku", "product_name", "item"])
         rev_col = self.semantic_map.get("revenue") or self._find_column(["gross_sales", "amount", "revenue", "price"])
         cogs_col = self.semantic_map.get("cost") or self._find_column(["cogs", "cost", "unit_cost"])
         fee_col = self.semantic_map.get("fee") or self._find_column(["fee", "commission", "platform_fees", "fba_fee"])
@@ -528,7 +543,16 @@ class NativeAnalyticsEngine:
         billed_col = self._find_column(["billed_weight_kg", "billed_weight"])
         actual_col = self._find_column(["actual_weight_kg", "actual_weight"])
 
-        sku_df = self.df[self.df[sku_col].astype(str).str.lower() == sku_target.lower()]
+        # Match across all candidate identifier columns
+        candidate_cols = [c for c in self.df.columns if any(k in c.lower() for k in ["sku", "product", "item", "title", "asin", "name", "id"])]
+        if not candidate_cols:
+            candidate_cols = list(self.df.columns)
+
+        mask = pd.Series(False, index=self.df.index)
+        for col in candidate_cols:
+            mask = mask | (self.df[col].astype(str).str.lower() == sku_target.lower())
+        sku_df = self.df[mask]
+
         if sku_df.empty:
             return False, "", None
 

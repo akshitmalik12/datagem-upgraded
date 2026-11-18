@@ -46,10 +46,31 @@ export default function CRMStatsLedger({
     { order_id: "OD-4081-5", sku: "FAST-CHARGER-65W", product_name: "GaN Fast Charger 65W", category: "Mobile Accessories", billed_weight_kg: 0.45, actual_weight_kg: 0.42, gross_sales: 1899.0, cogs: 520.0, net_profit: 1264.0, status: "STAR" }
   ];
 
+  // Derive clean financial classification for each row
+  const getRowFinancialStatus = (row) => {
+    const rawStatus = String(row.status || '').toUpperCase();
+    if (rawStatus === 'BLEEDER' || rawStatus === 'RETURN_LEAK') return rawStatus;
+    if (rawStatus === 'STAR') return 'STAR';
+    if (rawStatus === 'HEALTHY') return 'HEALTHY';
+
+    const returnFreight = Number(row.return_freight || 0);
+    const isReturn = rawStatus.includes('RETURN') || returnFreight > 0;
+    if (isReturn) return 'RETURN_LEAK';
+
+    const gross = Number(row.gross_sales || row.amount || row.revenue || 0);
+    const profit = row.net_profit !== undefined ? Number(row.net_profit) : (gross * 0.38 - Number(row.fba_fee || 0));
+    if (profit < 0) return 'BLEEDER';
+    if (profit >= 1000 || gross >= 3000) return 'STAR';
+    return 'HEALTHY';
+  };
+
   // Aggregated CRM Metrics (computed in real-time)
   const totalRevenue = rawRows.reduce((acc, r) => acc + (Number(r.gross_sales || r.amount || r.revenue || 0)), 0);
   const totalOrders = rawRows.length;
-  const bleedersCount = rawRows.filter(r => (r.status === 'BLEEDER' || r.status === 'RETURN_LEAK' || Number(r.net_profit || 0) < 0)).length;
+  const bleedersCount = rawRows.filter(r => {
+    const st = getRowFinancialStatus(r);
+    return st === 'BLEEDER' || st === 'RETURN_LEAK';
+  }).length;
   const avgOrderVal = totalOrders > 0 ? (totalRevenue / totalOrders) : 0;
 
   // Calculate live clawback overcharges from billed vs actual weight discrepancies
@@ -131,9 +152,25 @@ export default function CRMStatsLedger({
   // Filtered rows
   const filteredRows = rawRows.filter(r => {
     const textMatch = (r.sku || r.customer_id || r.product_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      (r.category || r.plan || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const statusMatch = statusFilter === 'ALL' || (r.status || 'HEALTHY').toUpperCase() === statusFilter;
-    return textMatch && statusMatch;
+                      (r.category || r.plan || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (r.order_id || '').toLowerCase().includes(searchQuery.toLowerCase());
+    if (!textMatch) return false;
+    if (statusFilter === 'ALL') return true;
+
+    const rowStatus = getRowFinancialStatus(r);
+    if (statusFilter === 'BLEEDER') {
+      return rowStatus === 'BLEEDER' || rowStatus === 'RETURN_LEAK';
+    }
+    if (statusFilter === 'STAR') {
+      return rowStatus === 'STAR';
+    }
+    if (statusFilter === 'HEALTHY') {
+      return rowStatus === 'HEALTHY';
+    }
+    if (statusFilter === 'RETURN_LEAK') {
+      return rowStatus === 'RETURN_LEAK';
+    }
+    return true;
   });
 
   return (
@@ -344,8 +381,10 @@ export default function CRMStatsLedger({
                 </tr>
               ) : (
                 filteredRows.map((row, idx) => {
-                  const isBleeder = row.status === 'BLEEDER' || row.status === 'RETURN_LEAK' || Number(row.net_profit || 0) < 0;
-                  const isStar = row.status === 'STAR' || (!isBleeder && Number(row.gross_sales || 0) > 3000);
+                  const finStatus = getRowFinancialStatus(row);
+                  const isReturnLeak = finStatus === 'RETURN_LEAK';
+                  const isBleeder = finStatus === 'BLEEDER' || isReturnLeak;
+                  const isStar = finStatus === 'STAR';
                   const skuCode = row.sku || row.customer_id || `ITEM-${idx + 1}`;
 
                   return (
@@ -390,13 +429,19 @@ export default function CRMStatsLedger({
                       <td className={`px-4 py-3 font-semibold font-sans ${isBleeder ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                         {row.net_profit !== undefined ? (
                           `${row.net_profit >= 0 ? '+' : ''}₹${Number(row.net_profit).toLocaleString()}`
+                        ) : isReturnLeak ? (
+                          `-₹${Number(row.return_freight || 284).toLocaleString()}`
                         ) : (
-                          `+₹${Math.round(Number(row.gross_sales || 1000) * 0.38).toLocaleString()}`
+                          `+₹${Math.round(Number(row.gross_sales || 1000) * 0.42).toLocaleString()}`
                         )}
                       </td>
 
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {isBleeder ? (
+                        {isReturnLeak ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900 whitespace-nowrap leading-none">
+                            Return Leak
+                          </span>
+                        ) : isBleeder ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900 whitespace-nowrap leading-none">
                             Hidden Bleeder
                           </span>
