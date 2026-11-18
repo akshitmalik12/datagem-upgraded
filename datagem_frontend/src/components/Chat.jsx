@@ -2917,6 +2917,10 @@ export default function Chat() {
           <WatchdogModal
         isOpen={isWatchdogModalOpen}
         onClose={() => setIsWatchdogModalOpen(false)}
+        onOpenCheckout={(plan) => {
+          setSelectedPlanForCheckout(plan || 'pro');
+          setIsCheckoutOpen(true);
+        }}
       />
       <MarketplaceConnectorsModal
         isOpen={isConnectorsModalOpen}

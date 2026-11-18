@@ -31,14 +31,27 @@ class WatchdogRule(BaseModel):
     rule_name: str
     metric: str  # 'return_rate', 'fee_leakage', 'gross_gmv'
     threshold: float
-    frequency: str = "weekly_monday"  # 'weekly_monday', 'daily'
+    frequency: str = "Monday & Thursday 8:00 AM"
     target_email: Optional[str] = None
+
+class WatchdogSettingsRequest(BaseModel):
+    schedule_days: List[str] = ["Monday", "Thursday"]
+    schedule_time: str = "08:00"
+    timezone: str = "Asia/Kolkata"
+    target_email: Optional[str] = None
+    active: bool = True
 
 class TestAlertRequest(BaseModel):
     metric: str
     value: float
     threshold: float
     target_email: str
+
+USER_WATCHDOG_CONFIG: Dict[int, Dict[str, Any]] = {}
+
+def is_paid_tier(user: User) -> bool:
+    tier = (getattr(user, "tier", "") or "free").lower()
+    return tier not in ["free", "starter"]
 
 def render_watchdog_template(user_name: str, metric: str, value: float, threshold: float, leaks: Optional[List[Dict[str, Any]]] = None) -> str:
     """Renders the executive HTML watchdog email using Jinja2."""
@@ -65,6 +78,49 @@ def dispatch_watchdog_email(to_email: str, subject: str, html_content: str):
     except Exception as e:
         logger.error(f"Watchdog dispatch error: {e}")
 
+@router.get("/settings")
+def get_watchdog_settings(current_user: User = Depends(get_current_active_user)):
+    """Returns timing preferences and paid gate status for the authenticated user."""
+    paid = is_paid_tier(current_user)
+    cfg = USER_WATCHDOG_CONFIG.get(current_user.id, {
+        "schedule_days": ["Monday", "Thursday"],
+        "schedule_time": "08:00",
+        "timezone": "Asia/Kolkata",
+        "target_email": current_user.email,
+        "active": True
+    })
+    return {
+        "user_tier": getattr(current_user, "tier", "free"),
+        "is_paid": paid,
+        "locked": not paid,
+        "upgrade_required_message": "The Autonomous Watchdog Sentinel is an exclusive feature for paid plans (Pro Growth, Autonomous Operator, Enterprise). Please upgrade to activate bi-weekly automated scans." if not paid else None,
+        "settings": cfg
+    }
+
+@router.post("/settings")
+def update_watchdog_settings(
+    req: WatchdogSettingsRequest,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Allows paid users to customize their scanning schedule and delivery timing."""
+    if not is_paid_tier(current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="The Autonomous Watchdog Sentinel is an exclusive feature for paid plans. Upgrade to Pro Growth or Autonomous Operator to configure custom email schedules."
+        )
+    USER_WATCHDOG_CONFIG[current_user.id] = {
+        "schedule_days": req.schedule_days,
+        "schedule_time": req.schedule_time,
+        "timezone": req.timezone,
+        "target_email": req.target_email or current_user.email,
+        "active": req.active
+    }
+    return {
+        "status": "updated",
+        "message": f"Watchdog schedule updated to {', '.join(req.schedule_days)} at {req.schedule_time} ({req.timezone})",
+        "settings": USER_WATCHDOG_CONFIG[current_user.id]
+    }
+
 @router.post("/send-alert-test")
 def send_test_alert(
     req: TestAlertRequest,
@@ -72,9 +128,14 @@ def send_test_alert(
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Compiles and dispatches (or previews) a watchdog HTML alert non-blockingly.
-    Returns preview metadata and dispatches async background worker.
+    Compiles and dispatches a watchdog HTML alert for paid users.
     """
+    if not is_paid_tier(current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="The Autonomous Watchdog Sentinel is an exclusive feature for paid plans. Please upgrade to Pro Growth or Autonomous Operator to dispatch automated briefings."
+        )
+
     user_name = getattr(current_user, "full_name", None) or "Executive"
     html_content = render_watchdog_template(
         user_name=user_name,
@@ -83,28 +144,41 @@ def send_test_alert(
         threshold=req.threshold
     )
 
-    subject = f"🚨 DataGem Monday 8:00 AM Watchdog: {req.metric.replace('_', ' ').title()} Breach"
+    cfg = USER_WATCHDOG_CONFIG.get(current_user.id, {"schedule_days": ["Monday", "Thursday"], "schedule_time": "08:00"})
+    days_str = " & ".join(cfg.get("schedule_days", ["Monday", "Thursday"]))
+    time_str = cfg.get("schedule_time", "08:00")
+    subject = f"🚨 DataGem {days_str} {time_str} AM Watchdog: {req.metric.replace('_', ' ').title()} Breach"
     background_tasks.add_task(dispatch_watchdog_email, req.target_email, subject, html_content)
 
     return {
         "status": "dispatched",
         "live_mode": bool(os.environ.get("SMTP_HOST") or os.environ.get("RESEND_API_KEY")),
         "recipient": req.target_email,
+        "schedule": f"{days_str} {time_str}",
         "html_preview_length": len(html_content),
         "compiled_html": html_content
     }
 
 @router.get("/rules")
 def get_user_rules(current_user: User = Depends(get_current_active_user)):
-    """Returns active watchdog rules for user."""
+    """Returns active watchdog rules for user with bi-weekly default schedule."""
+    paid = is_paid_tier(current_user)
+    cfg = USER_WATCHDOG_CONFIG.get(current_user.id, {"schedule_days": ["Monday", "Thursday"], "schedule_time": "08:00"})
+    days_str = " & ".join(cfg.get("schedule_days", ["Monday", "Thursday"]))
+    time_str = cfg.get("schedule_time", "08:00")
+    freq_label = f"{days_str} {time_str} AM"
+
     return {
+        "is_paid": paid,
+        "locked": not paid,
+        "schedule": freq_label,
         "rules": [
             {
                 "id": "rule_01",
                 "name": "Amazon FBA Return Rate Watchdog",
                 "metric": "return_rate",
                 "threshold": 12.0,
-                "frequency": "Monday 8:00 AM",
+                "frequency": freq_label,
                 "channel": "Email Digest",
                 "active": True
             },
@@ -113,7 +187,7 @@ def get_user_rules(current_user: User = Depends(get_current_active_user)):
                 "name": "Marketplace Commission Overcharge Leakage",
                 "metric": "fee_leakage",
                 "threshold": 22.0,
-                "frequency": "Monday 8:00 AM",
+                "frequency": freq_label,
                 "channel": "Email Digest",
                 "active": True
             },
@@ -122,7 +196,7 @@ def get_user_rules(current_user: User = Depends(get_current_active_user)):
                 "name": "SaaS Net Dollar Retention (NDR) Dip",
                 "metric": "ndr_dip",
                 "threshold": 105.0,
-                "frequency": "Monday 8:00 AM",
+                "frequency": freq_label,
                 "channel": "Email Digest",
                 "active": True
             }

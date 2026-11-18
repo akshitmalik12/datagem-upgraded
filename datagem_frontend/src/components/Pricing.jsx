@@ -43,8 +43,9 @@ export default function Pricing() {
       price_yearly_usd: "$24",
       description: "For growing merchants needing unlimited queries and dispute recovery.",
       features: [
-        "Unlimited DuckDB OLAP queries",
+        "150 DuckDB OLAP queries / day",
         "100MB dataset file uploads",
+        "Bi-weekly Watchdog Sentinel (Mon & Thu 8:00 AM alerts)",
         "Google Sheets & CSV live synchronization",
         "3 1-Click Amazon/Flipkart Dispute Filings / mo",
         "Full Dynamic CM3 & Hidden Bleeder Ledger",
@@ -64,10 +65,10 @@ export default function Pricing() {
       price_yearly_usd: "$79",
       description: "Hands-free continuous intelligence, scheduled briefings, and unlimited dispute recovery.",
       features: [
-        "Everything in Pro Growth",
+        "Everything in Pro Growth with Unlimited queries",
+        "Full Custom Watchdog Sentinel (Custom days, hours & daily alerts)",
         "Unlimited 1-Click Amazon/Flipkart Dispute Claims & PDF export",
-        "Automated Monday 8:00 AM CEO Watchdog Briefing",
-        "Shopify, Amazon SP-API & Flipkart connectors",
+        "Live Marketplace Connectors (Amazon SP-API, Flipkart & Shopify)",
         "Price Elasticity & Cash Contribution Simulator",
         "500MB dataset vault storage with Snappy Parquet",
         "Priority WhatsApp & Founder Support (3 Team Seats)"

@@ -44,11 +44,12 @@ def get_plans():
                 "price_inr": 2499,
                 "description": "For high-volume merchants needing unlimited queries and dispute filing.",
                 "features": [
-                    "Unlimited DuckDB OLAP queries",
+                    "150 DuckDB OLAP queries / day",
                     "100MB dataset file uploads",
-                    "Google Sheets & CSV live synchronization",
+                    "Bi-weekly Watchdog Sentinel (Mon & Thu 8:00 AM alerts)",
                     "3 1-Click Amazon/Flipkart Dispute Filings / month",
                     "Full Dynamic CM3 & Hidden Bleeder Ledger",
+                    "Google Sheets & CSV live synchronization",
                     "Email support (24h response)"
                 ],
                 "limits": {"daily_queries": 150, "max_file_size_mb": 100}
@@ -59,12 +60,12 @@ def get_plans():
                 "price_usd": 99,
                 "price_inr": 7999,
                 "badge": "Flagship",
-                "description": "Hands-free continuous intelligence, scheduled briefings, and unlimited dispute recovery.",
+                "description": "Hands-free continuous intelligence, custom scheduled briefings, and unlimited dispute recovery.",
                 "features": [
-                    "Everything in Pro Growth",
+                    "Everything in Pro Growth with Unlimited queries",
+                    "Full Custom Watchdog Sentinel (Custom days, hours & daily alerts)",
                     "Unlimited 1-Click Amazon/Flipkart Dispute Claims & PDF export",
-                    "Automated Monday 8:00 AM CEO Watchdog Briefing",
-                    "Shopify, Amazon SP-API & Flipkart connectors",
+                    "Live Marketplace Connectors (Amazon SP-API, Flipkart & Shopify)",
                     "Price Elasticity & Cash Contribution Simulator",
                     "500MB dataset vault storage with Snappy Parquet",
                     "Priority WhatsApp & Founder Support (3 Team Seats)"
