@@ -1,0 +1,16 @@
+order_id,sku,product_name,category,billed_weight_kg,actual_weight_kg,gross_sales,cogs,fba_fee,return_freight,status
+OD-5091-01,ELEC-W-EARBUDS,Wireless ANC Earbuds Pro,Electronics,1.25,0.38,2499.00,850.00,142.00,0.00,Delivered
+OD-5091-02,FAST-CHARGER-65W,GaN Fast Charger 65W,Mobile Accessories,0.45,0.42,1899.00,520.00,64.00,0.00,Delivered
+OD-5091-03,ELEC-W-EARBUDS,Wireless ANC Earbuds Pro,Electronics,1.25,0.38,2499.00,850.00,142.00,284.00,Customer Return
+OD-5091-04,MAG-POWERBANK-10K,MagSafe PowerBank 10k,Mobile Accessories,0.65,0.60,3299.00,1400.00,86.00,0.00,Delivered
+OD-5091-05,USB-C-CABLE-2M,Braided USB-C Cable 2m,Mobile Accessories,0.35,0.12,699.00,150.00,42.00,0.00,Delivered
+OD-5091-06,SMART-WATCH-PRO,Apex Ultra Smartwatch,Wearables,0.85,0.35,4999.00,2100.00,165.00,0.00,Delivered
+OD-5091-07,ELEC-W-EARBUDS,Wireless ANC Earbuds Pro,Electronics,1.25,0.38,2499.00,850.00,142.00,284.00,Customer Return
+OD-5091-08,FAST-CHARGER-65W,GaN Fast Charger 65W,Mobile Accessories,0.45,0.42,1899.00,520.00,64.00,0.00,Delivered
+OD-5091-09,SMART-WATCH-PRO,Apex Ultra Smartwatch,Wearables,0.85,0.35,4999.00,2100.00,165.00,320.00,Customer Return
+OD-5091-10,MAG-POWERBANK-10K,MagSafe PowerBank 10k,Mobile Accessories,0.65,0.60,3299.00,1400.00,86.00,0.00,Delivered
+OD-5091-11,USB-C-CABLE-2M,Braided USB-C Cable 2m,Mobile Accessories,0.35,0.12,699.00,150.00,42.00,0.00,Delivered
+OD-5091-12,FAST-CHARGER-65W,GaN Fast Charger 65W,Mobile Accessories,0.45,0.42,1899.00,520.00,64.00,0.00,Delivered
+OD-5091-13,ELEC-W-EARBUDS,Wireless ANC Earbuds Pro,Electronics,1.25,0.38,2499.00,850.00,142.00,0.00,Delivered
+OD-5091-14,MAG-POWERBANK-10K,MagSafe PowerBank 10k,Mobile Accessories,0.65,0.60,3299.00,1400.00,86.00,0.00,Delivered
+OD-5091-15,SMART-WATCH-PRO,Apex Ultra Smartwatch,Wearables,0.85,0.35,4999.00,2100.00,165.00,0.00,Delivered

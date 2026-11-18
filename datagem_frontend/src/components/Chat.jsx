@@ -1542,6 +1542,22 @@ export default function Chat() {
             onIngestFile={(newRows, filename) => {
               setDataset(newRows);
               setDatasetFilename(filename);
+              if (newRows && newRows.length > 0) {
+                const cols = Object.keys(newRows[0]);
+                const profile = {
+                  filename,
+                  totalRows: newRows.length,
+                  columns: cols,
+                  columnTypes: cols.reduce((acc, col) => {
+                    acc[col] = typeof newRows[0][col] === 'number' ? 'numeric' : 'categorical';
+                    return acc;
+                  }, {}),
+                  head: newRows.slice(0, 5),
+                  sample: newRows.slice(0, 10)
+                };
+                setDatasetProfile(profile);
+                setExecutiveBriefing(analyzeDatasetIntelligence(newRows, cols));
+              }
             }}
             onViewDispute={(row) => {
               setDisputeModalData(row);
@@ -1568,6 +1584,22 @@ export default function Chat() {
                 onIngestFile={(newRows, filename) => {
                   setDataset(newRows);
                   setDatasetFilename(filename);
+                  if (newRows && newRows.length > 0) {
+                    const cols = Object.keys(newRows[0]);
+                    const profile = {
+                      filename,
+                      totalRows: newRows.length,
+                      columns: cols,
+                      columnTypes: cols.reduce((acc, col) => {
+                        acc[col] = typeof newRows[0][col] === 'number' ? 'numeric' : 'categorical';
+                        return acc;
+                      }, {}),
+                      head: newRows.slice(0, 5),
+                      sample: newRows.slice(0, 10)
+                    };
+                    setDatasetProfile(profile);
+                    setExecutiveBriefing(analyzeDatasetIntelligence(newRows, cols));
+                  }
                 }}
                 onViewDispute={(row) => {
                   setDisputeModalData(row);

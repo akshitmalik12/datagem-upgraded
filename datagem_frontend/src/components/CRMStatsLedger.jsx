@@ -359,7 +359,7 @@ export default function CRMStatsLedger({
 
       {/* HIGH DENSITY CRM TRANSACTION TABLE */}
       <div className="flex-1 overflow-auto p-5">
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F17]/50 overflow-hidden shadow-sm">
+        <div id="tour-crm-table" className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F17]/50 overflow-hidden shadow-sm">
           <table className="w-full text-left border-collapse text-xs font-sans">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] font-mono">
