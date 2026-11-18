@@ -88,7 +88,7 @@ def send_test_alert(
 
     return {
         "status": "dispatched",
-        "live_mode": bool(os.environ.get("SMTP_HOST")),
+        "live_mode": bool(os.environ.get("SMTP_HOST") or os.environ.get("RESEND_API_KEY")),
         "recipient": req.target_email,
         "html_preview_length": len(html_content),
         "compiled_html": html_content
