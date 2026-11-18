@@ -2618,7 +2618,10 @@ export default function Chat() {
         <div className="flex-shrink-0 bg-transparent py-4 px-6 z-30 relative">
           <div className="max-w-4xl mx-auto flex flex-col items-center">
             <PromptBar
+              value={input}
+              onChange={setInput}
               placeholder="Ask anything about this dataset (e.g. 'calculate blended ROAS', 'top churned customers')..."
+              width={760}
               sources={[
                 { key: 'dataset', name: dataset ? 'Active Dataset' : 'No Data Ingested', description: dataset ? `${dataset.length || 'Ready'} rows` : 'Upload CSV/Parquet', icon: Attachment01Icon, attach: true },
                 { key: 'web', name: 'Web Benchmarks', description: 'Real-time CAC & CPM comparison', icon: Globe02Icon }
@@ -2629,12 +2632,8 @@ export default function Chat() {
                 { key: 'anomalies', name: '/anomalies', description: 'Scan for return rate or price outliers' },
                 { key: 'clean', name: '/clean', description: 'Impute missing values and detect column formats' }
               ]}
-              models={[
-                { key: 'gemini-pro', name: 'Gemini 2.5 Pro', tag: 'Deep Audit' },
-                { key: 'gemini-flash', name: 'Gemini 2.5 Flash', tag: '0.4s Fast' }
-              ]}
-              efforts={['Fast', 'Balanced', 'Deep', 'Max Spark']}
-              defaultEffort="Deep"
+              models={[]}
+              efforts={[]}
               busy={loading}
               onSend={(text) => {
                 if (!text || !text.trim()) return;
@@ -2686,12 +2685,8 @@ export default function Chat() {
                 if (fileInput) fileInput.click();
               }}
               onDictate={toggleListening}
-              background="#080C14"
-              color="#f1f5f9"
-              menuBackground="#0B111C"
               sparkColor="#0284c7"
               sparkBoost={1.2}
-              width={760}
               radius={20}
             />
 

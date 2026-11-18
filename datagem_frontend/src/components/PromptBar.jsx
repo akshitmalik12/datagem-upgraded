@@ -117,6 +117,8 @@ function SendGlyph({ busy, morphDuration, squash, tilt }) {
 }
 
 export default function PromptBar({
+  value,
+  onChange,
   placeholder = 'Ask anything',
   sources = DEFAULT_SOURCES,
   commands = DEFAULT_COMMANDS,
@@ -158,7 +160,17 @@ export default function PromptBar({
   const latest = useRef({});
   latest.current = { onSend, onStop, onAttach, onDictate, onEffortChange };
 
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState(value || '');
+
+  // Sync draft with external controlled value
+  useEffect(() => {
+    if (value !== undefined) {
+      setDraft(value);
+      if (value && inputRef.current) {
+        inputRef.current.focus();
+      }
+    }
+  }, [value]);
   const [attachments, setAttachments] = useState([]);
   const [modelKey, setModelKey] = useState(defaultModel);
   const [plusOpen, setPlusOpen] = useState(false);
@@ -407,6 +419,7 @@ export default function PromptBar({
     if (!canSend || busy) return;
     latest.current.onSend?.(draft.trim(), { attachments, model, effort: level });
     setDraft('');
+    if (onChange) onChange('');
     setAttachments([]);
     setDismissed(false);
     closeMenus();
@@ -608,7 +621,9 @@ export default function PromptBar({
           placeholder={listening ? 'Listening…' : placeholder}
           aria-label="Prompt"
           onChange={e => {
-            setDraft(e.target.value);
+            const next = e.target.value;
+            setDraft(next);
+            if (onChange) onChange(next);
             typing.current.energy = Math.min(1.6, typing.current.energy + 0.22);
             typing.current.strokes = Math.min(4, typing.current.strokes + 1);
             setDismissed(false);
@@ -620,6 +635,12 @@ export default function PromptBar({
         />
 
         <div className="prompt-bar__bar">
+          {models.length === 0 && efforts.length === 0 && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 font-medium mr-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              DuckDB Zero-Token Engine
+            </div>
+          )}
           <button
             type="button"
             className="prompt-bar__tool"
