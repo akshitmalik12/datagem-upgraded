@@ -20,6 +20,7 @@ from routers import billing
 from routers import ecommerce
 from routers import enterprise
 from routers import profit_engine
+from routers import voice
 import data_import
 
 # Setup logging
@@ -127,6 +128,7 @@ app.include_router(enterprise.router)
 app.include_router(profit_engine.router)
 app.include_router(watchdog.router)
 app.include_router(setup_admin.router)
+app.include_router(voice.router)
 
 
 

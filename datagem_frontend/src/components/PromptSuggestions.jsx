@@ -3,52 +3,44 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 
 const PROMPT_CATEGORIES = {
+  contextual: {
+    name: 'Contextual',
+    icon: '⚡',
+    shape: 'rounded-xl',
+    size: 'px-6 py-3',
+    prompts: [],
+  },
   analysis: {
     name: 'Analysis',
-    icon: '',
+    icon: '🔍',
     shape: 'rounded-xl',
     size: 'px-6 py-3',
     prompts: [
       'Generate a comprehensive data profiling report',
-      'Identify key statistical anomalies and outliers',
-      'Perform correlation analysis across all numerical features',
-      'Analyze missing values and suggest imputation strategies',
-      'Summarize the top 5 most critical insights',
-      'Evaluate the dataset for predictive modeling suitability',
+      'Which SKUs are bleeding net cash after accounting for returns and commissions?',
+      'Audit all weight handling overcharges and calculate reclaimable cash',
+      'Compare store performance vs industry web benchmarks',
+      'Identify top 5 products by gross sales',
+      'Summarize fee deductions and net seller payout',
     ],
   },
   visualization: {
     name: 'Visualization',
-    icon: '',
+    icon: '📊',
     shape: 'rounded-xl',
     size: 'px-6 py-3',
     prompts: [
-      'Generate a pairplot of the most correlated variables',
-      'Create an interactive dashboard of key distributions',
-      'Plot a correlation heatmap using seaborn',
-      'Render a PCA variance explanation chart',
-      'Visualize feature importance using a random forest',
-      'Plot a 3D scatter plot of the primary clusters',
-    ],
-  },
-  modeling: {
-    name: 'Modeling',
-    icon: '',
-    shape: 'rounded-xl',
-    size: 'px-6 py-3',
-    prompts: [
-      'Train a baseline Random Forest classifier',
-      'Perform K-Means clustering and visualize the centroids',
-      'Run an automated hyperparameter search',
-      'Forecast future trends using time-series analysis',
-      'Build a robust XGBoost predictive model',
-      'Generate a SHAP feature importance summary',
+      'Bar graph of sales by product',
+      'Bar graph of items sold',
+      'Distribution of billed vs actual weight discrepancies',
+      'Plot net profit margin vs gross revenue',
+      'Daily GMV timeline trend',
     ],
   },
 };
 
 export default function PromptSuggestions({ dataset, onSelectPrompt }) {
-  const [activeCategory, setActiveCategory] = useState('analysis');
+  const [activeCategory, setActiveCategory] = useState('contextual');
   const [recentPrompts, setRecentPrompts] = useState([]);
   const [favoritePrompts, setFavoritePrompts] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
@@ -93,23 +85,50 @@ export default function PromptSuggestions({ dataset, onSelectPrompt }) {
   };
 
   const getContextualPrompts = () => {
-    if (!dataset) return [];
-    
-    const contextual = [];
-    const columns = dataset.columns || [];
-    const numericColumns = dataset.numericColumns || [];
-    
-    if (numericColumns.length > 0) {
-      contextual.push(`Analyze the relationship between ${numericColumns[0]} and ${numericColumns[1] || numericColumns[0]}`);
-      contextual.push(`Create a histogram for ${numericColumns[0]}`);
+    if (!dataset) {
+      return [
+        'Audit all weight handling overcharges and calculate reclaimable cash',
+        'Which SKUs are bleeding net cash after accounting for returns and commissions?',
+        'Bar graph of sales by product',
+        'Generate a comprehensive data profiling report',
+        'Compare store performance vs industry web benchmarks'
+      ];
     }
     
-    if (columns.length > 0) {
-      contextual.push(`What are the unique values in ${columns[0]}?`);
-      contextual.push(`Show statistics for ${numericColumns[0] || columns[0]}`);
+    // Extract columns whether dataset is an array of rows or a metadata profile
+    let rawCols = [];
+    if (Array.isArray(dataset) && dataset.length > 0) {
+      rawCols = Object.keys(dataset[0]);
+    } else if (dataset.columns && Array.isArray(dataset.columns)) {
+      rawCols = dataset.columns.map(c => typeof c === 'string' ? c : (c.name || String(c)));
     }
     
-    return contextual;
+    const lowerCols = rawCols.map(c => c.toLowerCase());
+    const prompts = [];
+
+    // Check for E-commerce & Logistics dimensions
+    if (lowerCols.some(c => c.includes('weight'))) {
+      prompts.push('Audit all weight handling overcharges and calculate reclaimable cash');
+    }
+    if (lowerCols.some(c => c.includes('sku') || c.includes('product') || c.includes('item'))) {
+      prompts.push('Which SKUs are bleeding net cash after accounting for returns and commissions?');
+      prompts.push('Bar graph of sales by product');
+      prompts.push('Bar graph of items sold');
+      prompts.push('Analyze profit contribution, commission leakage, and return rate for ELEC-W-EARBUDS');
+    }
+    if (lowerCols.some(c => c.includes('revenue') || c.includes('sales') || c.includes('gross') || c.includes('amount'))) {
+      prompts.push('Top 5 products by gross sales');
+      prompts.push('Summarize fee deductions and net seller payout');
+    }
+    if (lowerCols.some(c => c.includes('churn') || c.includes('retention') || c.includes('mrr'))) {
+      prompts.push('Calculate Monthly Recurring Revenue (MRR) and Net Dollar Retention (NDR)');
+      prompts.push('Which customer subscription tier has the highest churn rate?');
+    }
+
+    prompts.push('Generate a comprehensive data profiling report');
+    prompts.push('Compare store performance vs industry web benchmarks');
+
+    return [...new Set(prompts)].slice(0, 6);
   };
 
   const displayPrompts = showFavorites 

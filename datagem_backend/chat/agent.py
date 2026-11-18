@@ -673,21 +673,28 @@ IMPORTANT:
             logger.error(f"Error calling LLM: {error_str}")
             
             # If Google API key is invalid/missing or quota exceeded, fall back seamlessly to local DuckDB execution
-            if "API key not valid" in error_str or "API_KEY_INVALID" in error_str or "quota" in error_str.lower() or not GEMINI_API_KEY or GEMINI_API_KEY == "demo_key":
+            if "API key not valid" in error_str or "API_KEY_INVALID" in error_str or "quota" in error_str.lower() or not GEMINI_API_KEY or GEMINI_API_KEY == "demo_key" or "400" in error_str:
                 if self.dataset and len(self.dataset) > 0:
                     try:
                         logger.info("Falling back to NativeAnalyticsEngine DuckDB execution due to API key error...")
                         native_engine = NativeAnalyticsEngine(dataset=self.dataset)
                         handled, response_md, _ = native_engine.execute_query(prompt)
-                        if handled and response_md:
+                        if not handled or not response_md:
+                            handled, response_md, _ = native_engine._generate_overview()
+                        if response_md:
                             yield "\n[⚡ Seamlessly resolved via In-Memory DuckDB Engine (Offline Resilient Mode)]\n\n"
                             yield response_md
                             ai_response_content = response_md
                             return
                     except Exception as fallback_err:
                         logger.warning(f"Fallback native execution error: {fallback_err}")
+                else:
+                    msg = "### 📊 DataGem Autonomous Co-Pilot\n\nNo active dataset is loaded in your workspace yet.\n\nTo run deep forensic audits, calculate reclaimable clawbacks, or generate profiling reports:\n- 📁 **Upload a Settlement CSV** (Flipkart, Amazon, or custom transaction report)\n- 🛒 **Connect Store** via the Marketplace Connectors modal\n- ⚡ Or select one of the instant domain presets (**E-Commerce & Retail** or **B2B SaaS**) from the domain hub menu above."
+                    yield msg
+                    ai_response_content = msg
+                    return
 
-            error_msg = f"❌ Error generating response: {e}"
+            error_msg = "⚠️ **Co-Pilot Notice:** Unable to complete LLM analysis on this query. Please verify your dataset or rephrase your analytical question."
             traceback.print_exc()
             yield f"\n{error_msg}\n"
             ai_response_content += error_msg

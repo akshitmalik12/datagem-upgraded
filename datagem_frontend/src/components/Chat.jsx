@@ -45,6 +45,8 @@ import CRMStatsLedger from './CRMStatsLedger';
 import GuidedTourModal from './GuidedTourModal';
 import DisputeTicketModal from './DisputeTicketModal';
 import { LogOut, User as UserIcon } from 'lucide-react';
+import TechText from './TechText';
+import Lightfall from './Lightfall';
 
 // Global memory cache to persist chat state across page navigations
 let chatMemoryCache = null;
@@ -231,16 +233,71 @@ export default function Chat() {
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const speechRecognitionRef = useRef(null);
 
   const toggleListening = async () => {
+    // If currently listening, stop
     if (isListening) {
+      if (speechRecognitionRef.current) {
+        try { speechRecognitionRef.current.stop(); } catch {}
+      }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-        mediaRecorderRef.current.stop();
+        try { mediaRecorderRef.current.stop(); } catch {}
       }
       setIsListening(false);
       return;
     }
-    
+
+    // Try browser-native Web Speech API first (Chrome, Edge, Safari, Brave)
+    const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        const basePrompt = input;
+        recognition.onstart = () => {
+          setIsListening(true);
+        };
+
+        recognition.onresult = (event) => {
+          let interimTranscript = '';
+          let finalTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+
+          const currentText = finalTranscript || interimTranscript;
+          if (currentText) {
+            setInput((basePrompt ? basePrompt + ' ' : '') + currentText);
+          }
+        };
+
+        recognition.onerror = (e) => {
+          console.warn('SpeechRecognition error:', e.error);
+          setIsListening(false);
+        };
+
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+
+        speechRecognitionRef.current = recognition;
+        recognition.start();
+        return;
+      } catch (err) {
+        console.warn('Web Speech API start failed, falling back to MediaRecorder:', err);
+      }
+    }
+
+    // Fallback: MediaRecorder sending to backend /voice/transcribe
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
@@ -248,39 +305,31 @@ export default function Chat() {
       audioChunksRef.current = [];
       
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
       
       mediaRecorder.onstop = async () => {
-        // Stop the tracks to release the mic
         stream.getTracks().forEach(track => track.stop());
-        
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        
-        // Show loading in the input box or something?
         const base = input;
         setInput(base + (base.length > 0 && !base.endsWith(' ') ? ' ' : '') + "🎙️ Transcribing...");
-        
         try {
           const result = await voiceApi.transcribe(audioBlob);
           const transcript = result.transcription || result.text || result.transcript || "";
-          
           setInput(base + (base.length > 0 && !base.endsWith(' ') ? ' ' : '') + transcript);
         } catch (error) {
           console.error("Transcription error:", error);
           setInput(base);
-          alert("Failed to transcribe audio.");
+        } finally {
+          setIsListening(false);
         }
       };
       
       mediaRecorder.start();
       setIsListening(true);
-      
     } catch (err) {
-      console.error("Error accessing microphone:", err);
-      alert("Microphone access denied or not available.");
+      console.error("Microphone access error:", err);
+      setIsListening(false);
     }
   };
   
@@ -1797,10 +1846,16 @@ export default function Chat() {
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     Autonomous OLAP Sandbox Ready
                   </div>
-                  <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-3 font-sans">
-                    Accelerate your data <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-emerald-300 to-white">intelligence</span>
-                  </h2>
-                  <p className="text-sm text-slate-400 max-w-xl mx-auto font-sans leading-relaxed">
+                  <div style={{ width: '100%', height: '110px', position: 'relative' }} className="my-1 flex items-center justify-center">
+                    <TechText
+                      text="DataGem"
+                      fontWeight={700}
+                      fontSize={64}
+                      reveal="letter"
+                      dashLength={4}
+                    />
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto font-sans leading-relaxed">
                     Upload any CSV or link your marketplace store to auto-generate executive briefings, audit fee leakage, and query with vector copilot.
                   </p>
                 </motion.div>

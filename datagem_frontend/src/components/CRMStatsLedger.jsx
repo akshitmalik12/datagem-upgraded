@@ -38,29 +38,48 @@ export default function CRMStatsLedger({
   const [ingestNotice, setIngestNotice] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Robust case-insensitive and alias-resilient value extractor
+  const getVal = (row, ...keys) => {
+    if (!row) return undefined;
+    for (const k of keys) {
+      if (row[k] !== undefined && row[k] !== null) return row[k];
+      const lowerK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+      for (const [rk, val] of Object.entries(row)) {
+        if (rk.toLowerCase().replace(/[^a-z0-9]/g, '') === lowerK) {
+          return val;
+        }
+      }
+    }
+    return undefined;
+  };
+
   // Derive CRM rows based on active dataset (empty array if no dataset loaded)
   const rawRows = dataset && dataset.length > 0 ? dataset : [];
 
   // Derive clean financial classification for each row
   const getRowFinancialStatus = (row) => {
-    const rawStatus = String(row.status || '').toUpperCase();
+    const rawStatus = String(getVal(row, 'status', 'order_status') || '').toUpperCase();
     if (rawStatus === 'BLEEDER' || rawStatus === 'RETURN_LEAK') return rawStatus;
     if (rawStatus === 'STAR') return 'STAR';
     if (rawStatus === 'HEALTHY') return 'HEALTHY';
 
-    const returnFreight = Number(row.return_freight || 0);
-    const isReturn = rawStatus.includes('RETURN') || returnFreight > 0;
+    const returnFreight = Number(getVal(row, 'return_freight', 'refund_amount') || 0);
+    const isReturn = rawStatus.includes('RETURN') || rawStatus.includes('REFUND') || returnFreight > 0;
     if (isReturn) return 'RETURN_LEAK';
 
-    const gross = Number(row.gross_sales || row.amount || row.revenue || 0);
-    const profit = row.net_profit !== undefined ? Number(row.net_profit) : (gross * 0.38 - Number(row.fba_fee || 0));
+    const gross = Number(getVal(row, 'gross_sales', 'amount', 'revenue', 'item_price') || 0);
+    const cogs = Number(getVal(row, 'cogs', 'cost', 'product_cost') || (gross * 0.35));
+    const fee = Number(getVal(row, 'fba_fee', 'platform_fees', 'fee', 'commission') || (gross * 0.15));
+    const profitVal = getVal(row, 'net_profit', 'profit', 'margin');
+    const profit = profitVal !== undefined ? Number(profitVal) : (gross - cogs - fee);
+    
     if (profit < 0) return 'BLEEDER';
-    if (profit >= 1000 || gross >= 3000) return 'STAR';
+    if (profit >= 1400 || gross >= 3000) return 'STAR';
     return 'HEALTHY';
   };
 
   // Aggregated CRM Metrics (computed in real-time)
-  const totalRevenue = rawRows.reduce((acc, r) => acc + (Number(r.gross_sales || r.amount || r.revenue || 0)), 0);
+  const totalRevenue = rawRows.reduce((acc, r) => acc + (Number(getVal(r, 'gross_sales', 'amount', 'revenue', 'item_price') || 0)), 0);
   const totalOrders = rawRows.length;
   const bleedersCount = rawRows.filter(r => {
     const st = getRowFinancialStatus(r);
@@ -70,8 +89,8 @@ export default function CRMStatsLedger({
 
   // Calculate live clawback overcharges from billed vs actual weight discrepancies
   const totalClawback = rawRows.reduce((acc, r) => {
-    const billed = Number(r.billed_weight_kg || 0);
-    const actual = Number(r.actual_weight_kg || 0);
+    const billed = Number(getVal(r, 'billed_weight_kg', 'billed_weight') || 0);
+    const actual = Number(getVal(r, 'actual_weight_kg', 'actual_weight') || 0);
     if (billed > actual) {
       const deltaSlabs = Math.ceil((billed - actual) / 0.5);
       return acc + (deltaSlabs * 61);
@@ -144,11 +163,18 @@ export default function CRMStatsLedger({
     }
   };
 
-  // Filtered rows
+  // Filtered rows with case-insensitive field matching
   const filteredRows = rawRows.filter(r => {
-    const textMatch = (r.sku || r.customer_id || r.product_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      (r.category || r.plan || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      (r.order_id || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const sku = String(getVal(r, 'sku', 'asin', 'item_id', 'customer_id') || '');
+    const prod = String(getVal(r, 'product_name', 'item_name', 'title') || '');
+    const cat = String(getVal(r, 'category', 'plan') || '');
+    const orderId = String(getVal(r, 'order_id', 'order_number', 'id') || '');
+
+    const query = searchQuery.toLowerCase().trim();
+    const textMatch = !query || sku.toLowerCase().includes(query) ||
+                               prod.toLowerCase().includes(query) ||
+                               cat.toLowerCase().includes(query) ||
+                               orderId.toLowerCase().includes(query);
     if (!textMatch) return false;
     if (statusFilter === 'ALL') return true;
 
@@ -415,33 +441,41 @@ export default function CRMStatsLedger({
                   const isReturnLeak = finStatus === 'RETURN_LEAK';
                   const isBleeder = finStatus === 'BLEEDER' || isReturnLeak;
                   const isStar = finStatus === 'STAR';
-                  const skuCode = row.sku || row.customer_id || `ITEM-${idx + 1}`;
+                  const skuCode = getVal(row, 'sku', 'asin', 'customer_id') || `ITEM-${idx + 1}`;
+                  const prodName = getVal(row, 'product_name', 'item_name', 'title') || skuCode;
+                  const categoryName = getVal(row, 'category', 'plan') || 'General';
+                  const orderId = getVal(row, 'order_id', 'order_number', 'id') || `TRX-${4080 + idx}`;
+                  const billedWeight = Number(getVal(row, 'billed_weight_kg', 'billed_weight') || 0);
+                  const actualWeight = Number(getVal(row, 'actual_weight_kg', 'actual_weight') || 0);
+                  const grossSales = Number(getVal(row, 'gross_sales', 'amount', 'revenue') || 0);
+                  const profitVal = getVal(row, 'net_profit', 'profit', 'margin');
+                  const returnFreightVal = Number(getVal(row, 'return_freight', 'refund_amount') || 284);
 
                   return (
                     <tr 
-                      key={row.order_id || idx}
+                      key={orderId || idx}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-900/50 transition-colors group"
                     >
                       <td className="px-4 py-3 font-mono text-slate-500 dark:text-slate-400">
-                        {row.order_id || `TRX-${4080 + idx}`}
+                        {orderId}
                       </td>
 
                       <td className="px-4 py-3 font-medium">
                         <div className="flex flex-col">
-                          <span className="font-semibold text-slate-900 dark:text-slate-100">{row.product_name || skuCode}</span>
-                          <span className="text-[10px] font-mono text-slate-400">{skuCode} · {row.category || 'General'}</span>
+                          <span className="font-semibold text-slate-900 dark:text-slate-100">{prodName}</span>
+                          <span className="text-[10px] font-mono text-slate-400">{skuCode} · {categoryName}</span>
                         </div>
                       </td>
 
                       <td className="px-4 py-3 font-mono">
-                        {row.billed_weight_kg ? (
+                        {billedWeight > 0 ? (
                           <div className="flex items-center gap-1.5">
-                            <span className={row.billed_weight_kg > row.actual_weight_kg ? 'text-rose-600 dark:text-rose-400 font-semibold' : 'text-slate-600 dark:text-slate-300'}>
-                              {row.billed_weight_kg}kg
+                            <span className={billedWeight > actualWeight ? 'text-rose-600 dark:text-rose-400 font-semibold' : 'text-slate-600 dark:text-slate-300'}>
+                              {billedWeight}kg
                             </span>
                             <span className="text-slate-400">/</span>
-                            <span className="text-emerald-600 dark:text-emerald-400">{row.actual_weight_kg}kg</span>
-                            {row.billed_weight_kg > row.actual_weight_kg && (
+                            <span className="text-emerald-600 dark:text-emerald-400">{actualWeight}kg</span>
+                            {billedWeight > actualWeight && (
                               <span className="text-[10px] text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 px-1 py-0.2 rounded font-sans ml-1">
                                 Overcharge
                               </span>
@@ -453,16 +487,16 @@ export default function CRMStatsLedger({
                       </td>
 
                       <td className="px-4 py-3 font-medium font-mono text-slate-800 dark:text-slate-200">
-                        ₹{Number(row.gross_sales || row.amount || row.revenue || 0).toLocaleString()}
+                        ₹{grossSales.toLocaleString()}
                       </td>
 
                       <td className={`px-4 py-3 font-semibold font-sans ${isBleeder ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                        {row.net_profit !== undefined ? (
-                          `${row.net_profit >= 0 ? '+' : ''}₹${Number(row.net_profit).toLocaleString()}`
+                        {profitVal !== undefined ? (
+                          `${Number(profitVal) >= 0 ? '+' : ''}₹${Number(profitVal).toLocaleString()}`
                         ) : isReturnLeak ? (
-                          `-₹${Number(row.return_freight || 284).toLocaleString()}`
+                          `-₹${returnFreightVal.toLocaleString()}`
                         ) : (
-                          `+₹${Math.round(Number(row.gross_sales || 1000) * 0.42).toLocaleString()}`
+                          `+₹${Math.round(grossSales * 0.42).toLocaleString()}`
                         )}
                       </td>
 
