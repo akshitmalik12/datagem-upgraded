@@ -105,8 +105,50 @@ export default function Chat() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showMoreTools, setShowMoreTools] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem('dg_sidebar_w')) || 320);
+  const [treeHeight, setTreeHeight] = useState(() => Number(localStorage.getItem('dg_tree_h')) || 380);
+  const [splitRatio, setSplitRatio] = useState(() => Number(localStorage.getItem('dg_split_ratio')) || 60); // 60% left CRM, 40% right Co-Pilot
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const [isResizingTree, setIsResizingTree] = useState(false);
+  const [isResizingSplit, setIsResizingSplit] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editSessionTitle, setEditSessionTitle] = useState("");
+
+  // Persist Resizer Handlers across Drag Gestures
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isResizingSidebar) {
+        const newWidth = Math.max(260, Math.min(520, e.clientX));
+        setSidebarWidth(newWidth);
+        localStorage.setItem('dg_sidebar_w', newWidth);
+      } else if (isResizingTree) {
+        const newHeight = Math.max(180, Math.min(650, e.clientY - 120));
+        setTreeHeight(newHeight);
+        localStorage.setItem('dg_tree_h', newHeight);
+      } else if (isResizingSplit) {
+        const containerWidth = window.innerWidth - (showSidebar ? sidebarWidth : 0);
+        const offsetX = e.clientX - (showSidebar ? sidebarWidth : 0);
+        const pct = Math.max(30, Math.min(75, Math.round((offsetX / containerWidth) * 100)));
+        setSplitRatio(pct);
+        localStorage.setItem('dg_split_ratio', pct);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingSidebar(false);
+      setIsResizingTree(false);
+      setIsResizingSplit(false);
+    };
+
+    if (isResizingSidebar || isResizingTree || isResizingSplit) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingSidebar, isResizingTree, isResizingSplit, showSidebar, sidebarWidth]);
 
   const deleteSession = (e, sessionId) => {
     e.stopPropagation();
@@ -1024,182 +1066,195 @@ export default function Chat() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] bg-indigo-600/10 rounded-full blur-[160px]" />
       </div>
       
-      {/* Sidebar */}
+      {/* Sidebar with Resizable Width and Reordered Layout */}
       <AnimatePresence mode="wait">
       {showSidebar && (
           <motion.div
-            initial={{ marginLeft: -320, opacity: 0 }}
+            initial={{ marginLeft: -sidebarWidth, opacity: 0 }}
             animate={{ marginLeft: 0, opacity: 1 }}
-            exit={{ marginLeft: -320, opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="w-80 flex-shrink-0 backdrop-blur-xl bg-white/70 dark:bg-gray-900/80 border-r border-gray-200/50 dark:border-gray-700/50 overflow-hidden transition-colors flex flex-col z-20"
+            exit={{ marginLeft: -sidebarWidth, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ width: `${sidebarWidth}px` }}
+            className="flex-shrink-0 backdrop-blur-xl bg-white/90 dark:bg-[#090D14]/90 border-r border-slate-200 dark:border-slate-800/80 overflow-hidden transition-colors flex flex-col z-20 relative"
           >
-            <div className="w-80 h-full overflow-y-auto overflow-x-hidden">
-                    <div className="p-4 flex flex-col h-full">
-            <button
-              onClick={handleNewChat}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white dark:text-gray-100 border border-gray-300 dark:border-gray-600 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition mb-6 flex-shrink-0"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>
-              New Chat
-            </button>
-            
-            {datasetProfile && (
-              <div className="mb-6 flex-shrink-0 border-b border-gray-200 dark:border-gray-700 pb-6">
-                <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                  Dataset Profile
-                </h2>
-
-                <div 
-                  className="mb-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                  onClick={() => navigate('/data-health')}
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Health Score</span>
-                    <span className="text-xs text-blue-500 font-semibold">View Details &rarr;</span>
-                  </div>
-                  <div className="h-24 relative flex items-center justify-center">
-                    <PieChart width={100} height={100}>
-                      <Pie
-                        data={[
-                          { name: 'Healthy', value: 85, color: '#10b981' },
-                          { name: 'Issues', value: 15, color: '#ef4444' }
-                        ]}
-                        cx="50%" cy="50%" innerRadius={30} outerRadius={45}
-                        paddingAngle={5} dataKey="value" stroke="none"
-                      >
-                        {[{color: '#10b981'}, {color: '#ef4444'}].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                    <div className="absolute flex items-center justify-center pointer-events-none">
-                      <span className="text-lg font-bold text-green-500">85%</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium">Filename</span>
-                    <span className="text-gray-900 dark:text-gray-100 font-semibold truncate max-w-[120px]" title={datasetFilename}>{datasetFilename}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium">Rows</span>
-                    <span className="text-gray-900 dark:text-gray-100 font-semibold">{datasetProfile.shape?.rows?.toLocaleString() || "..."}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium">Columns</span>
-                    <span className="text-gray-900 dark:text-gray-100 font-semibold">{datasetProfile.columns?.length || 0}</span>
-                  </div>
-                  
-                  <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 block">Columns (Drag to Chat)</label>
-                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar">
-                      {datasetProfile.columns?.map((col, idx) => {
-                        const colName = typeof col === 'string' ? col : col.name;
-                        return (
-                          <div 
-                            key={idx}
-                            draggable
-                            onDragStart={(e) => e.dataTransfer.setData('text/plain', colName)}
-                            className="text-xs px-2 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md cursor-grab active:cursor-grabbing hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 transition-colors shadow-sm text-gray-700 dark:text-gray-300 truncate max-w-full"
-                            title={colName}
-                          >
-                            {colName}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Hierarchical Project Tree Navigation via BranchedMenu */}
-            <div className="flex items-center justify-between mb-3 flex-shrink-0">
-              <h2 className="text-xs font-mono font-bold text-sky-400 uppercase tracking-wider">
-                Project &amp; Chat Tree
-              </h2>
+            <div className="h-full flex flex-col p-3.5 space-y-3 overflow-hidden select-none">
+              {/* Top: New Chat button */}
               <button
-                onClick={() => setShowChatHistory(true)}
-                className="text-[10px] font-mono text-emerald-400 hover:text-emerald-300 transition-colors"
+                onClick={handleNewChat}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-lg text-xs shadow-sm transition flex-shrink-0"
               >
-                + New Folder
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>
+                New Chat Session
               </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-              <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800">
-                <BranchedMenu
-                  items={getProjects().map(proj => ({
-                    label: proj.name,
-                    children: (proj.chats || []).map(chat => ({
-                      value: chat.id,
-                      label: chat.title,
-                      icon: Message01Icon
-                    }))
-                  }))}
-                  defaultOpen={[0, 1]}
-                  defaultActive="chat_roas"
-                  onSelect={(val, item) => {
-                    const foundSession = sessions.find(s => s.id === val || s.title === item.label);
-                    if (foundSession) {
-                      restoreSession(foundSession);
-                    } else {
-                      // Switch active thread title
-                      const fakeSess = {
-                        id: val,
-                        title: item.label,
-                        messages: [{
-                          role: 'assistant',
-                          content: `Switched to thread **"${item.label}"**.\n\nYou can now run DuckDB queries against this project context.`
-                        }],
-                        dataset,
-                        profile: datasetProfile
-                      };
-                      restoreSession(fakeSess);
-                    }
-                  }}
-                  color="#94a3b8"
-                  accentColor="#38bdf8"
-                  lineColor="#1e293b"
-                  width={260}
-                  rowHeight={34}
-                  indent={30}
-                  trunk={12}
-                  radius={8}
-                  lineWidth={1.5}
-                  fontSize={13}
-                  drawDuration={300}
-                  foldDuration={200}
-                />
-              </div>
-
-              {/* Legacy Flat Session List Quick-Switcher */}
-              <div className="mt-4 pt-3 border-t border-slate-800/80">
-                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block mb-2">Active Memory Sessions ({sessions.length})</span>
-                {sessions.map(s => (
-                  <div
-                    key={s.id}
-                    onClick={() => restoreSession(s)}
-                    className={`w-full group cursor-pointer flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono transition-colors mb-1 ${currentSessionId === s.id ? 'bg-sky-950/60 text-sky-300 border border-sky-800/80 font-bold' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}`}
+              {/* 1. TOP SECTION: Projects & Chat Tree (Promoted to Top) */}
+              <div 
+                style={{ height: `${treeHeight}px` }} 
+                className="flex flex-col flex-shrink-0 overflow-hidden bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800"
+              >
+                <div className="flex items-center justify-between mb-2 flex-shrink-0">
+                  <h2 className="text-[11px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>🗂️</span> Projects &amp; Chat Tree
+                  </h2>
+                  <button
+                    onClick={() => setShowChatHistory(true)}
+                    className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 hover:underline"
                   >
-                    <span className="truncate flex-1">{s.title || 'Untitled Session'}</span>
-                    <span className="text-[10px] text-slate-600 ml-2">{s.messages?.length || 0} msgs</span>
+                    + New Folder
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar pr-0.5">
+                  <BranchedMenu
+                    items={getProjects().map(proj => ({
+                      label: proj.name,
+                      children: (proj.chats || []).map(chat => ({
+                        value: chat.id,
+                        label: chat.title,
+                        icon: Message01Icon
+                      }))
+                    }))}
+                    defaultOpen={[0, 1]}
+                    defaultActive="chat_roas"
+                    onSelect={(val, item) => {
+                      const foundSession = sessions.find(s => s.id === val || s.title === item.label);
+                      if (foundSession) {
+                        restoreSession(foundSession);
+                      } else {
+                        const fakeSess = {
+                          id: val,
+                          title: item.label,
+                          messages: [{
+                            role: 'assistant',
+                            content: `Switched to thread **"${item.label}"**.\n\nYou can now run DuckDB queries against this project context.`
+                          }],
+                          dataset,
+                          profile: datasetProfile
+                        };
+                        restoreSession(fakeSess);
+                      }
+                    }}
+                    color="#64748b"
+                    accentColor="#0284c7"
+                    lineColor="#cbd5e1"
+                    width={sidebarWidth - 36}
+                    rowHeight={30}
+                    indent={24}
+                    trunk={10}
+                    radius={6}
+                    lineWidth={1.5}
+                    fontSize={12}
+                    drawDuration={200}
+                    foldDuration={150}
+                  />
+
+                  {/* Active Memory Sessions */}
+                  <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block mb-1">Recent Sessions ({sessions.length})</span>
+                    {sessions.map(s => (
+                      <div
+                        key={s.id}
+                        onClick={() => restoreSession(s)}
+                        className={`w-full group cursor-pointer flex items-center justify-between px-2 py-1 rounded-md text-[11px] font-mono transition-colors mb-0.5 ${currentSessionId === s.id ? 'bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 font-bold border border-sky-300 dark:border-sky-800' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-200'}`}
+                      >
+                        <span className="truncate flex-1">{s.title || 'Untitled Session'}</span>
+                        <span className="text-[9px] text-slate-400 ml-1.5">{s.messages?.length || 0}m</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {sessions.length === 0 && (
-                  <p className="text-xs text-slate-500 text-center py-4 font-mono">No recent sessions</p>
-                )}
+                </div>
+
+                {/* Vertical Resize Slider between Tree and Health Score */}
+                <div 
+                  onMouseDown={() => setIsResizingTree(true)}
+                  className="h-2 w-full cursor-row-resize flex items-center justify-center hover:bg-sky-500/20 rounded mt-1.5 transition-colors group"
+                  title="Drag up or down to adjust Tree vs Health Score height"
+                >
+                  <div className="w-8 h-1 bg-slate-300 dark:bg-slate-700 group-hover:bg-sky-500 rounded-full" />
+                </div>
               </div>
+
+              {/* 2. BOTTOM SECTION: Data Health Score & Column Metadata (Below Tree) */}
+              {datasetProfile && (
+                <div className="flex-1 flex flex-col min-h-0 overflow-y-auto space-y-2 custom-scrollbar pr-0.5">
+                  <div 
+                    className="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-sky-400 transition"
+                    onClick={() => navigate('/data-health')}
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span>🩺</span> Data Health Score
+                      </span>
+                      <span className="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">Inspect &rarr;</span>
+                    </div>
+                    <div className="h-16 relative flex items-center justify-center">
+                      <PieChart width={80} height={80}>
+                        <Pie
+                          data={[
+                            { name: 'Healthy', value: 85, color: '#10b981' },
+                            { name: 'Issues', value: 15, color: '#ef4444' }
+                          ]}
+                          cx="50%" cy="50%" innerRadius={24} outerRadius={36}
+                          paddingAngle={4} dataKey="value" stroke="none"
+                        >
+                          {[{color: '#10b981'}, {color: '#ef4444'}].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                      <div className="absolute flex items-center justify-center pointer-events-none">
+                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">85%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-500">File</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">{datasetFilename || 'amazon_in_settlement'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-500">Rows / Records</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{dataset?.length || datasetProfile.totalRows || 8}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-500">Columns</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{datasetProfile.columns?.length || 0}</span>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <label className="text-[10px] font-mono text-slate-500 block mb-1">Drag Column to Chat:</label>
+                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar">
+                        {datasetProfile.columns?.map((col, idx) => {
+                          const colName = typeof col === 'string' ? col : col.name;
+                          return (
+                            <div 
+                              key={idx}
+                              draggable
+                              onDragStart={(e) => e.dataTransfer.setData('text/plain', colName)}
+                              className="text-[10px] px-1.5 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded cursor-grab active:cursor-grabbing hover:border-sky-400 transition text-slate-700 dark:text-slate-300"
+                              title={colName}
+                            >
+                              {colName}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      </motion.div>
-    )}
-  </AnimatePresence>
+
+            {/* Horizontal Resize Bar on Sidebar Right Border */}
+            <div
+              onMouseDown={() => setIsResizingSidebar(true)}
+              className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-sky-500/30 transition-colors z-30"
+              title="Drag horizontally to resize sidebar width"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <div className="relative flex flex-col flex-1 overflow-hidden min-h-0 z-10">
@@ -1500,9 +1555,12 @@ export default function Chat() {
             }}
           />
         ) : workspaceViewMode === 'split' ? (
-          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 font-sans">
-            {/* Left 60%: High Density CRM Ledger & Stats */}
-            <div className="flex-1 lg:w-[60%] flex flex-col border-r border-slate-800/80 overflow-hidden">
+          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 font-sans relative">
+            {/* Left Column: High Density CRM Ledger & Stats (Adjustable Width via SplitRatio Slider) */}
+            <div 
+              style={{ width: `${splitRatio}%` }}
+              className="flex-1 flex flex-col overflow-hidden min-w-[320px] transition-[width] duration-75"
+            >
               <CRMStatsLedger
                 dataset={dataset}
                 activeDomain={activeDomainHub}
@@ -1522,8 +1580,20 @@ export default function Chat() {
               />
             </div>
 
-            {/* Right 40%: Persistent AI Co-Pilot Chat Rail */}
-            <div className="lg:w-[40%] flex flex-col bg-white dark:bg-[#070A10] border-l border-slate-200 dark:border-slate-800/80 overflow-hidden min-h-0 relative transition-colors">
+            {/* Horizontal Drag Resize Handle between CRM Ledger and Co-Pilot Rail */}
+            <div
+              onMouseDown={() => setIsResizingSplit(true)}
+              className="hidden lg:flex w-2 items-center justify-center cursor-col-resize hover:bg-sky-500/30 transition-colors z-20 bg-slate-200/80 dark:bg-slate-800/80 group"
+              title="Drag horizontally to adjust CRM vs Co-Pilot Rail width"
+            >
+              <div className="w-0.5 h-8 bg-slate-400 dark:bg-slate-600 group-hover:bg-sky-500 rounded-full" />
+            </div>
+
+            {/* Right Column: Persistent AI Co-Pilot Chat Rail (Adjustable Width) */}
+            <div 
+              style={{ width: `${100 - splitRatio}%` }}
+              className="flex flex-col bg-white dark:bg-[#070A10] border-l border-slate-200 dark:border-slate-800/80 overflow-hidden min-h-0 min-w-[280px] relative transition-colors"
+            >
               <div className="p-3 border-b border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-[#090D14] flex items-center justify-between text-xs font-sans">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
