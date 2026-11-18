@@ -33,8 +33,11 @@ class NativeAnalyticsEngine:
         self.con = duckdb.connect(database=":memory:")
         self.semantic_map: Dict[str, str] = {}
         
-        if dataset and len(dataset) > 0:
-            self.df = pd.DataFrame(dataset)
+        if dataset is not None:
+            if isinstance(dataset, pd.DataFrame):
+                self.df = dataset.copy()
+            elif isinstance(dataset, list) and len(dataset) > 0:
+                self.df = pd.DataFrame(dataset)
             self._clean_and_register()
         elif dataset_path:
             try:
@@ -119,7 +122,8 @@ class NativeAnalyticsEngine:
             "bar chart", "scatter", "overview", "kpi", "metrics", "describe", "head",
             "churn", "churned", "standard deviation", "std", "variance", "outlier", "anomal",
             "margin", "cm3", "cm2", "cogs", "contribution", "filter", "where",
-            "weight", "overcharge", "reclaim", "dispute", "audit"
+            "weight", "overcharge", "reclaim", "dispute", "audit",
+            "bleed", "bleeder", "bleeders", "loss", "losing", "drain", "graph"
         ]
         
         return any(k in q for k in keywords)
@@ -158,6 +162,11 @@ class NativeAnalyticsEngine:
             sku_target = self._extract_target_sku(q)
             if sku_target:
                 res = self._audit_single_sku(sku_target)
+                if res[0]: return res
+
+            # 4c. Hidden Bleeders & Negative Cash SKUs (Prioritize when user asks about bleeding, bleeders, loss, negative margin)
+            if any(w in q for w in ["bleed", "bleeder", "loss", "losing", "negative margin", "draining", "drain"]):
+                res = self._audit_hidden_bleeders()
                 if res[0]: return res
 
             # 5. Weight Handling Overcharge & Reclaim Audit (Amazon / Flipkart / Logistics)
@@ -601,6 +610,132 @@ class NativeAnalyticsEngine:
 
         return True, md, None
 
+    def _audit_hidden_bleeders(self) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+        """Audits SKUs that are bleeding net cash, negative contribution margin, or heavy return leakage."""
+        sku_col = self.semantic_map.get("product") or self._find_column(["sku", "product_name", "item", "product", "title"])
+        rev_col = self.semantic_map.get("revenue") or self._find_column(["gross_sales", "amount", "revenue", "price", "item_price"])
+        cogs_col = self.semantic_map.get("cost") or self._find_column(["cogs", "cost", "unit_cost"])
+        fee_col = self.semantic_map.get("fee") or self._find_column(["fba_fee", "fee", "commission", "platform_fees", "selling_fees"])
+        ret_fee_col = self._find_column(["return_freight", "return_fee", "rto_charges", "shipping_charge"])
+        profit_col = self.semantic_map.get("profit") or self._find_column(["net_profit", "profit", "margin", "cm3"])
+        status_col = self.semantic_map.get("status") or self._find_column(["status", "order_status", "return_status"])
+        billed_col = self._find_column(["billed_weight_kg", "billed_weight"])
+        actual_col = self._find_column(["actual_weight_kg", "actual_weight"])
+        name_col = self._find_column(["product_name", "title", "name", "item_name"]) or sku_col
+
+        if not sku_col:
+            return False, "", None
+
+        skus = self.df[sku_col].dropna().unique().tolist()
+        sku_metrics = []
+
+        for sku in skus:
+            sub = self.df[self.df[sku_col] == sku]
+            units = len(sub)
+            gross = float(sub[rev_col].sum()) if rev_col and rev_col in sub else 0.0
+            cogs = float(sub[cogs_col].sum()) if cogs_col and cogs_col in sub else (gross * 0.35)
+            fees = float(sub[fee_col].sum()) if fee_col and fee_col in sub else (gross * 0.18)
+            ret_freight = float(sub[ret_fee_col].sum()) if ret_fee_col and ret_fee_col in sub else 0.0
+
+            if profit_col and profit_col in sub:
+                net_profit = float(sub[profit_col].sum())
+            else:
+                net_profit = gross - cogs - fees - ret_freight
+
+            ret_count = 0
+            if status_col and status_col in sub:
+                ret_count = sum(1 for s in sub[status_col].astype(str).str.lower() if any(k in s for k in ['return', 'refund', 'leak', 'cancel']))
+            elif ret_freight > 0:
+                ret_count = sum(1 for rf in sub[ret_fee_col] if rf > 0)
+
+            ret_rate = (ret_count / units * 100) if units > 0 else 0.0
+
+            overcharge_inr = 0.0
+            if billed_col and actual_col and billed_col in sub and actual_col in sub:
+                for _, r in sub.iterrows():
+                    b = float(r.get(billed_col, 0) or 0)
+                    a = float(r.get(actual_col, 0) or 0)
+                    if b > a:
+                        overcharge_inr += 220.0 if (b - a) >= 0.5 else 110.0
+
+            prod_name = str(sub[name_col].iloc[0]) if name_col and name_col in sub else str(sku)
+            margin_pct = (net_profit / gross * 100) if gross > 0 else 0.0
+
+            sku_metrics.append({
+                "sku": str(sku),
+                "name": prod_name,
+                "units": units,
+                "gross_sales": gross,
+                "cogs": cogs,
+                "fees": fees,
+                "ret_freight": ret_freight,
+                "ret_count": ret_count,
+                "ret_rate": ret_rate,
+                "net_profit": net_profit,
+                "margin_pct": margin_pct,
+                "overcharge_inr": overcharge_inr
+            })
+
+        sku_metrics.sort(key=lambda x: (x["net_profit"], -x["ret_rate"]))
+        bleeders = [m for m in sku_metrics if m["net_profit"] < 0 or m["ret_rate"] >= 25.0 or m["ret_freight"] > 0]
+        if not bleeders:
+            bleeders = sku_metrics[:2]
+
+        md = f"### 🚨 Forensic SKU Bleeder Audit: Cash Drain & Return Leakage\n\n"
+        md += f"| SKU / Product | Units | Gross Sales | Returns | Return Freight Loss | Net Realized Cash | Status |\n"
+        md += f"| :--- | :---: | :--- | :---: | :--- | :--- | :---: |\n"
+
+        for m in sku_metrics:
+            is_bleeder = m["net_profit"] < 0 or m["ret_rate"] >= 25.0 or m["ret_freight"] > 0
+            status_badge = "🚨 **HIDDEN BLEEDER**" if m["net_profit"] < 0 else ("⚠️ **High Return Leak**" if is_bleeder else "🟢 **Star / Healthy**")
+            profit_str = f"**-₹{abs(m['net_profit']):,.2f}**" if m["net_profit"] < 0 else f"+₹{m['net_profit']:,.2f}"
+            ret_str = f"{m['ret_count']} ({m['ret_rate']:.0f}%)" if m['ret_count'] > 0 else "0 (0%)"
+            rf_str = f"₹{m['ret_freight']:,.2f}" if m['ret_freight'] > 0 else "₹0.00"
+            md += f"| **{m['sku']}**<br><span style='font-size:10px;color:#94a3b8'>{m['name']}</span> | {m['units']} | ₹{m['gross_sales']:,.2f} | {ret_str} | {rf_str} | {profit_str} | {status_badge} |\n"
+
+        md += "\n#### 🔍 Deep Root-Cause Analysis for Identified Bleeders:\n\n"
+        for b in bleeders[:2]:
+            b_profit_str = f"-₹{abs(b['net_profit']):,.2f}" if b['net_profit'] < 0 else f"+₹{b['net_profit']:,.2f}"
+            md += f"- **SKU `{b['sku']}` ({b['name']}):**\n"
+            if b['ret_count'] > 0:
+                md += f"  - **Return Penalty:** Customer return rate is **`{b['ret_rate']:.1f}%`** ({b['ret_count']} of {b['units']} orders returned), causing **`₹{b['ret_freight']:,.2f}`** in reverse logistics freight.\n"
+            if b['overcharge_inr'] > 0:
+                md += f"  - **Weight Discrepancy:** Incurred **`₹{b['overcharge_inr']:,.2f}`** in excess weight fees billed above physical catalog weight.\n"
+            md += f"  - **Net Realized Margin:** `{b['margin_pct']:.1f}%` (Net Settlement: `{b_profit_str}`). Reverse logistics + commissions erode profits into negative cashflow.\n\n"
+
+        md += f"> 💡 **Immediate Action Items:**\n"
+        md += f"> 1. Click **'Draft Ticket'** on the dispute rail to claim back phantom weight overcharges.\n"
+        md += f"> 2. For SKU `{bleeders[0]['sku']}`, inspect packaging dimensions and adjust listing price by **+5% to +8%** to offset reverse logistics leakage.\n"
+
+        plotly_dict = {
+            "data": [
+                {
+                    "x": [m["sku"] for m in sku_metrics],
+                    "y": [m["gross_sales"] for m in sku_metrics],
+                    "name": "Gross Sales (GMV)",
+                    "type": "bar",
+                    "marker": {"color": "#38bdf8"}
+                },
+                {
+                    "x": [m["sku"] for m in sku_metrics],
+                    "y": [m["net_profit"] for m in sku_metrics],
+                    "name": "Net Cash Margin (CM3)",
+                    "type": "bar",
+                    "marker": {"color": ["#f43f5e" if m["net_profit"] < 0 else "#10b981" for m in sku_metrics]}
+                }
+            ],
+            "layout": {
+                "title": "SKU Economics: Gross Sales vs Net Realized Cash",
+                "barmode": "group",
+                "template": "plotly_dark",
+                "paper_bgcolor": "rgba(0,0,0,0)",
+                "plot_bgcolor": "rgba(0,0,0,0)",
+                "font": {"color": "#e2e8f0"}
+            }
+        }
+        md += f"\n<<<PLOTLY_JSON_START>>>{json.dumps(plotly_dict)}<<<PLOTLY_JSON_END>>>\n"
+        return True, md, plotly_dict
+
     def _audit_weight_overcharges(self) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         """Audits Amazon / Flipkart weight discrepancy overcharges and calculates reclaimable cash."""
         billed_col = self._find_column(["billed_weight", "billed_weight_kg", "charged_weight", "portal_weight"])
@@ -761,32 +896,101 @@ class NativeAnalyticsEngine:
         return True, md, None
 
     def _generate_visualization(self, query: str) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
-        """Generates distribution plots or histograms."""
+        """Generates intelligent categorical bar charts or distribution plots."""
+        q = query.lower()
+
+        # 1. Identify Metric
+        metric_col = None
+        if any(w in q for w in ["sale", "revenue", "gmv", "gross"]):
+            metric_col = self.semantic_map.get("revenue") or self._find_column(["gross_sales", "amount", "revenue", "sales", "price"])
+        elif any(w in q for w in ["profit", "margin", "net", "cm3"]):
+            metric_col = self.semantic_map.get("profit") or self._find_column(["net_profit", "profit", "margin", "settlement"])
+        elif any(w in q for w in ["fee", "commission", "charge", "freight"]):
+            metric_col = self.semantic_map.get("fee") or self._find_column(["fba_fee", "fee", "commission", "return_freight"])
+        elif any(w in q for w in ["weight"]):
+            metric_col = self._find_column(["billed_weight_kg", "actual_weight_kg", "billed_weight", "actual_weight"])
+
         numeric_cols = self.df.select_dtypes(include=[np.number]).columns.tolist()
-        if not numeric_cols:
+        if not metric_col and numeric_cols:
+            for c in numeric_cols:
+                if c.lower() in q:
+                    metric_col = c
+                    break
+            if not metric_col:
+                metric_col = self.semantic_map.get("revenue") or numeric_cols[0]
+
+        if not metric_col:
             return False, "", None
 
-        col = numeric_cols[0]
-        for c in numeric_cols:
-            if c.lower() in query:
-                col = c
+        # 2. Identify Dimension for grouping (e.g., product, sku, category, channel, region)
+        dim_col = None
+        for col in self.df.columns:
+            if col.lower() in q and self.df[col].dtype == object:
+                dim_col = col
                 break
+        if not dim_col:
+            dim_col = self.semantic_map.get("product") or self._find_column(["product_name", "sku", "item", "category", "region", "channel", "status"])
+
+        # 3. Check if user asked specifically for a histogram/distribution
+        is_histogram = any(w in q for w in ["histogram", "distribution", "spread"]) and not any(w in q for w in ["bar", "by"])
+
+        if is_histogram or not dim_col:
+            plotly_dict = {
+                "data": [{
+                    "x": self.df[metric_col].dropna().head(500).tolist(),
+                    "type": "histogram",
+                    "marker": {"color": "#10b981"}
+                }],
+                "layout": {
+                    "title": f"Distribution of {metric_col}",
+                    "template": "plotly_dark",
+                    "paper_bgcolor": "rgba(0,0,0,0)",
+                    "plot_bgcolor": "rgba(0,0,0,0)",
+                    "font": {"color": "#e2e8f0"}
+                }
+            }
+            md = f"### 📊 Distribution of `{metric_col}`\n\n"
+            md += f"<<<PLOTLY_JSON_START>>>{json.dumps(plotly_dict)}<<<PLOTLY_JSON_END>>>\n"
+            return True, md, plotly_dict
+
+        # 4. Grouped Bar Chart (Categorical breakdown)
+        sql = f"""
+            SELECT CAST("{dim_col}" AS VARCHAR) as dimension,
+                   SUM("{metric_col}") as total_metric,
+                   COUNT(*) as record_count
+            FROM df
+            WHERE "{dim_col}" IS NOT NULL
+            GROUP BY "{dim_col}"
+            ORDER BY total_metric DESC
+            LIMIT 10
+        """
+        res_df = self.con.execute(sql).df()
+
+        is_currency = any(w in metric_col.lower() for w in ["sales", "revenue", "gmv", "profit", "fee", "price", "amount"])
+        prefix = "₹" if is_currency else ""
+
+        md = f"### 📊 Breakdown: `{metric_col}` by `{dim_col}`\n\n"
+        md += f"| Rank | {dim_col} | Total {metric_col} | Volume Count |\n"
+        md += f"| :---: | :--- | :--- | :---: |\n"
+
+        for idx, row in res_df.iterrows():
+            val = f"{prefix}{row['total_metric']:,.2f}"
+            md += f"| {idx+1} | **{row['dimension']}** | {val} | {int(row['record_count']):,} |\n"
 
         plotly_dict = {
             "data": [{
-                "x": self.df[col].dropna().head(500).tolist(),
-                "type": "histogram",
-                "marker": {"color": "#10b981"}
+                "x": res_df['dimension'].tolist(),
+                "y": res_df['total_metric'].tolist(),
+                "type": "bar",
+                "marker": {"color": "#0ea5e9"}
             }],
             "layout": {
-                "title": f"Distribution of {col}",
+                "title": f"Total {metric_col} by {dim_col}",
                 "template": "plotly_dark",
                 "paper_bgcolor": "rgba(0,0,0,0)",
                 "plot_bgcolor": "rgba(0,0,0,0)",
                 "font": {"color": "#e2e8f0"}
             }
         }
-
-        md = f"Generated distribution visualization for `{col}`:\n\n"
-        md += f"<<<PLOTLY_JSON_START>>>{json.dumps(plotly_dict)}<<<PLOTLY_JSON_END>>>\n"
+        md += f"\n<<<PLOTLY_JSON_START>>>{json.dumps(plotly_dict)}<<<PLOTLY_JSON_END>>>\n"
         return True, md, plotly_dict
