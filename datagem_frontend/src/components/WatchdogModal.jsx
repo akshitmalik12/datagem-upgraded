@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from '../services/api';
 
 export default function WatchdogModal({ isOpen, onClose }) {
   const [rules, setRules] = useState([
@@ -17,7 +18,7 @@ export default function WatchdogModal({ isOpen, onClose }) {
     setTestStatus('Compiling forensic Monday 8:00 AM executive brief...');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://127.0.0.1:8001/watchdog/send-alert-test', {
+      const res = await fetch(`${API_BASE_URL}/watchdog/send-alert-test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

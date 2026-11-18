@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, Sparkles, Terminal, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import CheckoutModal from './CheckoutModal';
 
 export default function Pricing() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [billingPeriod, setBillingPeriod] = useState('monthly'); // 'monthly' | 'yearly'
   const [currency, setCurrency] = useState('INR'); // 'INR' | 'USD'
+  const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState(null);
 
   const plans = [
     {
@@ -250,17 +255,34 @@ export default function Pricing() {
                   </div>
                 </div>
 
-                <Link
-                  to={p.id === 'starter' ? '/chat' : `/login?upgrade=${p.id}`}
-                  className={`w-full py-3 rounded-xl font-bold font-sans text-xs flex items-center justify-center gap-2 transition-all shadow-md ${
-                    p.popular
-                      ? 'bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-500 hover:opacity-95 text-black shadow-emerald-500/25'
-                      : 'bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white'
-                  }`}
-                >
-                  <span>{p.cta}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                {p.id === 'starter' ? (
+                  <Link
+                    to="/chat"
+                    className="w-full py-3 rounded-xl font-bold font-sans text-xs flex items-center justify-center gap-2 transition-all shadow-md bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white"
+                  >
+                    <span>{p.cta}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (user) {
+                        setSelectedPlanForCheckout(p);
+                      } else {
+                        navigate(`/signup?plan=${p.id}`);
+                      }
+                    }}
+                    className={`w-full py-3 rounded-xl font-bold font-sans text-xs flex items-center justify-center gap-2 transition-all shadow-md ${
+                      p.popular
+                        ? 'bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-500 hover:opacity-95 text-black shadow-emerald-500/25'
+                        : 'bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white'
+                    }`}
+                  >
+                    <span>{p.cta}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </motion.div>
             );
           })}
@@ -284,6 +306,16 @@ export default function Pricing() {
         </div>
 
       </div>
+
+      <CheckoutModal
+        isOpen={!!selectedPlanForCheckout}
+        onClose={() => setSelectedPlanForCheckout(null)}
+        selectedPlan={selectedPlanForCheckout}
+        onUpgradeSuccess={() => {
+          // Stay on pricing or navigate to chat
+          navigate('/chat');
+        }}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field, field_validator
@@ -61,6 +61,7 @@ security_scheme = HTTPBearer(auto_error=False)
 @router.post("/")
 async def chat_endpoint(
     request: ChatRequest, 
+    raw_request: Request,
     db: Session = Depends(database.get_db),
     token: HTTPAuthorizationCredentials | None = Depends(security_scheme)
 ):
@@ -123,6 +124,16 @@ async def chat_endpoint(
         
         agent = DataAnalystAgent(db=db, user=user, dataset=request.dataset, connection_string=request.connection_string, session_id=request.session_id)
 
+        # Extract optional user-supplied client API keys from headers
+        custom_keys = {}
+        if raw_request:
+            if raw_request.headers.get("x-groq-api-key"):
+                custom_keys["groq"] = raw_request.headers.get("x-groq-api-key")
+            if raw_request.headers.get("x-gemini-api-key"):
+                custom_keys["gemini"] = raw_request.headers.get("x-gemini-api-key")
+            if raw_request.headers.get("x-openrouter-api-key"):
+                custom_keys["openrouter"] = raw_request.headers.get("x-openrouter-api-key")
+
         # ✅ Define async stream generator with Multi-Provider LiteLLM Gateway & DuckDB Sandbox
         async def event_stream():
             try:
@@ -130,7 +141,8 @@ async def chat_endpoint(
                 async for chunk in ai_gateway.stream_query(
                     prompt=request.message,
                     dataset=request.dataset,
-                    dataset_path=None
+                    dataset_path=None,
+                    custom_keys=custom_keys
                 ):
                     yield chunk
             except Exception as gateway_err:

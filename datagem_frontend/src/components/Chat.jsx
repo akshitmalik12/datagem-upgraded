@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { chatAPI, dashboardApi, voiceApi } from '../services/api';
+import { chatAPI, dashboardApi, voiceApi, API_BASE_URL } from '../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import Canvas from './Canvas';
@@ -45,7 +45,9 @@ import CRMStatsLedger from './CRMStatsLedger';
 import GuidedTourModal from './GuidedTourModal';
 import DisputeTicketModal from './DisputeTicketModal';
 import PriceElasticityModal from './PriceElasticityModal';
-import { LogOut, User as UserIcon } from 'lucide-react';
+import SettingsModal from './SettingsModal';
+import CheckoutModal from './CheckoutModal';
+import { LogOut, User as UserIcon, Settings, Sparkles } from 'lucide-react';
 import TechText from './TechText';
 import Lightfall from './Lightfall';
 
@@ -83,6 +85,9 @@ export default function Chat() {
   const [disputeModalData, setDisputeModalData] = useState(null);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [selectedSkuForSimulation, setSelectedSkuForSimulation] = useState(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [thoughtsOpen, setThoughtsOpen] = useState(false);
@@ -524,7 +529,7 @@ export default function Chat() {
     if (!url) return;
     setIsImporting(true);
     try {
-      const endpoint = type === 'url' ? 'http://127.0.0.1:8001/import/url' : 'http://127.0.0.1:8001/import/gsheet';
+      const endpoint = type === 'url' ? `${API_BASE_URL}/import/url` : `${API_BASE_URL}/import/gsheet`;
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1411,6 +1416,33 @@ export default function Chat() {
                 <span className="max-w-[140px] truncate">{user?.email || 'Authenticated'}</span>
               </div>
 
+              {/* Upgrade CTA if not Enterprise */}
+              {user?.tier?.toLowerCase() !== 'enterprise' && (
+                <button
+                  onClick={() => {
+                    setSelectedPlanForCheckout({
+                      id: 'pro',
+                      name: 'Pro Growth',
+                      price_monthly_inr: '₹2,499',
+                      price_monthly_usd: '$29',
+                      description: 'For growing merchants needing unlimited queries and dispute recovery.',
+                      features: [
+                        'Unlimited DuckDB OLAP queries',
+                        '100MB dataset file uploads',
+                        '3 1-Click Amazon/Flipkart Dispute Filings / mo',
+                        'Full Dynamic CM3 & Hidden Bleeder Ledger'
+                      ]
+                    });
+                    setIsCheckoutOpen(true);
+                  }}
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-sans font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 hover:opacity-95 shadow-sm transition-all"
+                  title="Upgrade your DataGem subscription"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Upgrade</span>
+                </button>
+              )}
+
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
@@ -1427,6 +1459,16 @@ export default function Chat() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
                 )}
+              </button>
+
+              {/* Settings & API Keys Button */}
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
+                title="Settings & Free AI Keys"
+                aria-label="Settings"
+              >
+                <Settings className="w-4 h-4" />
               </button>
 
               {/* Explicit Logout Button */}
@@ -2877,6 +2919,36 @@ export default function Chat() {
         onOpenDispute={(disputeData) => {
           setDisputeModalData(disputeData);
           setIsDisputeModalOpen(true);
+        }}
+      />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onOpenUpgrade={() => {
+          setIsSettingsOpen(false);
+          setSelectedPlanForCheckout({
+            id: 'pro',
+            name: 'Pro Growth',
+            price_monthly_inr: '₹2,499',
+            price_monthly_usd: '$29',
+            description: 'For growing merchants needing unlimited queries and dispute recovery.',
+            features: [
+              'Unlimited DuckDB OLAP queries',
+              '100MB dataset file uploads',
+              '3 1-Click Amazon/Flipkart Dispute Filings / mo',
+              'Full Dynamic CM3 & Hidden Bleeder Ledger'
+            ]
+          });
+          setIsCheckoutOpen(true);
+        }}
+      />
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        selectedPlan={selectedPlanForCheckout}
+        onUpgradeSuccess={(tier) => {
+          // Refresh user context or local tier
+          if (user) user.tier = tier;
         }}
       />
     </>

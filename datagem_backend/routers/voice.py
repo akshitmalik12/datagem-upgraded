@@ -1,6 +1,7 @@
 import os
 import logging
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from typing import Optional
+from fastapi import APIRouter, UploadFile, File, HTTPException, Header
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -13,13 +14,16 @@ class TranscribeResponse(BaseModel):
     source: str = "stt"
 
 @router.post("/transcribe", response_model=TranscribeResponse)
-async def transcribe_audio(audio: UploadFile = File(...)):
+async def transcribe_audio(
+    audio: UploadFile = File(...),
+    x_groq_api_key: Optional[str] = Header(None)
+):
     """Transcribes audio file using Groq Whisper or fallback STT engine."""
     try:
         audio_bytes = await audio.read()
         logger.info(f"Received audio file {audio.filename} ({len(audio_bytes)} bytes) for transcription")
 
-        groq_api_key = os.getenv("GROQ_API_KEY")
+        groq_api_key = x_groq_api_key or os.getenv("GROQ_API_KEY")
         if groq_api_key:
             try:
                 from groq import Groq

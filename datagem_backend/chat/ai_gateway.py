@@ -22,15 +22,19 @@ class AIGateway:
         self.gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self.openrouter_key = os.getenv("OPENROUTER_API_KEY")
 
-    def get_available_models(self) -> List[str]:
-        """Returns configured models in priority order based on available keys."""
+    def get_available_models(self, custom_keys: Optional[Dict[str, str]] = None) -> List[tuple[str, str]]:
+        """Returns configured (model_name, api_key) pairs in priority order."""
+        groq_k = (custom_keys.get("groq") if custom_keys else None) or self.groq_key or os.getenv("GROQ_API_KEY")
+        gemini_k = (custom_keys.get("gemini") if custom_keys else None) or self.gemini_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        openrouter_k = (custom_keys.get("openrouter") if custom_keys else None) or self.openrouter_key or os.getenv("OPENROUTER_API_KEY")
+
         models = []
-        if self.groq_key:
-            models.append("groq/llama-3.3-70b-versatile")
-        if self.gemini_key:
-            models.append("gemini/gemini-1.5-flash")
-        if self.openrouter_key:
-            models.append("openrouter/meta-llama/llama-3.3-70b-instruct:free")
+        if groq_k:
+            models.append(("groq/llama-3.3-70b-versatile", groq_k))
+        if gemini_k:
+            models.append(("gemini/gemini-1.5-flash", gemini_k))
+        if openrouter_k:
+            models.append(("openrouter/meta-llama/llama-3.3-70b-instruct:free", openrouter_k))
         return models
 
     async def stream_query(
@@ -38,30 +42,28 @@ class AIGateway:
         prompt: str,
         dataset: Optional[List[Dict[str, Any]]] = None,
         dataset_path: Optional[str] = None,
-        system_context: Optional[str] = None
+        system_context: Optional[str] = None,
+        custom_keys: Optional[Dict[str, str]] = None
     ) -> AsyncGenerator[str, None]:
         """
         Executes query via multi-provider LLM if keys are available,
         otherwise seamlessly falls back to DuckDB in-memory OLAP engine.
         """
-        models = self.get_available_models()
+        model_pairs = self.get_available_models(custom_keys)
 
         # Step 1: If an analytical engine can execute it directly or if no keys configured
         engine = NativeAnalyticsEngine(dataset=dataset, dataset_path=dataset_path)
         
         # If user is asking for deterministic calculations (Bleeders, Overcharges, Rankings, Distributions)
         # DuckDB engine gives 100% deterministic accuracy with 0 token spend
-        if not models or engine.is_analytical_query(prompt):
+        if not model_pairs or engine.is_analytical_query(prompt):
             ok, response_md, plot_data = engine.execute_query(prompt)
             if ok:
                 yield f"[⚡ Executed via DuckDB In-Memory OLAP Sandbox (0 API tokens consumed)]\n\n{response_md}"
                 return
 
         # Step 2: If LLM keys are configured, attempt streaming inference with auto-failover
-        if models:
-            primary_model = models[0]
-            fallback_models = models[1:] if len(models) > 1 else []
-
+        if model_pairs:
             dataset_summary = ""
             if dataset and len(dataset) > 0:
                 cols = list(dataset[0].keys())
@@ -71,7 +73,7 @@ class AIGateway:
             system_prompt = (
                 system_context or 
                 "You are DataGem, an executive AI data analyst specializing in e-commerce unit economics, Amazon FBA fee auditing, and marketplace dispute analysis. "
-                "Provide structured executive summaries, markdown tables, and concrete dollar figures. "
+                "Provide structured executive summaries, markdown tables, and concrete figures. "
                 "Always format metrics in Indian Rupees (₹) or USD ($)."
             )
 
@@ -80,24 +82,26 @@ class AIGateway:
                 {"role": "user", "content": prompt}
             ]
 
-            try:
-                response = await litellm.acompletion(
-                    model=primary_model,
-                    messages=messages,
-                    stream=True,
-                    fallbacks=fallback_models if fallback_models else None,
-                    timeout=20
-                )
+            # Try models in sequence with graceful fallback
+            for model_name, api_key in model_pairs:
+                try:
+                    response = await litellm.acompletion(
+                        model=model_name,
+                        messages=messages,
+                        api_key=api_key,
+                        stream=True,
+                        timeout=20
+                    )
 
-                async for chunk in response:
-                    content = chunk.choices[0].delta.content or ""
-                    if content:
-                        yield content
-                return
+                    async for chunk in response:
+                        content = chunk.choices[0].delta.content or ""
+                        if content:
+                            yield content
+                    return
 
-            except Exception as llm_err:
-                logger.warning(f"LiteLLM multi-provider stream failed: {llm_err}. Falling back to DuckDB Sandbox.")
-                # Fall through to DuckDB engine
+                except Exception as llm_err:
+                    logger.warning(f"LiteLLM model {model_name} failed: {llm_err}. Trying next fallback...")
+                    continue
 
         # Step 3: Resilient offline fallback via DuckDB
         ok, response_md, _ = engine.execute_query(prompt)

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Dynamically resolve API URL with fallback
-const API_BASE_URL = import.meta.env.VITE_API_URL || (
+export const API_BASE_URL = import.meta.env.VITE_API_URL || (
   typeof window !== 'undefined' && window.location.hostname !== 'localhost'
     ? 'https://api-production-cf34820e.up.railway.app'
     : 'http://127.0.0.1:8001'
@@ -76,6 +76,13 @@ export const chatAPI = {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    try {
+      const customKeys = JSON.parse(localStorage.getItem('datagem_custom_keys') || '{}');
+      if (customKeys.groq) headers['X-Groq-API-Key'] = customKeys.groq;
+      if (customKeys.gemini) headers['X-Gemini-API-Key'] = customKeys.gemini;
+      if (customKeys.openrouter) headers['X-OpenRouter-API-Key'] = customKeys.openrouter;
+    } catch (e) {}
+
     const payload = {
       message,
       image,
@@ -85,7 +92,7 @@ export const chatAPI = {
       session_id: sessionId,
     };
 
-    const response = await fetch('http://127.0.0.1:8001/chat', {
+    const response = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
@@ -119,8 +126,13 @@ export const voiceApi = {
   transcribe: async (audioBlob) => {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
+    const headers = { 'Content-Type': 'multipart/form-data' };
+    try {
+      const customKeys = JSON.parse(localStorage.getItem('datagem_custom_keys') || '{}');
+      if (customKeys.groq) headers['X-Groq-API-Key'] = customKeys.groq;
+    } catch (e) {}
     const res = await api.post('/voice/transcribe', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers,
     });
     return res.data;
   },
@@ -128,6 +140,14 @@ export const voiceApi = {
 
 export const billingAPI = {
   getPlans: () => api.get('/billing/plans'),
+  getStatus: () => api.get('/billing/subscription-status'),
+  simulateUpgrade: (planTier, email, provider = 'razorpay') => 
+    api.post('/billing/webhook/simulate', {
+      provider,
+      email,
+      plan_tier: planTier,
+      amount: planTier === 'pro' ? '₹2,499' : (planTier === 'operator' ? '₹7,999' : '₹24,999')
+    }),
 };
 
 export default api;
