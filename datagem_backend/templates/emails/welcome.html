@@ -4,61 +4,215 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to DataGem</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F8FAFC;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      width: 100%;
+      background-color: #F8FAFC;
+      padding: 44px 0;
+    }
+    .container {
+      max-width: 580px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border-radius: 16px;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+      overflow: hidden;
+    }
+    .header-bar {
+      height: 4px;
+      background: linear-gradient(90deg, #10B981 0%, #06B6D4 50%, #3B82F6 100%);
+    }
+    .content {
+      padding: 40px 44px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #10B981, #059669);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+    }
+    .brand-name {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0F172A;
+    }
+    .badge-live {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background-color: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      color: #065F46;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 16px;
+    }
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background-color: #10B981;
+      border-radius: 50%;
+      margin-right: 6px;
+      display: inline-block;
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #0F172A;
+      margin: 0 0 12px 0;
+      letter-spacing: -0.03em;
+    }
+    p.lead {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #475569;
+      margin: 0 0 28px 0;
+    }
+    .cards-grid {
+      margin-bottom: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .feature-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .card-icon {
+      font-size: 20px;
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #0F172A;
+      margin-bottom: 2px;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #64748B;
+      line-height: 1.4;
+    }
+    .cta-container {
+      text-align: center;
+      margin: 32px 0 20px 0;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #0F172A;
+      color: #FFFFFF !important;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 14px 34px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    }
+    .sub-note {
+      text-align: center;
+      font-size: 12px;
+      color: #94A3B8;
+      margin: 0 0 24px 0;
+    }
+    .footer {
+      border-top: 1px solid #F1F5F9;
+      padding-top: 24px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #94A3B8;
+      text-align: center;
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #05070A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F1F5F9;">
-  <div style="max-width: 600px; margin: 30px auto; background: #090D14; border: 1px solid #1E293B; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-    
-    <!-- Top Gradient Bar -->
-    <div style="height: 4px; background: linear-gradient(90deg, #0284c7, #38bdf8, #34d399);"></div>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header-bar"></div>
+      <div class="content">
+        <div class="brand">
+          <div class="brand-icon">💎</div>
+          <div class="brand-name">DataGem</div>
+        </div>
 
-    <!-- Header Section -->
-    <div style="padding: 32px 32px 20px 32px; text-align: center;">
-      <div style="display: inline-block; width: 44px; height: 44px; line-height: 44px; background: #0F172A; border: 1px solid #334155; border-radius: 12px; font-size: 22px; margin-bottom: 12px;">
-        💎
-      </div>
-      <h1 style="color: #FFFFFF; font-size: 22px; font-weight: 700; margin: 0 0 6px 0;">Welcome to DataGem, {{ user_name }}!</h1>
-      <p style="color: #94A3B8; font-size: 13px; margin: 0; font-family: monospace;">Domain-Aware Autonomous Decision Engine</p>
-    </div>
+        <div>
+          <span class="badge-live">
+            <span class="pulse-dot"></span> Workspace Ready & Activated
+          </span>
+        </div>
 
-    <!-- Main Content -->
-    <div style="padding: 0 32px 32px 32px;">
-      <div style="background: #05070A; border: 1px solid #1E293B; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-        <h3 style="color: #38BDF8; font-size: 14px; font-weight: 600; margin: 0 0 12px 0;">Your Workspace is Live</h3>
-        <p style="color: #CBD5E1; font-size: 13px; line-height: 1.6; margin: 0 0 16px 0;">
-          DataGem gives you pre-trained domain intelligence and sub-second DuckDB OLAP processing:
+        <h1>Welcome aboard, {{ user_name }}!</h1>
+        <p class="lead">
+          Your workspace is live. DataGem connects directly with your marketplace data to reveal hidden leakage, optimize price margins, and calculate retention cohorts with sub-second zero-token DuckDB processing.
         </p>
 
-        <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: #94A3B8;">
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px solid #1E293B;">🛒 <strong>E-Commerce & Retail:</strong></td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #1E293B; text-align: right; color: #34D399;">Amazon Clawbacks & CM3 Margin</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px solid #1E293B;">📈 <strong>B2B SaaS & Growth:</strong></td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #1E293B; text-align: right; color: #38BDF8;">NDR & Churn Cohorts</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0;">⚡ <strong>Universal Studio:</strong></td>
-            <td style="padding: 8px 0; text-align: right; color: #F1F5F9;">Vectorized DuckDB Sandbox (0 Tokens)</td>
-          </tr>
-        </table>
+        <div class="cards-grid">
+          <div class="feature-card">
+            <div class="card-icon">📦</div>
+            <div>
+              <div class="card-title">Amazon & Flipkart Clawback Engine</div>
+              <div class="card-desc">Auto-audit weight discrepancies, lost inventory, and uncredited customer refunds ready for claim filing.</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">📈</div>
+            <div>
+              <div class="card-title">Price Elasticity & CM3 Simulator</div>
+              <div class="card-desc">Stress-test price shifts vs volume sensitivity to maximize net profit margins before touching live listings.</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">⚡</div>
+            <div>
+              <div class="card-title">Universal Vectorized Studio</div>
+              <div class="card-desc">Zero-token in-memory analytics running 100x faster than legacy cloud warehouses.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cta-container">
+          <a href="{{ workspace_url|default('https://www.datagem.app/chat') }}" class="cta-button">
+            Open Your Analytics Studio &rarr;
+          </a>
+        </div>
+        <div class="sub-note">No credit card required &bull; Instant CSV, Parquet, or Marketplace Sync</div>
+
+        <div class="footer">
+          Questions or custom data feeds? Simply reply directly to this email.<br>
+          &copy; 2026 DataGem Technologies Inc. &bull; Enterprise Autonomous Decision Engine
+        </div>
       </div>
-
-      <!-- Action Button -->
-      <div style="text-align: center; margin-bottom: 24px;">
-        <a href="{{ workspace_url }}" style="display: inline-block; background: #0284c7; color: #FFFFFF; font-size: 13px; font-weight: 600; text-decoration: none; padding: 12px 32px; border-radius: 8px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
-          Open Your Analytics Studio →
-        </a>
-      </div>
-
-      <p style="color: #64748B; font-size: 11px; text-align: center; line-height: 1.5; margin: 0;">
-        Need assistance or want a custom enterprise connector? Simply reply to this email to reach our engineering team.
-      </p>
-    </div>
-
-    <!-- Footer -->
-    <div style="padding: 16px 32px; background: #05070A; border-top: 1px solid #1E293B; text-align: center; font-size: 10px; font-family: monospace; color: #475569;">
-      © 2026 DataGem. Zero-Token In-Memory Decision Engine.
     </div>
   </div>
 </body>

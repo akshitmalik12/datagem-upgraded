@@ -6,73 +6,100 @@
   <title>DataGem Autonomous Executive Briefing</title>
   <style>
     body {
-      font-family: 'Inter', Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #05070A;
-      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F8FAFC;
+      color: #0F172A;
       margin: 0;
-      padding: 32px 16px;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
     }
     .wrapper {
-      max-width: 620px;
+      width: 100%;
+      background-color: #F8FAFC;
+      padding: 40px 0;
+    }
+    .container {
+      max-width: 580px;
       margin: 0 auto;
-      background-color: #090D14;
-      border: 1px solid #1e293b;
-      border-radius: 20px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
     }
-    .header {
-      padding: 28px;
-      background: linear-gradient(135deg, #0d1522 0%, #090D14 100%);
-      border-bottom: 1px solid #1e293b;
+    .header-bar {
+      height: 4px;
+      background: linear-gradient(90deg, #10B981 0%, #06B6D4 50%, #3B82F6 100%);
     }
-    .logo-badge {
+    .content {
+      padding: 36px 40px;
+    }
+    .brand {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      color: #38bdf8;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 12px;
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    .title {
-      font-size: 22px;
-      font-weight: 800;
+    .brand-icon {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #10B981, #059669);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: #ffffff;
-      margin: 0 0 10px 0;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .brand-name {
+      font-size: 17px;
+      font-weight: 700;
       letter-spacing: -0.02em;
+      color: #0F172A;
     }
     .badge {
       display: inline-block;
-      padding: 5px 12px;
+      padding: 4px 10px;
       border-radius: 9999px;
       font-size: 11px;
       font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
     }
     .badge-breach {
-      background-color: rgba(244, 63, 94, 0.15);
-      border: 1px solid rgba(244, 63, 94, 0.4);
-      color: #fb7185;
+      background-color: #FFF1F2;
+      border: 1px solid #FECDD3;
+      color: #E11D48;
     }
     .badge-nominal {
-      background-color: rgba(52, 211, 153, 0.15);
-      border: 1px solid rgba(52, 211, 153, 0.4);
-      color: #34d399;
+      background-color: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      color: #065F46;
     }
-    .content {
-      padding: 28px;
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0F172A;
+      margin: 0 0 10px 0;
+      letter-spacing: -0.02em;
     }
-    .kpi-grid {
+    p.intro {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #475569;
+      margin: 0 0 24px 0;
+    }
+    .kpi-card {
+      background-color: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
       display: table;
       width: 100%;
-      background-color: #0c121e;
-      border: 1px solid #1e293b;
-      border-radius: 14px;
-      padding: 16px;
-      margin: 20px 0;
+      box-sizing: border-box;
     }
     .kpi-col {
       display: table-cell;
@@ -81,131 +108,165 @@
     .kpi-label {
       font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #94a3b8;
-      font-family: monospace;
+      letter-spacing: 0.05em;
+      color: #64748B;
+      font-weight: 600;
+      margin-bottom: 4px;
     }
     .kpi-val {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 800;
-      color: #ffffff;
-      margin-top: 4px;
+      color: #0F172A;
     }
     .kpi-breach {
-      color: #fb7185;
+      color: #E11D48;
     }
     .leak-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 18px;
-      font-size: 12px;
+      margin-top: 14px;
+      font-size: 13px;
     }
     .leak-table th {
       text-align: left;
-      color: #64748b;
-      font-family: monospace;
-      padding: 8px 4px;
-      border-bottom: 1px solid #1e293b;
+      color: #64748B;
+      font-size: 11px;
+      font-weight: 600;
       text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 8px 4px;
+      border-bottom: 1px solid #E2E8F0;
     }
     .leak-table td {
       padding: 10px 4px;
-      border-bottom: 1px solid #131d2e;
-      color: #cbd5e1;
+      border-bottom: 1px solid #F1F5F9;
+      color: #334155;
     }
-    .cta-btn {
-      display: block;
+    .cta-container {
       text-align: center;
-      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
-      color: #ffffff;
-      font-weight: 700;
-      text-decoration: none;
-      padding: 14px 20px;
-      border-radius: 12px;
-      font-size: 14px;
       margin-top: 28px;
-      box-shadow: 0 10px 20px -5px rgba(2, 132, 199, 0.4);
+    }
+    .cta-button {
+      display: inline-block;
+      background: #0F172A;
+      color: #FFFFFF !important;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 13px 32px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+    }
+    .action-note {
+      margin-top: 22px;
+      padding: 14px;
+      border-radius: 10px;
+      background-color: #FEF2F2;
+      border: 1px solid #FEE2E2;
+      font-size: 13px;
+      color: #991B1B;
+      line-height: 1.5;
+    }
+    .action-nominal {
+      margin-top: 22px;
+      padding: 14px;
+      border-radius: 10px;
+      background-color: #F0FDF4;
+      border: 1px solid #DCFCE7;
+      font-size: 13px;
+      color: #166534;
+      line-height: 1.5;
     }
     .footer {
-      padding: 20px 28px;
-      background-color: #06090f;
-      border-top: 1px solid #1e293b;
-      text-align: center;
-      font-size: 11px;
-      color: #64748b;
-      font-family: monospace;
+      border-top: 1px solid #F1F5F9;
+      padding-top: 20px;
+      margin-top: 28px;
+      font-size: 12px;
       line-height: 1.6;
+      color: #94A3B8;
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <div class="wrapper">
-    <div class="header">
-      <div class="logo-badge">⚡ DataGem Autonomous OLAP</div>
-      <h1 class="title">Monday 8:00 AM Executive Briefing</h1>
-      {% if value > threshold %}
-      <span class="badge badge-breach">🚨 CRITICAL THRESHOLD BREACH</span>
-      {% else %}
-      <span class="badge badge-nominal">✅ ALL METRICS NOMINAL</span>
-      {% endif %}
-    </div>
-
-    <div class="content">
-      <p style="margin: 0 0 16px 0; font-size: 14px; color: #94a3b8; line-height: 1.6;">
-        Good morning, <strong>{{ user_name }}</strong>. Here is your automated executive scan across all connected e-commerce and SaaS channels for the preceding week.
-      </p>
-
-      <div class="kpi-grid">
-        <div class="kpi-col" style="width: 55%;">
-          <div class="kpi-label">Monitored Metric</div>
-          <div class="kpi-val">{{ metric|replace('_', ' ')|title }}</div>
+    <div class="container">
+      <div class="header-bar"></div>
+      <div class="content">
+        <div class="brand">
+          <div class="brand-icon">💎</div>
+          <div class="brand-name">DataGem Watchdog</div>
         </div>
-        <div class="kpi-col" style="width: 45%; text-align: right;">
-          <div class="kpi-label">Current vs Limit</div>
-          <div class="kpi-val {% if value > threshold %}kpi-breach{% endif %}">
-            {{ value }}% <span style="font-size: 13px; color: #64748b; font-weight: 400;">({{ threshold }}% max)</span>
+
+        <div>
+          {% if value > threshold %}
+          <span class="badge badge-breach">🚨 Critical Threshold Breach</span>
+          {% else %}
+          <span class="badge badge-nominal">✅ All Metrics Nominal</span>
+          {% endif %}
+        </div>
+
+        <h1 class="title">Monday 8:00 AM Executive Briefing</h1>
+        <p class="intro">
+          Good morning, <strong>{{ user_name }}</strong>. Here is your automated executive scan across all connected e-commerce and SaaS channels for the preceding week.
+        </p>
+
+        <div class="kpi-card">
+          <div class="kpi-col" style="width: 55%;">
+            <div class="kpi-label">Monitored Metric</div>
+            <div class="kpi-val">{{ metric|replace('_', ' ')|title }}</div>
+          </div>
+          <div class="kpi-col" style="width: 45%; text-align: right;">
+            <div class="kpi-label">Current vs Limit</div>
+            <div class="kpi-val {% if value > threshold %}kpi-breach{% endif %}">
+              {{ value }}% <span style="font-size: 13px; color: #64748B; font-weight: 400;">({{ threshold }}% max)</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {% if leaks and leaks|length > 0 %}
-      <div style="margin-top: 24px;">
-        <span class="kpi-label" style="display: block; margin-bottom: 8px;">Top Identified Discrepancies</span>
-        <table class="leak-table">
-          <thead>
-            <tr>
-              <th>SKU / Identifier</th>
-              <th>Channel</th>
-              <th style="text-align: right;">Variance Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in leaks %}
-            <tr>
-              <td style="font-weight: 600; color: #ffffff;">{{ item.sku }}</td>
-              <td>{{ item.channel|default('Amazon FBA') }}</td>
-              <td style="text-align: right; color: #fb7185; font-family: monospace; font-weight: 700;">₹{{ item.amount }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% endif %}
-
-      <div style="margin-top: 22px; padding: 14px; border-radius: 12px; background-color: #0b1420; border: 1px solid #17283c; font-size: 13px; color: #94a3b8; line-height: 1.5;">
-        {% if value > threshold %}
-        ⚠️ <strong>Autonomous Recommendation:</strong> We recommend initiating weight and fee dispute tickets for these SKUs. The dispute payload has been formatted and is ready for 1-click filing.
-        {% else %}
-        ✨ <strong>Autonomous Recommendation:</strong> Your margins and operational fees are holding stable within benchmark parameters.
+        {% if leaks and leaks|length > 0 %}
+        <div style="margin-top: 20px;">
+          <div class="kpi-label">Top Identified Discrepancies</div>
+          <table class="leak-table">
+            <thead>
+              <tr>
+                <th>SKU / Identifier</th>
+                <th>Channel</th>
+                <th style="text-align: right;">Variance Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in leaks %}
+              <tr>
+                <td style="font-weight: 600; color: #0F172A;">{{ item.sku }}</td>
+                <td>{{ item.channel|default('Amazon FBA') }}</td>
+                <td style="text-align: right; color: #E11D48; font-family: monospace; font-weight: 700;">₹{{ item.amount }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
         {% endif %}
+
+        {% if value > threshold %}
+        <div class="action-note">
+          ⚠️ <strong>Autonomous Recommendation:</strong> We recommend initiating weight and fee dispute tickets for these SKUs. The dispute payload has been formatted and is ready for 1-click filing.
+        </div>
+        {% else %}
+        <div class="action-nominal">
+          ✨ <strong>Autonomous Recommendation:</strong> Your margins and operational fees are holding stable within benchmark parameters.
+        </div>
+        {% endif %}
+
+        <div class="cta-container">
+          <a href="{{ workspace_url|default('https://www.datagem.app/chat') }}" class="cta-button">Open Executive CRM Command Center &rarr;</a>
+        </div>
+
+        <div class="footer">
+          Dispatched by DataGem Autonomous Engine &bull; Monday 8:00 AM Cron Watchdog<br>
+          Zero-Token In-Memory Execution &bull; &copy; 2026 DataGem Technologies Inc.
+        </div>
       </div>
-
-      <a href="http://localhost:5173/chat" class="cta-btn">Open Executive CRM Command Center →</a>
-    </div>
-
-    <div class="footer">
-      Dispatched by DataGem Autonomous Engine · Monday 8:00 AM Cron Watchdog<br>
-      Zero-Token In-Memory Execution · Deep Obsidian Edition
     </div>
   </div>
 </body>

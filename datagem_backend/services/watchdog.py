@@ -53,7 +53,8 @@ def render_watchdog_template(user_name: str, metric: str, value: float, threshol
         metric=metric,
         value=value,
         threshold=threshold,
-        leaks=default_leaks
+        leaks=default_leaks,
+        workspace_url="https://www.datagem.app/chat"
     )
 
 def dispatch_watchdog_email(to_email: str, subject: str, html_content: str):
