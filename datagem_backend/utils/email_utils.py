@@ -161,3 +161,18 @@ def send_anomaly_alert(user_email: str, alert_title: str, details: dict, recomme
     </div>
     """
     return send_transactional_email(user_email, subject, html)
+
+def send_weekly_executive_digest(user_email: str, digest_metrics: dict):
+    """Sends Monday 8:00 AM CEO briefing."""
+    subject = "📊 Your Monday 8:00 AM Executive Briefing — DataGem"
+    html = f"""
+    <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 550px; margin: 30px auto; background: #090D14; border: 1px solid #1E293B; border-radius: 16px; padding: 32px; color: #F1F5F9;">
+      <h2 style="color: #38BDF8; margin: 0 0 12px 0;">Weekly Business Health Digest</h2>
+      <p style="color: #94A3B8; font-size: 13px;">Autonomous audit from your connected stores & datasets.</p>
+      <div style="background: #05070A; border: 1px solid #1E293B; border-radius: 12px; padding: 18px; margin: 20px 0;">
+        <pre style="color: #34D399; font-size: 12px; margin: 0; white-space: pre-wrap;">{digest_metrics}</pre>
+      </div>
+    </div>
+    """
+    return send_transactional_email(user_email, subject, html)
+
