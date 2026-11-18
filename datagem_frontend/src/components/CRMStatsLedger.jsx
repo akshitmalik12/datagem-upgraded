@@ -112,26 +112,41 @@ export default function CRMStatsLedger({
       skipEmptyLines: true,
       complete: (results) => {
         const cleanedRows = results.data.map((row, idx) => {
-          const sku = row.sku || row.SKU || row.product_sku || row.asin || `SKU-${idx + 1}`;
-          const gross = parseFloat(row.gross_sales || row.amount || row.revenue || row.item_price || 0);
+          // Robust identifier mapping across Flipkart, Amazon, and generic systems
+          const sku = row.sku || row.SKU || row.product_sku || row.asin || row.ASIN || row.fsn || row.FSN || row.order_item_id || `SKU-${idx + 1}`;
+          const gross = parseFloat(row.gross_sales || row.amount || row.revenue || row.item_price || row.selling_price || row.principal || 0);
           const cogs = parseFloat(row.cogs || row.cost || row.product_cost || (gross * 0.35));
-          const billed_weight = parseFloat(row.billed_weight_kg || row.billed_weight || 0);
-          const actual_weight = parseFloat(row.actual_weight_kg || row.actual_weight || 0);
-          let net = parseFloat(row.net_profit || (gross - cogs));
-          let status = row.status || (net < 0 ? 'BLEEDER' : gross > 5000 ? 'STAR' : 'HEALTHY');
+          const fee = parseFloat(row.fba_fee || row.fee || row.marketplace_fee || row.commission || row.commission_rate || row.fixed_fee || (gross * 0.15));
+          const returnFreight = parseFloat(row.return_freight || row.reverse_shipping_fee || row.rto_charges || 0);
+          
+          const billed_weight = parseFloat(row.billed_weight_kg || row.billed_weight || row.charged_weight || row.volumetric_weight || 0);
+          const actual_weight = parseFloat(row.actual_weight_kg || row.actual_weight || row.physical_weight || 0);
+          
+          let net = row.net_profit !== undefined 
+            ? parseFloat(row.net_profit) 
+            : (gross - cogs - fee - returnFreight);
+            
+          const rawStatus = String(row.status || row.order_status || row.return_type || '').toUpperCase();
+          const isReturn = rawStatus.includes('RETURN') || rawStatus.includes('REFUND') || rawStatus.includes('CANCEL') || returnFreight > 0;
+          
+          let status = isReturn 
+            ? 'RETURN_LEAK' 
+            : (net < 0 ? 'BLEEDER' : (net >= 1400 || gross >= 3000) ? 'STAR' : 'HEALTHY');
 
           return {
             ...row,
-            order_id: row.order_id || row.order_number || `OD-${1000 + idx}`,
+            order_id: row.order_id || row.order_number || row.sub_order_id || `OD-${1000 + idx}`,
             sku,
-            product_name: row.product_name || row.item_name || sku,
-            category: row.category || 'General Merch',
+            product_name: row.product_name || row.item_name || row.title || sku,
+            category: row.category || row.vertical || 'General Merch',
             gross_sales: isNaN(gross) ? 0 : gross,
             cogs: isNaN(cogs) ? 0 : cogs,
+            fee: isNaN(fee) ? 0 : fee,
+            return_freight: isNaN(returnFreight) ? 0 : returnFreight,
             net_profit: isNaN(net) ? 0 : net,
             billed_weight_kg: isNaN(billed_weight) ? 0 : billed_weight,
             actual_weight_kg: isNaN(actual_weight) ? 0 : actual_weight,
-            status: status.toUpperCase()
+            status: status
           };
         });
 
