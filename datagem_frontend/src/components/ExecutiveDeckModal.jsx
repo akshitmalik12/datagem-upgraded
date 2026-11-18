@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DOMAIN_PRESETS } from '../utils/sampleData';
 
 export default function ExecutiveDeckModal({ isOpen, onClose, dataset, datasetProfile }) {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -7,8 +8,10 @@ export default function ExecutiveDeckModal({ isOpen, onClose, dataset, datasetPr
 
   if (!isOpen) return null;
 
-  const rowCount = dataset ? dataset.length : 0;
-  const columns = dataset && dataset[0] ? Object.keys(dataset[0]) : [];
+  const activeData = (dataset && dataset.length > 0) ? dataset : DOMAIN_PRESETS.ecom.data;
+  const isDemo = !dataset || dataset.length === 0;
+  const rowCount = activeData.length;
+  const columns = activeData[0] ? Object.keys(activeData[0]) : [];
 
   // Compute key metrics safely
   let gmv = 0;
@@ -16,8 +19,8 @@ export default function ExecutiveDeckModal({ isOpen, onClose, dataset, datasetPr
   let returnsCount = 0;
   const skuCounts = {};
 
-  if (dataset && dataset.length > 0) {
-    dataset.forEach(row => {
+  if (activeData && activeData.length > 0) {
+    activeData.forEach(row => {
       // Find revenue
       for (const k of Object.keys(row)) {
         const kl = k.toLowerCase();

@@ -19,6 +19,17 @@ from database.models import User
 
 router = APIRouter()
 
+def is_admin_email(email: str) -> bool:
+    if not email:
+        return False
+    el = email.lower().strip()
+    return (
+        "akshit" in el or
+        "founder" in el or
+        "ceo" in el or
+        el in ["aakshitmalik@gmail.com", "akshitmalik1203@gmail.com", "founder@company.com"]
+    )
+
 @router.post("/signup", response_model=auth_models.UserInDB)
 def create_new_user(
     user: auth_models.UserCreate, 
@@ -36,7 +47,7 @@ def create_new_user(
     # We scramble the password here, *before* sending it to crud.py
     hashed_password = security.get_password_hash(user.password)
     # Assign tier: promote primary owner/admins to enterprise tier automatically
-    initial_tier = "enterprise" if user.email.lower() in ["aakshitmalik@gmail.com", "founder@company.com"] else "free"
+    initial_tier = "enterprise" if is_admin_email(user.email) else "free"
 
     db_user = db_models.User(
         email=user.email,
@@ -76,7 +87,7 @@ async def login_for_access_token(
         )
     
     # Ensure primary admin accounts are always enterprise tier upon successful login
-    if user.email.lower() in ["aakshitmalik@gmail.com", "founder@company.com"] and user.tier != "enterprise":
+    if is_admin_email(user.email) and user.tier != "enterprise":
         user.tier = "enterprise"
         db.commit()
 
@@ -102,7 +113,7 @@ async def login_json(
         )
     
     # Ensure primary admin accounts are always enterprise tier upon successful login
-    if user.email.lower() in ["aakshitmalik@gmail.com", "founder@company.com"] and user.tier != "enterprise":
+    if is_admin_email(user.email) and user.tier != "enterprise":
         user.tier = "enterprise"
         db.commit()
 

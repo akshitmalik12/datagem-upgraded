@@ -44,6 +44,7 @@ import { DOMAIN_PRESETS } from '../utils/sampleData';
 import CRMStatsLedger from './CRMStatsLedger';
 import GuidedTourModal from './GuidedTourModal';
 import DisputeTicketModal from './DisputeTicketModal';
+import PriceElasticityModal from './PriceElasticityModal';
 import { LogOut, User as UserIcon } from 'lucide-react';
 import TechText from './TechText';
 import Lightfall from './Lightfall';
@@ -80,6 +81,8 @@ export default function Chat() {
   const [isWatchdogModalOpen, setIsWatchdogModalOpen] = useState(false);
   const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
   const [disputeModalData, setDisputeModalData] = useState(null);
+  const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+  const [selectedSkuForSimulation, setSelectedSkuForSimulation] = useState(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [thoughtsOpen, setThoughtsOpen] = useState(false);
@@ -1508,6 +1511,12 @@ export default function Chat() {
                 {showMoreTools && (
                   <div className="absolute top-full left-0 mt-1 w-52 bg-white dark:bg-[#090D14] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 z-50 space-y-0.5">
                     <button
+                      onClick={() => { setIsPriceModalOpen(true); setShowMoreTools(false); }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                    >
+                      <span>📈</span> Price Elasticity Studio
+                    </button>
+                    <button
                       onClick={() => { setIsConnectorsModalOpen(true); setShowMoreTools(false); }}
                       className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                     >
@@ -1624,6 +1633,10 @@ export default function Chat() {
               setDisputeModalData(row);
               setIsDisputeModalOpen(true);
             }}
+            onSimulatePrice={(sku) => {
+              setSelectedSkuForSimulation(sku || null);
+              setIsPriceModalOpen(true);
+            }}
             onConnectMarketplace={() => setIsConnectorsModalOpen(true)}
             onAskAI={(promptText) => {
               setWorkspaceViewMode('split');
@@ -1667,6 +1680,10 @@ export default function Chat() {
                 onViewDispute={(row) => {
                   setDisputeModalData(row);
                   setIsDisputeModalOpen(true);
+                }}
+                onSimulatePrice={(sku) => {
+                  setSelectedSkuForSimulation(sku || null);
+                  setIsPriceModalOpen(true);
                 }}
                 onAskAI={(promptText) => {
                   setInput(promptText);
@@ -2371,14 +2388,14 @@ export default function Chat() {
                   
                   {/* Display text summary - Enhanced UI */}
                   {(message.content || (message.code && message.code.length > 0) || (message.outputs && message.outputs.length > 0) || (message.plots && message.plots.length > 0)) && (
-                  <div className={`prose prose-sm leading-relaxed max-w-none ${message.role === 'user' ? 'prose-invert' : 'dark:prose-invert'} ${message.role === 'assistant' ? 'response-enhanced' : ''}`}>
+                  <div className={`prose prose-sm leading-relaxed max-w-none dark:prose-invert ${message.role === 'assistant' ? 'response-enhanced' : ''}`}>
 {message.content && message.content.trim() ? (
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        p: ({ children }) => <p className="mb-3 last:mb-0 text-gray-700 dark:text-gray-300 leading-relaxed">{children}</p>,
-                        strong: ({ children }) => <strong className="font-bold text-gray-900 dark:text-gray-100">{children}</strong>,
-                        em: ({ children }) => <em className="italic text-gray-600 dark:text-gray-400">{children}</em>,
+                        p: ({ children }) => <p className="mb-3 last:mb-0 text-slate-800 dark:text-slate-200 leading-relaxed font-sans">{children}</p>,
+                        strong: ({ children }) => <strong className="font-bold text-slate-900 dark:text-slate-100">{children}</strong>,
+                        em: ({ children }) => <em className="italic text-slate-700 dark:text-slate-300">{children}</em>,
                         code: ({ node, inline, className, children, ...props }) => {
                           const match = /language-(\w+)/.exec(className || '');
                           return !inline && match ? (
@@ -2389,11 +2406,7 @@ export default function Chat() {
                               />
                             </div>
                           ) : (
-                            <code className={`px-2 py-1 rounded-md text-sm font-mono ${
-                              message.role === 'user' 
-                                ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100' 
-                                : 'bg-accent-50 dark:bg-gray-800 text-accent-700 dark:text-accent-300 border border-accent-200 dark:border-gray-700'
-                            }`} {...props}>
+                            <code className="px-2 py-1 rounded-md text-sm font-mono bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700" {...props}>
                               {children}
                             </code>
                           )
@@ -2850,6 +2863,21 @@ export default function Chat() {
         isOpen={isDisputeModalOpen}
         onClose={() => setIsDisputeModalOpen(false)}
         disputeData={disputeModalData}
+      />
+      <PriceElasticityModal
+        isOpen={isPriceModalOpen}
+        onClose={() => setIsPriceModalOpen(false)}
+        dataset={dataset}
+        selectedSku={selectedSkuForSimulation}
+        onApplyToChat={(prompt) => {
+          setWorkspaceViewMode('split');
+          setInput(prompt);
+          handleSendMessage(prompt);
+        }}
+        onOpenDispute={(disputeData) => {
+          setDisputeModalData(disputeData);
+          setIsDisputeModalOpen(true);
+        }}
       />
     </>
   );

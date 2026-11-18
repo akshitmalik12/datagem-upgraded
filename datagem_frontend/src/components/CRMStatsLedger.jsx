@@ -19,7 +19,8 @@ import {
   ExternalLink,
   MessageSquare,
   ShieldCheck,
-  Scale
+  Scale,
+  Sliders
 } from 'lucide-react';
 
 export default function CRMStatsLedger({ 
@@ -269,6 +270,15 @@ export default function CRMStatsLedger({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => onSimulatePrice && onSimulatePrice()}
+              className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold font-sans transition-all flex items-center gap-1.5"
+              title="Open Price Elasticity & What-If Studio"
+            >
+              <Sliders className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Price Simulator</span>
+            </button>
+
             <button
               onClick={() => fileInputRef.current?.click()}
               className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium font-sans transition-all flex items-center gap-1.5"
@@ -528,6 +538,14 @@ export default function CRMStatsLedger({
                             title="Ask AI Drilldown"
                           >
                             Ask AI
+                          </button>
+
+                          <button
+                            onClick={() => onSimulatePrice && onSimulatePrice(skuCode)}
+                            className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-all"
+                            title="Simulate Price Elasticity"
+                          >
+                            Simulate
                           </button>
 
                           {row.billed_weight_kg > row.actual_weight_kg && (
