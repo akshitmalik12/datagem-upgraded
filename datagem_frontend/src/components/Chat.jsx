@@ -48,6 +48,8 @@ import PriceElasticityModal from './PriceElasticityModal';
 import SettingsModal from './SettingsModal';
 import CheckoutModal from './CheckoutModal';
 import ShareReportModal from './ShareReportModal';
+import DisputePacketModal from './DisputePacketModal';
+import BuyBoxWarRoomModal from './BuyBoxWarRoomModal';
 import { LogOut, User as UserIcon, Settings, Sparkles, Share2 } from 'lucide-react';
 import TechText from './TechText';
 import Lightfall from './Lightfall';
@@ -90,6 +92,9 @@ export default function Chat() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isDisputePacketOpen, setIsDisputePacketOpen] = useState(false);
+  const [selectedClaimForPacket, setSelectedClaimForPacket] = useState(null);
+  const [isBuyBoxWarRoomOpen, setIsBuyBoxWarRoomOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [thoughtsOpen, setThoughtsOpen] = useState(false);
@@ -1614,6 +1619,22 @@ export default function Chat() {
                       <span>📈</span> Price Elasticity Studio
                     </button>
                     <button
+                      onClick={() => { setIsBuyBoxWarRoomOpen(true); setShowMoreTools(false); }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                    >
+                      <span>⚔️</span> Buy Box War-Room
+                    </button>
+                    <button
+                      onClick={() => { 
+                        setSelectedClaimForPacket({ claim_id: 'CLM-AMZ-2026-981', sku: 'ELEC-W-EARBUDS', marketplace: 'Amazon Seller Central (FBA)' });
+                        setIsDisputePacketOpen(true); 
+                        setShowMoreTools(false); 
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                    >
+                      <span>⚖️</span> Official Amazon Dispute Dockets
+                    </button>
+                    <button
                       onClick={() => { setIsConnectorsModalOpen(true); setShowMoreTools(false); }}
                       className="w-full text-left px-2.5 py-1.5 rounded-md text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                     >
@@ -1821,22 +1842,76 @@ export default function Chat() {
               {/* Chat Messages inside Split Rail */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ scrollBehavior: 'smooth' }}>
                 {messages.length === 0 ? (
-                  <div className="py-12 text-center text-slate-500 text-xs font-sans space-y-3">
-                    <div className="text-3xl">💎</div>
-                    <p className="text-slate-700 dark:text-slate-300 font-medium">Click any row in the CRM table to run an instant AI audit.</p>
-                    <div className="flex flex-col gap-1.5 max-w-xs mx-auto">
+                  <div className="py-10 px-4 text-center font-sans space-y-4 max-w-md mx-auto">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-sky-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
+                      <span className="text-2xl">💎</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Autonomous Decision Co-Pilot</h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        Select a recommended forensic audit prompt or click any row in the CRM ledger:
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-1">
                       <button
                         onClick={() => handleSendMessage("Audit all weight handling overcharges and calculate reclaimable cash")}
-                        className="p-2 text-left bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 transition-colors"
+                        className="p-3 text-left bg-white dark:bg-[#0B1220] hover:bg-slate-50 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-xl transition-all shadow-sm group"
                       >
-                        ⚡ "Find weight overcharges on Amazon"
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-semibold text-xs text-slate-900 dark:text-white group-hover:text-emerald-400 transition-colors flex items-center gap-1.5">
+                            <span>📦</span> FBA Fee &amp; Weight Discrepancy Audit
+                          </span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            CLAWBACK
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                          Cross-reference catalog specs against billed weights to compile reclaimable cash dockets.
+                        </p>
                       </button>
+
                       <button
                         onClick={() => handleSendMessage("Which SKUs are bleeding net cash after accounting for returns and commissions?")}
-                        className="p-2 text-left bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 transition-colors"
+                        className="p-3 text-left bg-white dark:bg-[#0B1220] hover:bg-slate-50 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-500/50 rounded-xl transition-all shadow-sm group"
                       >
-                        📉 "Identify my top 3 Hidden Bleeders"
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-semibold text-xs text-slate-900 dark:text-white group-hover:text-rose-400 transition-colors flex items-center gap-1.5">
+                            <span>📉</span> Hidden Bleeder &amp; Margin Leakage
+                          </span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                            CM3 PROFIT
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                          Pinpoint high-volume products silently losing money on return freight and ad spend.
+                        </p>
                       </button>
+
+                      <button
+                        onClick={() => handleSendMessage("Simulate what happens if I increase price by 8% on Fast Chargers")}
+                        className="p-3 text-left bg-white dark:bg-[#0B1220] hover:bg-slate-50 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-sky-500/50 rounded-xl transition-all shadow-sm group"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-semibold text-xs text-slate-900 dark:text-white group-hover:text-sky-400 transition-colors flex items-center gap-1.5">
+                            <span>📈</span> Price Elasticity &amp; Profit Delta
+                          </span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                            WHAT-IF
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                          Model demand elasticity vs margin expansion to maximize annualized net cash flow.
+                        </p>
+                      </button>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-center gap-3 text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                      <span>⚡ DuckDB Vectorized</span>
+                      <span>•</span>
+                      <span>0 Tokens Spent</span>
+                      <span>•</span>
+                      <span>Sub-Second OLAP</span>
                     </div>
                   </div>
                 ) : (
@@ -3015,6 +3090,19 @@ export default function Chat() {
         onClose={() => setIsShareModalOpen(false)}
         currentDataset={dataset}
         briefingText={executiveBriefing?.summary}
+      />
+      <DisputePacketModal
+        isOpen={isDisputePacketOpen}
+        onClose={() => setIsDisputePacketOpen(false)}
+        claimData={selectedClaimForPacket}
+        onOpenUpgrade={(tier) => {
+          setSelectedPlanForCheckout(tier || 'pro');
+          setIsCheckoutOpen(true);
+        }}
+      />
+      <BuyBoxWarRoomModal
+        isOpen={isBuyBoxWarRoomOpen}
+        onClose={() => setIsBuyBoxWarRoomOpen(false)}
       />
     </>
   );
