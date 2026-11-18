@@ -61,13 +61,13 @@ export default function GuidedTourModal({ isOpen, onClose, onStepChange }) {
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 pointer-events-none flex items-end sm:items-center justify-center p-4">
-        {/* Soft Backdrop Dimming */}
+        {/* Transparent Clickable Backdrop without heavy blur to keep background UI completely readable */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-auto"
+          className="fixed inset-0 bg-black/15 pointer-events-auto"
         />
 
         {/* Floating Interactive Spotlight Card */}

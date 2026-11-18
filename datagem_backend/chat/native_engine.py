@@ -154,6 +154,12 @@ class NativeAnalyticsEngine:
                 res = self._analyze_churn(q)
                 if res[0]: return res
 
+            # 4b. Target SKU Forensic Analysis (Prioritize when user mentions a specific SKU / Product ID)
+            sku_target = self._extract_target_sku(q)
+            if sku_target:
+                res = self._audit_single_sku(sku_target)
+                if res[0]: return res
+
             # 5. Weight Handling Overcharge & Reclaim Audit (Amazon / Flipkart / Logistics)
             if any(w in q for w in ["weight", "overcharge", "reclaim", "dispute"]):
                 res = self._audit_weight_overcharges()
@@ -495,6 +501,79 @@ class NativeAnalyticsEngine:
             md += f"> 🚨 **High Churn Alert:** Churn rate ({churn_rate:.2f}%) exceeds the 5-7% SaaS/Subscription benchmark. Review customer feedback and onboarding drop-offs.\n"
         else:
             md += f"> ✅ Churn rate ({churn_rate:.2f}%) is within healthy operational limits.\n"
+
+        return True, md, None
+
+    def _extract_target_sku(self, query: str) -> Optional[str]:
+        """Extracts specific SKU or product identifier from query."""
+        sku_col = self.semantic_map.get("product") or self._find_column(["sku", "product_name", "item"])
+        if not sku_col or self.df is None or self.df.empty:
+            return None
+        
+        # Check against unique SKUs in dataset
+        unique_skus = self.df[sku_col].dropna().unique().tolist()
+        for sku in unique_skus:
+            if str(sku).lower() in query.lower():
+                return str(sku)
+        return None
+
+    def _audit_single_sku(self, sku_target: str) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+        """Deep forensic analysis for a specific SKU (Units, Margin, Returns, and Weight Overcharges)."""
+        sku_col = self.semantic_map.get("product") or self._find_column(["sku", "product_name", "item"])
+        rev_col = self.semantic_map.get("revenue") or self._find_column(["gross_sales", "amount", "revenue", "price"])
+        cogs_col = self.semantic_map.get("cost") or self._find_column(["cogs", "cost", "unit_cost"])
+        fee_col = self.semantic_map.get("fee") or self._find_column(["fee", "commission", "platform_fees", "fba_fee"])
+        profit_col = self.semantic_map.get("profit") or self._find_column(["net_profit", "profit", "margin"])
+        status_col = self.semantic_map.get("status") or self._find_column(["status", "order_status"])
+        billed_col = self._find_column(["billed_weight_kg", "billed_weight"])
+        actual_col = self._find_column(["actual_weight_kg", "actual_weight"])
+
+        sku_df = self.df[self.df[sku_col].astype(str).str.lower() == sku_target.lower()]
+        if sku_df.empty:
+            return False, "", None
+
+        units = len(sku_df)
+        gross_sales = float(sku_df[rev_col].sum()) if rev_col and rev_col in sku_df else 0.0
+        cogs = float(sku_df[cogs_col].sum()) if cogs_col and cogs_col in sku_df else (gross_sales * 0.35)
+        fees = float(sku_df[fee_col].sum()) if fee_col and fee_col in sku_df else (gross_sales * 0.18)
+        net_profit = float(sku_df[profit_col].sum()) if profit_col and profit_col in sku_df else (gross_sales - cogs - fees)
+
+        # Returns count
+        returns_count = 0
+        if status_col and status_col in sku_df:
+            returns_count = sum(1 for s in sku_df[status_col].astype(str).str.lower() if 'return' in s or 'refund' in s or 'leak' in s)
+        return_rate = (returns_count / units * 100) if units > 0 else 0.0
+
+        # Weight Discrepancies
+        has_weight_data = billed_col and actual_col and billed_col in sku_df and actual_col in sku_df
+        billed_wt = float(sku_df[billed_col].iloc[0]) if has_weight_data else 0.0
+        actual_wt = float(sku_df[actual_col].iloc[0]) if has_weight_data else 0.0
+        is_overcharged = billed_wt > actual_wt
+        excess_wt = (billed_wt - actual_wt) if is_overcharged else 0.0
+        reclaim_per_unit = 220.0 if excess_wt >= 0.5 else (110.0 if excess_wt > 0 else 0.0)
+        total_reclaimable = reclaim_per_unit * units
+
+        md = f"### 🔍 Deep Forensic Audit: SKU `{sku_target}`\n\n"
+        md += f"| Diagnostic Dimension | Metric Value | Benchmark Status |\n"
+        md += f"| :--- | :--- | :--- |\n"
+        md += f"| **Total Orders Analyzed** | `{units}` units | Tracked |\n"
+        md += f"| **Gross Revenue (GMV)** | ₹{gross_sales:,.2f} | 100% Volume |\n"
+        md += f"| **Marketplace Fees & COGS** | ₹{(cogs + fees):,.2f} | {((cogs+fees)/gross_sales*100) if gross_sales > 0 else 0:.1f}% Deductions |\n"
+        md += f"| **Net Realized Margin (CM3)** | **₹{net_profit:,.2f}** | {'🚨 Negative Margin Bleeder' if net_profit < 0 else '🟢 Positive Margin'} |\n"
+        md += f"| **Customer Return Rate** | **`{return_rate:.1f}%`** ({returns_count} returns) | {'🚨 High Return Leakage' if return_rate > 15 else '✅ Healthy'} |\n"
+        
+        if has_weight_data:
+            md += f"| **Billed Weight vs Actual** | **`{billed_wt:.2f}kg`** / `{actual_wt:.2f}kg` | {'🚨 Volumetric Overcharge' if is_overcharged else '✅ Accurate'} |\n"
+            if is_overcharged:
+                md += f"| **Reclaimable Clawback Cash** | **₹{total_reclaimable:,.2f}** | Ready for Dispute Docket |\n\n"
+                md += f"> ⚖️ **Weight Overcharge Notice:** Amazon/Flipkart is billing `{billed_wt:.2f}kg` instead of your physical catalog weight of `{actual_wt:.2f}kg` (discrepancy of **`+{excess_wt:.2f}kg`** per shipment). This drains **₹{total_reclaimable:,.2f}** across your `{units}` orders.\n\n"
+        else:
+            md += "\n"
+
+        if net_profit < 0:
+            md += f"> ⚠️ **Executive Recommendation:** SKU `{sku_target}` is a **Hidden Bleeder**. Reverse logistics and commissions are wiping out gross profits. Consider restructuring the packaging or revising the list price by **+5% to +8%** to achieve net positive CM3.\n"
+        else:
+            md += f"> 💡 **Executive Recommendation:** Unit economics are healthy. Click **'Draft Ticket'** to submit a reimbursement claim for the weight delta.\n"
 
         return True, md, None
 
