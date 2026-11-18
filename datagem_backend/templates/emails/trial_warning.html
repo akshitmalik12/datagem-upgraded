@@ -2,31 +2,171 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>DataGem Free Tier Limit Notice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataGem Usage Alert</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F8FAFC;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      width: 100%;
+      background-color: #F8FAFC;
+      padding: 40px 0;
+    }
+    .container {
+      max-width: 580px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border-radius: 16px;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+      overflow: hidden;
+    }
+    .header-bar {
+      height: 4px;
+      background: linear-gradient(90deg, #F59E0B 0%, #EF4444 100%);
+    }
+    .content {
+      padding: 36px 40px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .brand-icon {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #F59E0B, #D97706);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .brand-name {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0F172A;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background-color: #FEF3C7;
+      border: 1px solid #FDE68A;
+      color: #92400E;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0F172A;
+      margin: 0 0 10px 0;
+      letter-spacing: -0.02em;
+    }
+    p.lead {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #475569;
+      margin: 0 0 24px 0;
+    }
+    .upsell-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .upsell-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 10px;
+    }
+    .upsell-list {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.6;
+    }
+    .cta-container {
+      text-align: center;
+      margin: 28px 0 16px 0;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #0F172A;
+      color: #FFFFFF !important;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 13px 32px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+    }
+    .footer {
+      border-top: 1px solid #F1F5F9;
+      padding-top: 20px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #94A3B8;
+      text-align: center;
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #05070A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F1F5F9;">
-  <div style="max-width: 550px; margin: 30px auto; background: #090D14; border: 1px solid #1E293B; border-radius: 16px; overflow: hidden;">
-    <div style="height: 4px; background: linear-gradient(90deg, #f59e0b, #ef4444);"></div>
-    <div style="padding: 32px;">
-      <h2 style="color: #F59E0B; font-size: 18px; margin: 0 0 12px 0;">⚡ Trial Limit Approaching</h2>
-      <p style="color: #CBD5E1; font-size: 13px; line-height: 1.6; margin: 0 0 20px 0;">
-        You have used {{ queries_used }} of your daily queries on the Free tier. You currently have <strong>{{ queries_left }} queries left</strong> for today.
-      </p>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header-bar"></div>
+      <div class="content">
+        <div class="brand">
+          <div class="brand-icon">⚡</div>
+          <div class="brand-name">DataGem</div>
+        </div>
 
-      <div style="background: #05070A; border: 1px solid #1E293B; border-radius: 12px; padding: 18px; margin-bottom: 24px;">
-        <h4 style="color: #38BDF8; font-size: 13px; margin: 0 0 8px 0;">Upgrade to Pro ($15/mo) for:</h4>
-        <ul style="color: #94A3B8; font-size: 12px; padding-left: 18px; margin: 0; line-height: 1.6;">
-          <li>Unlimited natural language analytical queries</li>
-          <li>Amazon & Flipkart autonomous dispute ticket generation</li>
-          <li>Full interactive price elasticity modeling</li>
-          <li>Persistent DuckDB project sessions</li>
-        </ul>
-      </div>
+        <div>
+          <span class="badge">Daily Limit Notice</span>
+        </div>
 
-      <div style="text-align: center;">
-        <a href="{{ upgrade_url }}" style="display: inline-block; background: #0284c7; color: #FFFFFF; font-size: 12px; font-weight: 600; text-decoration: none; padding: 10px 28px; border-radius: 8px;">
-          Upgrade to Unlimited Pro →
-        </a>
+        <h1>Trial Limit Approaching</h1>
+        <p class="lead">
+          You have used {{ queries_used }} of your daily queries on the Free tier. You currently have <strong>{{ queries_left }} queries left</strong> for today.
+        </p>
+
+        <div class="upsell-card">
+          <div class="upsell-title">Upgrade to Pro Growth ($29/mo) for:</div>
+          <ul class="upsell-list">
+            <li>Unlimited natural language analytical queries</li>
+            <li>Amazon & Flipkart autonomous dispute ticket generator</li>
+            <li>Full interactive price elasticity & CM3 sensitivity modeling</li>
+            <li>24/7 Watchdog anomaly sentinel alerts</li>
+          </ul>
+        </div>
+
+        <div class="cta-container">
+          <a href="{{ upgrade_url|default('https://www.datagem.app/pricing') }}" class="cta-button">
+            Upgrade to Unlimited Pro &rarr;
+          </a>
+        </div>
+
+        <div class="footer">
+          &copy; 2026 DataGem Technologies Inc. &bull; Enterprise Autonomous Decision Engine
+        </div>
       </div>
     </div>
   </div>
