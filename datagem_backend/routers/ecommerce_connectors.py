@@ -53,40 +53,73 @@ class SyncResponse(BaseModel):
     records: List[Dict[str, Any]]
     timestamp: str
 
+USER_CONNECTORS: Dict[int, Dict[str, Any]] = {}
+
 @router.get("/status")
 def get_connectors_status(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(database.get_db)
 ):
     """Returns connected marketplaces and sync health for the authenticated user."""
-    is_vip = current_user.email in ["aakshitmalik@gmail.com", "founder@company.com"] or current_user.tier.lower() == "enterprise"
+    user_conn = USER_CONNECTORS.get(current_user.id, {})
     return {
-        "user_tier": getattr(current_user, "tier", "free"),
-        "amazon": {
-            "connected": True if is_vip else False,
-            "seller_id": "A3V5TESTSELLER" if is_vip else None,
-            "last_synced": "2026-11-17T06:30:00Z" if is_vip else None,
-            "channel_health": "OPTIMAL"
-        },
-        "flipkart": {
-            "connected": True if is_vip else False,
-            "seller_id": "FK_ALPHA_ENTERPRISE" if is_vip else None,
-            "last_synced": "2026-11-17T05:15:00Z" if is_vip else None,
-            "channel_health": "OPTIMAL"
-        },
-        "shopify": {
-            "connected": True if is_vip else False,
-            "shop_domain": "datagem-demo.myshopify.com" if is_vip else None,
-            "last_synced": "2026-11-17T07:45:00Z" if is_vip else None,
-            "channel_health": "OPTIMAL"
-        },
-        "woocommerce": {
-            "connected": True if is_vip else False,
-            "store_url": "https://store.datagem.ai" if is_vip else None,
-            "last_synced": "2026-11-17T08:10:00Z" if is_vip else None,
-            "channel_health": "OPTIMAL"
-        }
+        "user_tier": getattr(current_user, "tier", "pro"),
+        "amazon": user_conn.get("amazon", {
+            "connected": False,
+            "seller_id": None,
+            "last_synced": None,
+            "channel_health": "NOT_CONNECTED"
+        }),
+        "flipkart": user_conn.get("flipkart", {
+            "connected": False,
+            "seller_id": None,
+            "last_synced": None,
+            "channel_health": "NOT_CONNECTED"
+        }),
+        "shopify": user_conn.get("shopify", {
+            "connected": False,
+            "shop_domain": None,
+            "last_synced": None,
+            "channel_health": "NOT_CONNECTED"
+        }),
+        "woocommerce": user_conn.get("woocommerce", {
+            "connected": False,
+            "store_url": None,
+            "last_synced": None,
+            "channel_health": "NOT_CONNECTED"
+        })
     }
+
+@router.post("/flipkart/connect")
+def connect_flipkart(
+    req: FlipkartConnectRequest,
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.id not in USER_CONNECTORS:
+        USER_CONNECTORS[current_user.id] = {}
+    display_id = req.app_id if len(req.app_id) <= 16 else (req.app_id[:12] + "...")
+    USER_CONNECTORS[current_user.id]["flipkart"] = {
+        "connected": True,
+        "seller_id": f"FK_{display_id}",
+        "last_synced": datetime.utcnow().isoformat(),
+        "channel_health": "OPTIMAL"
+    }
+    return {"status": "connected", "channel": "Flipkart Seller Hub", "seller_id": display_id}
+
+@router.post("/amazon/connect")
+def connect_amazon(
+    req: AmazonConnectRequest,
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.id not in USER_CONNECTORS:
+        USER_CONNECTORS[current_user.id] = {}
+    USER_CONNECTORS[current_user.id]["amazon"] = {
+        "connected": True,
+        "seller_id": req.seller_id,
+        "last_synced": datetime.utcnow().isoformat(),
+        "channel_health": "OPTIMAL"
+    }
+    return {"status": "connected", "channel": "Amazon SP-API", "seller_id": req.seller_id}
 
 @router.post("/amazon/sync", response_model=SyncResponse)
 def sync_amazon_spapi(

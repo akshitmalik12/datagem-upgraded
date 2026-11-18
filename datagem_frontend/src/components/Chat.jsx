@@ -44,6 +44,7 @@ import { DOMAIN_PRESETS } from '../utils/sampleData';
 import CRMStatsLedger from './CRMStatsLedger';
 import GuidedTourModal from './GuidedTourModal';
 import DisputeTicketModal from './DisputeTicketModal';
+import { LogOut, User as UserIcon } from 'lucide-react';
 
 // Global memory cache to persist chat state across page navigations
 let chatMemoryCache = null;
@@ -84,18 +85,8 @@ export default function Chat() {
   const handleStop = () => { setLoading(false); /* Stop & Steer */ };
   const [persona, setPersona] = useState('enterprise');
   const [currentResponse, setCurrentResponse] = useState('');
-  const [dataset, setDataset] = useState(chatMemoryCache?.dataset || DOMAIN_PRESETS.ecom.data);
-  const [datasetProfile, setDatasetProfile] = useState(chatMemoryCache?.datasetProfile || {
-    filename: DOMAIN_PRESETS.ecom.datasetName,
-    totalRows: DOMAIN_PRESETS.ecom.data.length,
-    columns: Object.keys(DOMAIN_PRESETS.ecom.data[0] || {}),
-    columnTypes: Object.keys(DOMAIN_PRESETS.ecom.data[0] || {}).reduce((acc, col) => {
-      acc[col] = typeof DOMAIN_PRESETS.ecom.data[0][col] === 'number' ? 'numeric' : 'categorical';
-      return acc;
-    }, {}),
-    fileSize: "64 KB",
-    processedAt: new Date().toISOString()
-  });
+  const [dataset, setDataset] = useState(chatMemoryCache?.dataset || null);
+  const [datasetProfile, setDatasetProfile] = useState(chatMemoryCache?.datasetProfile || null);
   const [executiveBriefing, setExecutiveBriefing] = useState(null);
   const [activeDomainHub, setActiveDomainHub] = useState('ecom'); // 'ecom' | 'saas' | 'studio'
   const [showDomainSwitcher, setShowDomainSwitcher] = useState(false);
@@ -1360,6 +1351,14 @@ export default function Chat() {
                 DuckDB Active
               </span>
 
+              {/* User Profile Pill */}
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-700 dark:text-slate-300">
+                <div className="w-4 h-4 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-[10px] font-bold">
+                  {user?.email ? user.email[0].toUpperCase() : 'U'}
+                </div>
+                <span className="max-w-[140px] truncate">{user?.email || 'Authenticated'}</span>
+              </div>
+
               {/* Theme Toggle Button */}
               <button
                 onClick={toggleTheme}
@@ -1376,6 +1375,19 @@ export default function Chat() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
                 )}
+              </button>
+
+              {/* Explicit Logout Button */}
+              <button
+                onClick={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-sans font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/40 transition-colors shadow-sm"
+                title="Log out of your account"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
@@ -1563,6 +1575,7 @@ export default function Chat() {
               setDisputeModalData(row);
               setIsDisputeModalOpen(true);
             }}
+            onConnectMarketplace={() => setIsConnectorsModalOpen(true)}
             onAskAI={(promptText) => {
               setWorkspaceViewMode('split');
               setInput(promptText);
@@ -1581,6 +1594,7 @@ export default function Chat() {
                 dataset={dataset}
                 activeDomain={activeDomainHub}
                 activeTourStep={isTourOpen ? activeTourStep : null}
+                onConnectMarketplace={() => setIsConnectorsModalOpen(true)}
                 onIngestFile={(newRows, filename) => {
                   setDataset(newRows);
                   setDatasetFilename(filename);
@@ -1664,13 +1678,58 @@ export default function Chat() {
                   </div>
                 ) : (
                   messages.map((message, index) => (
-                    <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} text-xs font-sans`}>
-                      <div className={`max-w-[85%] rounded-xl p-3.5 ${
+                    <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} text-xs font-sans mb-3`}>
+                      <div className={`w-full max-w-[95%] rounded-xl p-3.5 ${
                         message.role === 'user' 
-                          ? 'bg-sky-50 dark:bg-[#0B1524] text-sky-950 dark:text-sky-100 border border-sky-200 dark:border-sky-500/40' 
-                          : 'bg-slate-50 dark:bg-[#090D14] text-slate-900 dark:text-slate-200 border border-slate-200 dark:border-slate-800'
+                          ? 'bg-sky-50 dark:bg-[#0B1524] text-sky-950 dark:text-sky-100 border border-sky-200 dark:border-sky-500/40 ml-auto' 
+                          : 'bg-white dark:bg-[#090D14] text-slate-900 dark:text-slate-200 border border-slate-200 dark:border-slate-800 shadow-sm'
                       }`}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.plots && message.plots.filter(p => p && p.data && p.data.length > 0).map((plot, i) => {
+                          const isDark = document.documentElement.classList.contains('dark');
+                          const textColor = isDark ? '#e5e7eb' : '#374151';
+                          const gridColor = isDark ? '#374151' : '#e5e7eb';
+                          const themedLayout = {
+                            ...plot.layout,
+                            autosize: true,
+                            paper_bgcolor: 'transparent',
+                            plot_bgcolor: 'transparent',
+                            font: { ...plot.layout?.font, color: textColor, size: 10 },
+                            margin: { l: 45, r: 15, t: 30, b: 50 },
+                            xaxis: { ...plot.layout?.xaxis, gridcolor: gridColor, zerolinecolor: gridColor, tickfont: { color: textColor, size: 9 }, titlefont: { color: textColor, size: 10 } },
+                            yaxis: { ...plot.layout?.yaxis, gridcolor: gridColor, zerolinecolor: gridColor, tickfont: { color: textColor, size: 9 }, titlefont: { color: textColor, size: 10 } },
+                            legend: { ...plot.layout?.legend, font: { color: textColor, size: 9 } },
+                            title: { ...plot.layout?.title, font: { color: textColor, size: 11 } }
+                          };
+                          return (
+                            <div key={i} className="my-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
+                              <Plot
+                                data={plot.data}
+                                layout={themedLayout}
+                                useResizeHandler={true}
+                                style={{ width: '100%', minHeight: '270px' }}
+                                config={{ responsive: true, displayModeBar: false }}
+                              />
+                            </div>
+                          );
+                        })}
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            table: ({ children }) => (
+                              <div className="overflow-x-auto my-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900/60 text-[11px]">
+                                  {children}
+                                </table>
+                              </div>
+                            ),
+                            thead: ({ children }) => <thead className="bg-slate-50 dark:bg-slate-800/80">{children}</thead>,
+                            tbody: ({ children }) => <tbody className="bg-white dark:bg-slate-900/40 divide-y divide-slate-100 dark:divide-slate-800/60">{children}</tbody>,
+                            th: ({ children }) => <th className="px-2.5 py-1.5 text-left text-[10px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">{children}</th>,
+                            td: ({ children }) => <td className="px-2.5 py-1.5 text-[11px] font-mono text-slate-700 dark:text-slate-300">{children}</td>,
+                            p: ({ children }) => <p className="mb-2 last:mb-0 text-slate-800 dark:text-slate-200 leading-relaxed text-xs">{children}</p>,
+                            blockquote: ({ children }) => <blockquote className="border-l-2 border-sky-500 pl-2.5 py-1 my-2 bg-sky-50/50 dark:bg-sky-950/20 text-slate-700 dark:text-slate-300 text-[11px] rounded-r">{children}</blockquote>
+                          }}
+                        >
                           {message.content}
                         </ReactMarkdown>
                       </div>

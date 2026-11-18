@@ -16,17 +16,33 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
+  const INACTIVITY_TIMEOUT_MS = 6 * 60 * 60 * 1000; // 6 hours
+
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
+        // Check if session exceeded 6 hours of inactivity
+        const lastActive = parseInt(localStorage.getItem('datagem_last_active') || '0', 10);
+        if (lastActive && (Date.now() - lastActive > INACTIVITY_TIMEOUT_MS)) {
+          console.warn('Session expired after 6 hours of inactivity.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('datagem_last_active');
+          setToken(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
         try {
           const userData = await authAPI.getMe();
           setUser(userData);
           setToken(storedToken);
+          localStorage.setItem('datagem_last_active', Date.now().toString());
         } catch (error) {
           // Token is invalid, clear it
           localStorage.removeItem('token');
+          localStorage.removeItem('datagem_last_active');
           setToken(null);
         }
       }
@@ -36,10 +52,46 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
+  // Inactivity tracking when logged in
+  useEffect(() => {
+    if (!token) return;
+
+    const updateActivity = () => {
+      localStorage.setItem('datagem_last_active', Date.now().toString());
+    };
+
+    const checkInactivity = () => {
+      const lastActive = parseInt(localStorage.getItem('datagem_last_active') || '0', 10);
+      if (lastActive && (Date.now() - lastActive > INACTIVITY_TIMEOUT_MS)) {
+        console.warn('Auto-logging out after 6 hours of inactivity.');
+        logout();
+      }
+    };
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    let lastThrottled = Date.now();
+    const handleUserActivity = () => {
+      const now = Date.now();
+      if (now - lastThrottled > 15000) { // throttle write to every 15s
+        lastThrottled = now;
+        updateActivity();
+      }
+    };
+
+    events.forEach(evt => window.addEventListener(evt, handleUserActivity, { passive: true }));
+    const interval = setInterval(checkInactivity, 60000); // verify every 1 minute
+
+    return () => {
+      events.forEach(evt => window.removeEventListener(evt, handleUserActivity));
+      clearInterval(interval);
+    };
+  }, [token]);
+
   const login = async (email, password) => {
     try {
       const data = await authAPI.login(email, password);
       localStorage.setItem('token', data.access_token);
+      localStorage.setItem('datagem_last_active', Date.now().toString());
       setToken(data.access_token);
       
       const userData = await authAPI.getMe();
@@ -97,6 +149,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('datagem_last_active');
     localStorage.removeItem('datagem_sessions');
     localStorage.removeItem('datagem_chat_sessions');
     localStorage.removeItem('datagem_current_project_id');

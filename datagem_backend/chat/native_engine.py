@@ -306,7 +306,14 @@ class NativeAnalyticsEngine:
                 "template": "plotly_dark",
                 "paper_bgcolor": "rgba(0,0,0,0)",
                 "plot_bgcolor": "rgba(0,0,0,0)",
-                "font": {"color": "#e2e8f0"}
+                "font": {"color": "#e2e8f0"},
+                "xaxis": {
+                    "title": {"text": str(dim_col).replace('_', ' ').title(), "font": {"color": "#94a3b8", "size": 12}},
+                    "tickangle": -20
+                },
+                "yaxis": {
+                    "title": {"text": f"Total {metric_col.replace('_', ' ').title()}{' (₹)' if is_currency else ''}", "font": {"color": "#94a3b8", "size": 12}}
+                }
             }
         }
         md += f"\n<<<PLOTLY_JSON_START>>>{json.dumps(plotly_dict)}<<<PLOTLY_JSON_END>>>\n"
@@ -376,7 +383,14 @@ class NativeAnalyticsEngine:
                 "template": "plotly_dark",
                 "paper_bgcolor": "rgba(0,0,0,0)",
                 "plot_bgcolor": "rgba(0,0,0,0)",
-                "font": {"color": "#e2e8f0"}
+                "font": {"color": "#e2e8f0"},
+                "xaxis": {
+                    "title": {"text": str(dim_col).replace('_', ' ').title(), "font": {"color": "#94a3b8", "size": 12}},
+                    "tickangle": -20
+                },
+                "yaxis": {
+                    "title": {"text": f"{metric_col.replace('_', ' ').title()}{' (₹)' if is_currency else ''}", "font": {"color": "#94a3b8", "size": 12}}
+                }
             }
         }
         md += f"\n<<<PLOTLY_JSON_START>>>{json.dumps(plotly_dict)}<<<PLOTLY_JSON_END>>>\n"
@@ -730,7 +744,14 @@ class NativeAnalyticsEngine:
                 "template": "plotly_dark",
                 "paper_bgcolor": "rgba(0,0,0,0)",
                 "plot_bgcolor": "rgba(0,0,0,0)",
-                "font": {"color": "#e2e8f0"}
+                "font": {"color": "#e2e8f0"},
+                "xaxis": {
+                    "title": {"text": "SKU / Product", "font": {"color": "#94a3b8", "size": 12}},
+                    "tickangle": -20
+                },
+                "yaxis": {
+                    "title": {"text": "Financial Amount (₹)", "font": {"color": "#94a3b8", "size": 12}}
+                }
             }
         }
         md += f"\n<<<PLOTLY_JSON_START>>>{json.dumps(plotly_dict)}<<<PLOTLY_JSON_END>>>\n"
@@ -900,8 +921,16 @@ class NativeAnalyticsEngine:
         q = query.lower()
 
         # 1. Identify Metric
+        is_units_query = any(w in q for w in ["items sold", "item sold", "units sold", "units", "quantity", "orders sold", "how many sold", "volume"])
         metric_col = None
-        if any(w in q for w in ["sale", "revenue", "gmv", "gross"]):
+        
+        if is_units_query:
+            qty_col = self._find_column(["quantity", "qty", "units", "items_count", "order_quantity"])
+            if qty_col:
+                metric_col = qty_col
+            else:
+                metric_col = self.semantic_map.get("revenue") or self._find_column(["gross_sales", "amount", "revenue", "sales", "price"])
+        elif any(w in q for w in ["sale", "sales", "sold", "revenue", "gmv", "gross", "item", "product"]):
             metric_col = self.semantic_map.get("revenue") or self._find_column(["gross_sales", "amount", "revenue", "sales", "price"])
         elif any(w in q for w in ["profit", "margin", "net", "cm3"]):
             metric_col = self.semantic_map.get("profit") or self._find_column(["net_profit", "profit", "margin", "settlement"])
@@ -942,11 +971,17 @@ class NativeAnalyticsEngine:
                     "marker": {"color": "#10b981"}
                 }],
                 "layout": {
-                    "title": f"Distribution of {metric_col}",
+                    "title": f"Distribution of {metric_col.replace('_', ' ').title()}",
                     "template": "plotly_dark",
                     "paper_bgcolor": "rgba(0,0,0,0)",
                     "plot_bgcolor": "rgba(0,0,0,0)",
-                    "font": {"color": "#e2e8f0"}
+                    "font": {"color": "#e2e8f0"},
+                    "xaxis": {
+                        "title": {"text": metric_col.replace('_', ' ').title(), "font": {"color": "#94a3b8", "size": 12}}
+                    },
+                    "yaxis": {
+                        "title": {"text": "Frequency / Count", "font": {"color": "#94a3b8", "size": 12}}
+                    }
                 }
             }
             md = f"### 📊 Distribution of `{metric_col}`\n\n"
@@ -954,28 +989,46 @@ class NativeAnalyticsEngine:
             return True, md, plotly_dict
 
         # 4. Grouped Bar Chart (Categorical breakdown)
-        sql = f"""
-            SELECT CAST("{dim_col}" AS VARCHAR) as dimension,
-                   SUM("{metric_col}") as total_metric,
-                   COUNT(*) as record_count
-            FROM df
-            WHERE "{dim_col}" IS NOT NULL
-            GROUP BY "{dim_col}"
-            ORDER BY total_metric DESC
-            LIMIT 10
-        """
+        if is_units_query and not self._find_column(["quantity", "qty", "units"]):
+            # Count transactions/orders as units sold
+            sql = f"""
+                SELECT CAST("{dim_col}" AS VARCHAR) as dimension,
+                       COUNT(*) as total_metric,
+                       SUM("{metric_col}") as total_sales
+                FROM df
+                WHERE "{dim_col}" IS NOT NULL
+                GROUP BY "{dim_col}"
+                ORDER BY total_metric DESC
+                LIMIT 10
+            """
+            y_axis_label = "Units Sold (Orders Count)"
+            is_currency = False
+        else:
+            sql = f"""
+                SELECT CAST("{dim_col}" AS VARCHAR) as dimension,
+                       SUM("{metric_col}") as total_metric,
+                       COUNT(*) as record_count
+                FROM df
+                WHERE "{dim_col}" IS NOT NULL
+                GROUP BY "{dim_col}"
+                ORDER BY total_metric DESC
+                LIMIT 10
+            """
+            is_currency = any(w in metric_col.lower() for w in ["sales", "revenue", "gmv", "profit", "fee", "price", "amount"])
+            y_axis_label = f"{metric_col.replace('_', ' ').title()}{' (₹)' if is_currency else ''}"
+
         res_df = self.con.execute(sql).df()
-
-        is_currency = any(w in metric_col.lower() for w in ["sales", "revenue", "gmv", "profit", "fee", "price", "amount"])
         prefix = "₹" if is_currency else ""
+        x_axis_label = str(dim_col).replace('_', ' ').title()
 
-        md = f"### 📊 Breakdown: `{metric_col}` by `{dim_col}`\n\n"
-        md += f"| Rank | {dim_col} | Total {metric_col} | Volume Count |\n"
+        md = f"### 📊 Breakdown: `{y_axis_label}` by `{x_axis_label}`\n\n"
+        md += f"| Rank | {x_axis_label} | {y_axis_label} | Volume Count |\n"
         md += f"| :---: | :--- | :--- | :---: |\n"
 
         for idx, row in res_df.iterrows():
-            val = f"{prefix}{row['total_metric']:,.2f}"
-            md += f"| {idx+1} | **{row['dimension']}** | {val} | {int(row['record_count']):,} |\n"
+            val = f"{prefix}{row['total_metric']:,.2f}" if is_currency else f"{int(row['total_metric']):,} units"
+            count_val = int(row.get('record_count', row['total_metric']))
+            md += f"| {idx+1} | **{row['dimension']}** | {val} | {count_val:,} |\n"
 
         plotly_dict = {
             "data": [{
@@ -985,11 +1038,18 @@ class NativeAnalyticsEngine:
                 "marker": {"color": "#0ea5e9"}
             }],
             "layout": {
-                "title": f"Total {metric_col} by {dim_col}",
+                "title": f"{y_axis_label} by {x_axis_label}",
                 "template": "plotly_dark",
                 "paper_bgcolor": "rgba(0,0,0,0)",
                 "plot_bgcolor": "rgba(0,0,0,0)",
-                "font": {"color": "#e2e8f0"}
+                "font": {"color": "#e2e8f0"},
+                "xaxis": {
+                    "title": {"text": x_axis_label, "font": {"color": "#94a3b8", "size": 12}},
+                    "tickangle": -20
+                },
+                "yaxis": {
+                    "title": {"text": y_axis_label, "font": {"color": "#94a3b8", "size": 12}}
+                }
             }
         }
         md += f"\n<<<PLOTLY_JSON_START>>>{json.dumps(plotly_dict)}<<<PLOTLY_JSON_END>>>\n"

@@ -28,6 +28,7 @@ export default function CRMStatsLedger({
   activeDomain = 'ecom', 
   activeTourStep = null,
   onIngestFile = null,
+  onConnectMarketplace = null,
   onSimulatePrice, 
   onViewDispute 
 }) {
@@ -37,14 +38,8 @@ export default function CRMStatsLedger({
   const [ingestNotice, setIngestNotice] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Derive CRM rows based on active dataset or fallback domain ledger
-  const rawRows = dataset && dataset.length > 0 ? dataset : [
-    { order_id: "OD-4081-1", sku: "ELEC-W-EARBUDS", product_name: "Wireless ANC Earbuds Pro", category: "Electronics", billed_weight_kg: 1.25, actual_weight_kg: 0.38, gross_sales: 2499.0, cogs: 850.0, net_profit: -142.0, status: "BLEEDER" },
-    { order_id: "OD-4081-2", sku: "FAST-CHARGER-65W", product_name: "GaN Fast Charger 65W", category: "Mobile Accessories", billed_weight_kg: 0.45, actual_weight_kg: 0.42, gross_sales: 1899.0, cogs: 520.0, net_profit: 1264.0, status: "STAR" },
-    { order_id: "OD-4081-3", sku: "ELEC-W-EARBUDS", product_name: "Wireless ANC Earbuds Pro", category: "Electronics", billed_weight_kg: 1.25, actual_weight_kg: 0.38, gross_sales: 2499.0, cogs: 850.0, net_profit: -284.0, status: "RETURN_LEAK" },
-    { order_id: "OD-4081-4", sku: "MAG-POWERBANK-10K", product_name: "MagSafe PowerBank 10k", category: "Mobile Accessories", billed_weight_kg: 0.65, actual_weight_kg: 0.60, gross_sales: 3299.0, cogs: 1400.0, net_profit: 1195.0, status: "HEALTHY" },
-    { order_id: "OD-4081-5", sku: "FAST-CHARGER-65W", product_name: "GaN Fast Charger 65W", category: "Mobile Accessories", billed_weight_kg: 0.45, actual_weight_kg: 0.42, gross_sales: 1899.0, cogs: 520.0, net_profit: 1264.0, status: "STAR" }
-  ];
+  // Derive CRM rows based on active dataset (empty array if no dataset loaded)
+  const rawRows = dataset && dataset.length > 0 ? dataset : [];
 
   // Derive clean financial classification for each row
   const getRowFinancialStatus = (row) => {
@@ -316,7 +311,7 @@ export default function CRMStatsLedger({
               <Scale className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
             </div>
             <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
-              ₹{totalClawback > 0 ? totalClawback.toLocaleString() : '42,500'}
+              ₹{totalClawback > 0 ? totalClawback.toLocaleString() : '0'}
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans">
               Ready for 1-click dispute ticket
@@ -373,7 +368,42 @@ export default function CRMStatsLedger({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
-              {filteredRows.length === 0 ? (
+              {rawRows.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-16 px-4">
+                    <div className="max-w-md mx-auto flex flex-col items-center justify-center text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400 mb-3 shadow-sm">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white font-sans">No Transaction Ledger Loaded</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-sans mt-1.5 mb-5 leading-relaxed">
+                        Upload your Flipkart Seller Hub / Amazon settlement CSV or sync your marketplace account to audit fee leakages, return freight penalties, and volumetric weight overcharges.
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-2.5">
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold font-sans shadow-sm transition-all flex items-center gap-1.5"
+                        >
+                          <UploadCloud className="w-3.5 h-3.5" />
+                          <span>Upload Settlement CSV</span>
+                        </button>
+                        <button
+                          onClick={() => onConnectMarketplace && onConnectMarketplace('flipkart')}
+                          className="px-3.5 py-2 rounded-lg bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium font-sans transition-all flex items-center gap-1.5 shadow-sm"
+                        >
+                          <span>🛒 Connect Flipkart</span>
+                        </button>
+                        <button
+                          onClick={() => onConnectMarketplace && onConnectMarketplace('amazon')}
+                          className="px-3.5 py-2 rounded-lg bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium font-sans transition-all flex items-center gap-1.5 shadow-sm"
+                        >
+                          <span>📦 Connect Amazon</span>
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredRows.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="text-center py-10 text-slate-400 font-sans">
                     No transactions match your search filter.
