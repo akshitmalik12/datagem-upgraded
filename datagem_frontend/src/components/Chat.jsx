@@ -118,6 +118,23 @@ export default function Chat() {
   const [editSessionTitle, setEditSessionTitle] = useState("");
   const [searchParams] = useSearchParams();
 
+  const domainSwitcherRef = useRef(null);
+  const toolsMenuRef = useRef(null);
+
+  // Click outside listener for header popovers
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (domainSwitcherRef.current && !domainSwitcherRef.current.contains(e.target)) {
+        setShowDomainSwitcher(false);
+      }
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target)) {
+        setShowMoreTools(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   // Handle URL query presets (e.g. from Landing page "Open in Live Studio")
   useEffect(() => {
     const preset = searchParams.get('preset');
@@ -1366,7 +1383,7 @@ export default function Chat() {
               </div>
 
               {/* 1-Click Domain Hub Switcher Pill */}
-              <div className="relative hidden md:block">
+              <div ref={domainSwitcherRef} className="relative hidden md:block">
                 <button
                   onClick={() => setShowDomainSwitcher(!showDomainSwitcher)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-xs font-medium transition-all text-slate-700 dark:text-slate-200"
@@ -1580,7 +1597,7 @@ export default function Chat() {
               </button>
 
               {/* Consolidated "More Tools & Portals" Dropdown */}
-              <div className="relative">
+              <div ref={toolsMenuRef} className="relative">
                 <button
                   onClick={() => setShowMoreTools(!showMoreTools)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors font-medium"
