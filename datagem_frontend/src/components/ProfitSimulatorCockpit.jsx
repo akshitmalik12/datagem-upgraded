@@ -25,16 +25,31 @@ export default function ProfitSimulatorCockpit({
   const [sliderPercent, setSliderPercent] = useState(4);
   const [copied, setCopied] = useState(false);
 
-  // Extract unique SKUs from dataset with sensible fallbacks
-  const skuList = useMemo(() => {
-    if (!dataset || dataset.length === 0) {
-      return [
-        { sku: 'ELEC-W-EARBUDS', name: 'Wireless ANC Earbuds', basePrice: 2499, baseUnits: 420, cogs: 850, fbaFee: 142, billedWt: 1.25, actualWt: 0.38 },
-        { sku: 'MAG-POWERBANK-10K', name: 'MagSafe PowerBank 10k', basePrice: 3299, baseUnits: 280, cogs: 1400, fbaFee: 86, billedWt: 0.65, actualWt: 0.60 },
-        { sku: 'FAST-CHARGER-65W', name: 'GaN Fast Charger 65W', basePrice: 1899, baseUnits: 510, cogs: 520, fbaFee: 64, billedWt: 0.45, actualWt: 0.42 }
-      ];
-    }
+  // If no dataset is loaded, render clean empty state
+  if (!dataset || dataset.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#F8FAFC] dark:bg-[#07090E] font-sans text-center">
+        <div className="max-w-md mx-auto p-8 rounded-2xl bg-white dark:bg-[#090D14] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4">
+            <Sliders className="w-7 h-7" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">No Catalog Data Loaded</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed mb-6">
+            Upload your marketplace transactions or select an active domain workspace to simulate price adjustments, demand elasticity, and net bankable CM3.
+          </p>
+          <button
+            onClick={() => onSwitchToLedger && onSwitchToLedger()}
+            className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-all shadow-sm"
+          >
+            Go to Audit Ledger →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
+  // Extract unique SKUs from dataset
+  const skuList = useMemo(() => {
     const map = new Map();
     dataset.forEach(row => {
       const getVal = (...keys) => {

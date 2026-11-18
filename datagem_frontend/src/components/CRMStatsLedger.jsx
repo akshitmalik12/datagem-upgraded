@@ -368,11 +368,17 @@ export default function CRMStatsLedger({
               <DollarSign className="w-3.5 h-3.5 text-slate-400" />
             </div>
             <div className="text-xl font-bold text-slate-900 dark:text-white mt-1 font-mono">
-              {isSaaS ? `$${Math.round(totalMRR).toLocaleString()}` : `₹${Math.round(totalRevenue).toLocaleString()}`}
+              {totalOrders === 0 ? '—' : isSaaS ? `$${Math.round(totalMRR).toLocaleString()}` : `₹${Math.round(totalRevenue).toLocaleString()}`}
             </div>
-            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 font-sans flex items-center gap-1">
-              <ArrowUpRight className="w-3 h-3" />
-              <span>+18.4% vs benchmark</span>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans flex items-center gap-1">
+              {totalOrders > 0 ? (
+                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <ArrowUpRight className="w-3 h-3" />
+                  +18.4% vs benchmark
+                </span>
+              ) : (
+                <span>Awaiting data upload</span>
+              )}
             </div>
           </div>
 
@@ -384,10 +390,14 @@ export default function CRMStatsLedger({
               <ShoppingBag className="w-3.5 h-3.5 text-slate-400" />
             </div>
             <div className="text-xl font-bold text-slate-900 dark:text-white mt-1 font-mono">
-              {isSaaS ? `${activeAccounts} Accounts` : totalOrders.toLocaleString()}
+              {totalOrders === 0 ? '—' : isSaaS ? `${activeAccounts} Accounts` : totalOrders.toLocaleString()}
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans">
-              {isSaaS ? `Avg Seats: 14` : `Avg Order: ₹${Math.round(avgOrderVal).toLocaleString()}`}
+              {totalOrders > 0 ? (
+                isSaaS ? `Avg Seats: 14` : `Avg Order: ₹${Math.round(avgOrderVal).toLocaleString()}`
+              ) : (
+                'No transactions loaded'
+              )}
             </div>
           </div>
 
@@ -398,11 +408,15 @@ export default function CRMStatsLedger({
               </span>
               <AlertTriangle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
             </div>
-            <div className="text-xl font-bold text-rose-600 dark:text-rose-400 mt-1 font-mono">
-              {isSaaS ? `${highRiskChurn} Accounts` : `${bleedersCount} SKU${bleedersCount === 1 ? '' : 's'}`}
+            <div className="text-xl font-bold text-slate-900 dark:text-white mt-1 font-mono">
+              {totalOrders === 0 ? '—' : `${bleedersCount} SKU${bleedersCount === 1 ? '' : 's'}`}
             </div>
-            <div className="text-[10px] text-rose-600/80 dark:text-rose-400/80 mt-1 font-sans">
-              {isSaaS ? 'Contract renewal or high risk' : 'Negative CM3 margin detected'}
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans">
+              {totalOrders > 0 ? (
+                isSaaS ? 'Contract renewal or high risk' : 'Negative CM3 margin detected'
+              ) : (
+                'Zero leakage detected'
+              )}
             </div>
           </div>
 
@@ -414,10 +428,14 @@ export default function CRMStatsLedger({
               <Scale className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
             </div>
             <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
-              {isSaaS ? `$${Math.round(totalOrders > 0 ? totalLTV / totalOrders : 0).toLocaleString()}` : `₹${totalClawback > 0 ? totalClawback.toLocaleString() : '0'}`}
+              {totalOrders === 0 ? '—' : isSaaS ? `$${Math.round(totalOrders > 0 ? totalLTV / totalOrders : 0).toLocaleString()}` : `₹${totalClawback > 0 ? totalClawback.toLocaleString() : '0'}`}
             </div>
-            <div className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-1 font-sans">
-              {isSaaS ? 'Net dollar expansion potential' : 'Ready for 1-click dispute ticket'}
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-sans">
+              {totalOrders > 0 ? (
+                isSaaS ? 'Net dollar expansion potential' : 'Ready for 1-click dispute ticket'
+              ) : (
+                'Audit queue empty'
+              )}
             </div>
           </div>
         </div>

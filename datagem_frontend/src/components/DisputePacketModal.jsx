@@ -72,6 +72,33 @@ export default function DisputePacketModal({ isOpen, onClose, onOpenUpgrade, cla
 
   if (!isOpen) return null;
 
+  if (!claimData) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="w-full max-w-lg bg-[#090D14] border border-slate-800 rounded-3xl shadow-2xl p-6 text-center flex flex-col items-center font-sans text-slate-100"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-3">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-white">No Dispute Packet Selected</h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed mb-5">
+            Select a verified claim or overcharge audit from the Audit Ledger to compile a policy-compliant dispute packet.
+          </p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold shadow-sm transition-all"
+          >
+            Close
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
       <motion.div

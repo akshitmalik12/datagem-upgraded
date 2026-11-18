@@ -17,7 +17,34 @@ export default function DisputeTicketModal({ isOpen, onClose, disputeData }) {
 
   if (!isOpen) return null;
 
-  const sku = disputeData?.sku || 'ELEC-W-EARBUDS';
+  if (!disputeData || !disputeData.sku) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="w-full max-w-lg bg-white dark:bg-[#090D14] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 text-center flex flex-col items-center font-sans text-slate-800 dark:text-slate-100"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-3">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">No Dispute Case Selected</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm leading-relaxed mb-5">
+            Identify an overcharge or weight discrepancy in the Audit Ledger or AI Co-Pilot to automatically generate a formal carrier dispute ticket.
+          </p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-xs font-semibold shadow-sm transition-all"
+          >
+            Return to Ledger
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const sku = disputeData.sku;
   const productName = disputeData?.product_name || 'Wireless ANC Earbuds';
   const billedWeight = disputeData?.billed_weight_kg || 1.25;
   const actualWeight = disputeData?.actual_weight_kg || 0.38;

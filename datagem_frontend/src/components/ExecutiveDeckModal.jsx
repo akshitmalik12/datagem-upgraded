@@ -8,8 +8,57 @@ export default function ExecutiveDeckModal({ isOpen, onClose, dataset, datasetPr
 
   if (!isOpen) return null;
 
-  const activeData = (dataset && dataset.length > 0) ? dataset : DOMAIN_PRESETS.ecom.data;
-  const isDemo = !dataset || dataset.length === 0;
+  if (!dataset || dataset.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="w-full max-w-lg bg-[#090D14] border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative font-sans text-slate-100"
+        >
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs border border-sky-500/30">
+                📄
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-white">Executive Presentation Deck</h2>
+                <p className="text-[11px] font-mono text-slate-400">Board &amp; Leadership Reporting</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-sm transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Empty State */}
+          <div className="p-8 text-center flex flex-col items-center">
+            <div className="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center mb-4">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <h3 className="text-base font-bold text-white">No Dataset Loaded</h3>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed mb-6">
+              Upload your Amazon or Flipkart settlement ledger, or select an instant domain preset to auto-compile your 4-slide executive P&L and fee leakage audit.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-sm transition-all"
+            >
+              Return to Workspace
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const activeData = dataset;
+  const isDemo = false;
   const rowCount = activeData.length;
   const columns = activeData[0] ? Object.keys(activeData[0]) : [];
 
