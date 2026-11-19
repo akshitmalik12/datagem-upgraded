@@ -17,9 +17,9 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Strictly allow ONLY the designated super-admin email. No tier-based or enterprise bypass.
-  const ADMIN_EMAIL = 'aakshitmalik@gmail.com';
-  const isAdmin = user?.email?.trim().toLowerCase() === ADMIN_EMAIL;
+  // Strictly allow ONLY the designated super-admin emails. No tier-based or enterprise bypass.
+  const ADMIN_EMAILS = ['aakshitmalik@gmail.com', 'akshitmalik1203@gmail.com'];
+  const isAdmin = ADMIN_EMAILS.includes(user?.email?.trim().toLowerCase());
 
   if (!isAdmin) {
     return <Navigate to="/chat" replace />;

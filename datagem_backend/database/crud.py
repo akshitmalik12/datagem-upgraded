@@ -10,8 +10,11 @@ from auth import models as auth_models
 # =====================
 
 def get_user_by_email(db: Session, email: str):
-    """Fetch a single user by their email address."""
-    return db.query(db_models.User).filter(db_models.User.email == email).first()
+    """Fetch a single user by their email address (case-insensitive & trimmed)."""
+    if not email:
+        return None
+    from sqlalchemy import func
+    return db.query(db_models.User).filter(func.lower(func.trim(db_models.User.email)) == email.strip().lower()).first()
 
 def create_user(db: Session, user: db_models.User):
     """

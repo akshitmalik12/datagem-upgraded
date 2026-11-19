@@ -19,12 +19,17 @@ export default function ForgotPassword() {
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      return setError('Please enter your work email address.');
+    }
     setIsLoading(true);
     try {
-      await authAPI.forgotPassword(email);
+      await authAPI.forgotPassword(cleanEmail);
+      setEmail(cleanEmail);
       setStep('otp');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send OTP. Please try again.');
+      setError(err.response?.data?.detail || 'Failed to send OTP. Please check your email or try again.');
     } finally {
       setIsLoading(false);
     }
@@ -33,9 +38,14 @@ export default function ForgotPassword() {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setError('');
+    const cleanEmail = email.trim();
+    const cleanOtp = otp.trim();
+    if (!cleanOtp) {
+      return setError('Please enter the 6-digit verification code.');
+    }
     setIsLoading(true);
     try {
-      await authAPI.verifyOTP(email, otp);
+      await authAPI.verifyOTP(cleanEmail, cleanOtp);
       setStep('reset');
     } catch (err) {
       setError(err.response?.data?.detail || 'Invalid or expired OTP.');
@@ -50,10 +60,11 @@ export default function ForgotPassword() {
     if (newPassword.length < 8) {
       return setError('Password must be at least 8 characters long.');
     }
-    
+    const cleanEmail = email.trim();
+    const cleanOtp = otp.trim();
     setIsLoading(true);
     try {
-      await authAPI.resetPassword(email, otp, newPassword);
+      await authAPI.resetPassword(cleanEmail, cleanOtp, newPassword);
       setStep('success');
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to reset password.');

@@ -22,7 +22,7 @@ router = APIRouter()
 def is_admin_email(email: str) -> bool:
     if not email:
         return False
-    return email.lower().strip() == "aakshitmalik@gmail.com"
+    return email.lower().strip() in ["aakshitmalik@gmail.com", "akshitmalik1203@gmail.com"]
 
 @router.post("/signup", response_model=auth_models.UserInDB)
 def create_new_user(
@@ -131,58 +131,74 @@ import string
 
 @router.post("/forgot-password")
 def forgot_password(request: auth_models.ForgotPasswordRequest, db: Session = Depends(database.get_db)):
-    user = crud.get_user_by_email(db, email=request.email)
+    clean_email = request.email.strip().lower()
+    user = crud.get_user_by_email(db, email=clean_email)
     if not user:
-        # Prevent email enumeration by returning a generic success message
-        return {"message": "If that email exists, an OTP has been sent."}
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account registered with this email address. Please check your spelling or sign up."
+        )
         
     # Generate 6-digit OTP
     otp = ''.join(random.choices(string.digits, k=6))
     
     # Store OTP (expires in 15 minutes)
     expires_at = datetime.utcnow() + timedelta(minutes=15)
-    db_reset = db_models.PasswordReset(email=request.email, otp=otp, expires_at=expires_at)
+    db_reset = db_models.PasswordReset(email=clean_email, otp=otp, expires_at=expires_at)
     db.add(db_reset)
     db.commit()
     
     # Send OTP using our verified transactional email engine (Resend API)
     try:
         from utils.email_utils import send_password_reset_email
-        send_password_reset_email(request.email, otp)
-        print(f"✅ Successfully dispatched OTP verification email to {request.email}")
+        sent = send_password_reset_email(clean_email, otp)
+        if sent:
+            print(f"✅ Successfully dispatched OTP verification email to {clean_email}")
+        else:
+            print(f"⚠️ Failed to send OTP email to {clean_email}")
     except Exception as e:
         print(f"⚠️ Failed to send OTP email: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send OTP email: {str(e)}"
+        )
     
-    return {"message": "If that email exists, an OTP has been sent."}
+    return {"message": "Verification OTP sent successfully to your email."}
 
 @router.post("/verify-otp")
 def verify_otp(request: auth_models.VerifyOTPRequest, db: Session = Depends(database.get_db)):
+    from sqlalchemy import func
+    clean_email = request.email.strip().lower()
+    clean_otp = request.otp.strip()
     # Find active OTP
     reset_record = db.query(db_models.PasswordReset).filter(
-        db_models.PasswordReset.email == request.email,
-        db_models.PasswordReset.otp == request.otp,
+        func.lower(func.trim(db_models.PasswordReset.email)) == clean_email,
+        db_models.PasswordReset.otp == clean_otp,
         db_models.PasswordReset.expires_at > datetime.utcnow()
     ).first()
     
     if not reset_record:
-        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP. Please request a new code.")
         
     return {"message": "OTP verified successfully"}
 
 @router.post("/reset-password")
 def reset_password(request: auth_models.ResetPasswordRequest, db: Session = Depends(database.get_db)):
+    from sqlalchemy import func
+    clean_email = request.email.strip().lower()
+    clean_otp = request.otp.strip()
     # Find active OTP
     reset_record = db.query(db_models.PasswordReset).filter(
-        db_models.PasswordReset.email == request.email,
-        db_models.PasswordReset.otp == request.otp,
+        func.lower(func.trim(db_models.PasswordReset.email)) == clean_email,
+        db_models.PasswordReset.otp == clean_otp,
         db_models.PasswordReset.expires_at > datetime.utcnow()
     ).first()
     
     if not reset_record:
-        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP. Please request a new code.")
         
     # Update password
-    user = crud.get_user_by_email(db, email=request.email)
+    user = crud.get_user_by_email(db, email=clean_email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
@@ -192,7 +208,7 @@ def reset_password(request: auth_models.ResetPasswordRequest, db: Session = Depe
     db.delete(reset_record)
     db.commit()
     
-    return {"message": "Password has been reset successfully"}
+    return {"message": "Password has been reset successfully. You can now log in."}
 
 @router.post("/set-tier")
 async def set_user_tier(

@@ -26,10 +26,10 @@ class StatusUpdateRequest(BaseModel):
 class DeleteUserRequest(BaseModel):
     email: str
 
-ADMIN_EMAIL = "aakshitmalik@gmail.com"
+ADMIN_EMAILS = ["aakshitmalik@gmail.com", "akshitmalik1203@gmail.com"]
 
 def verify_admin(current_user: models.User):
-    if not current_user or current_user.email.strip().lower() != ADMIN_EMAIL:
+    if not current_user or current_user.email.strip().lower() not in ADMIN_EMAILS:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Super-admin access strictly required"

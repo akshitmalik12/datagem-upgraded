@@ -178,7 +178,8 @@ export const COLOR_PALETTES = {
 
 export default function DesignShowcase() {
   const { user } = useAuth();
-  if (user && user.email?.trim().toLowerCase() !== 'aakshitmalik@gmail.com') {
+  const ADMIN_EMAILS = ['aakshitmalik@gmail.com', 'akshitmalik1203@gmail.com'];
+  if (user && !ADMIN_EMAILS.includes(user.email?.trim().toLowerCase())) {
     return <Navigate to="/chat" replace />;
   }
 

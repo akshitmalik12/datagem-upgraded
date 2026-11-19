@@ -9,8 +9,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('users'); // Defaults directly to User Control for quick tier assignment
   const navigate = useNavigate();
 
-  // Component-level security guard: strictly allow only the designated super-admin email
-  if (user && user.email?.trim().toLowerCase() !== 'aakshitmalik@gmail.com') {
+  // Component-level security guard: strictly allow only the designated super-admin emails
+  const ADMIN_EMAILS = ['aakshitmalik@gmail.com', 'akshitmalik1203@gmail.com'];
+  if (user && !ADMIN_EMAILS.includes(user.email?.trim().toLowerCase())) {
     return <Navigate to="/chat" replace />;
   }
 

@@ -1625,7 +1625,7 @@ export default function Chat() {
                   >
                     <span>ℹ️</span> About Platform
                   </Link>
-                  {user?.email?.trim().toLowerCase() === 'aakshitmalik@gmail.com' && (
+                  {['aakshitmalik@gmail.com', 'akshitmalik1203@gmail.com'].includes(user?.email?.trim().toLowerCase()) && (
                     <>
                       <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
                       <Link

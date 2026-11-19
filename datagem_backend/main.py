@@ -38,29 +38,32 @@ async def lifespan(app: FastAPI):
         # Ensure primary admin accounts are provisioned and set to enterprise tier
         with SessionLocal() as db:
             from auth import security
+            from sqlalchemy import func
             admins = [
                 ("aakshitmalik@gmail.com", "fashion1@CARE", "Akshit Malik"),
+                ("akshitmalik1203@gmail.com", "fashion1@CARE", "Akshit Malik"),
                 ("founder@company.com", "Password123!", "Founder")
             ]
             for email, raw_pass, name in admins:
-                existing = db.query(db_models.User).filter(db_models.User.email == email).first()
+                clean_email = email.strip().lower()
+                existing = db.query(db_models.User).filter(func.lower(func.trim(db_models.User.email)) == clean_email).first()
                 if not existing:
                     hashed = security.get_password_hash(raw_pass)
                     new_admin = db_models.User(
-                        email=email,
+                        email=clean_email,
                         hashed_password=hashed,
                         full_name=name,
                         tier="enterprise"
                     )
                     db.add(new_admin)
                     db.commit()
-                    logger.info(f"Provisioned new admin account: {email} (enterprise)")
+                    logger.info(f"Provisioned new admin account: {clean_email} (enterprise)")
                 else:
                     existing.hashed_password = security.get_password_hash(raw_pass)
                     if existing.tier.lower() != "enterprise":
                         existing.tier = "enterprise"
                     db.commit()
-                    logger.info(f"Updated {email} credentials and enterprise tier")
+                    logger.info(f"Updated {clean_email} credentials and enterprise tier")
     except Exception as e:
         logger.error(f"Non-fatal database connection warning during startup: {e}. Running in resilient mode.")
     yield
